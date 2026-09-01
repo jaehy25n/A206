@@ -38,6 +38,8 @@
 ## Git
 
 - 명시적으로 요청받지 않으면 commit, push, reset, 브랜치 삭제를 하지 않는다.
+- 브랜치 이름은 소문자 kebab-case의 `<type>/<scope>` 형식을 사용한다. 사용자·도구·모델 이름 접두사는 사용하지 않는다.
+- 브랜치 type은 목적에 맞게 `feature`, `fix`, `docs`, `chore`, `refactor`, `test` 중 하나를 사용한다. 초기 프로젝트 구성은 `chore/project-bootstrap`을 사용한다.
 - 커밋 요청 시 Conventional Commits를 사용한다.
 
   ```text
