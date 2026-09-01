@@ -1,15 +1,23 @@
+# 저장소 작업 지침은 코드와 함께 관리한다.
+!AGENTS.md
+
+# Android Studio / IntelliJ 로컬 상태
 *.iml
-.gradle
+/.idea/
+
+# Gradle 및 Android 빌드 산출물
+/.gradle/
+/.kotlin/
+/**/build/
+/captures/
+/.externalNativeBuild/
+/.cxx/
 /local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+/gradle/gradle-daemon-jvm.properties
+
+# OS 메타데이터
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+
+# Codex·Spec Kit 로컬 도구 런타임
+/.agents/
+/.specify/
