@@ -14,9 +14,15 @@
 /.cxx/
 /local.properties
 /gradle/gradle-daemon-jvm.properties
+*.class
+*.jar
+*.log
+.env*
+/out/
 
 # OS 메타데이터
 .DS_Store
+Thumbs.db
 
 # Codex·Spec Kit 로컬 도구 런타임
 /.agents/
