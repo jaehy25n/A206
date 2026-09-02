@@ -31,5 +31,5 @@
 
 ## 참고
 
-- 사용자는 Seed에 없는 내용을 추정하지 말 것을 지시했다. 현재 로컬 MVP의 미해결 질문은 없으며, 실제 서버 API 계약은 명시적으로 범위 밖이고 향후 별도 계약으로 다룬다.
+- 서버 내부 설계는 범위 밖으로 유지한다. 모바일의 실제 서버 통신 계약은 `contracts/episode-upload.md`에 정의하며, HTTPS server base URL·수신 응답 계약은 구현 전에 제공돼야 한다.
 - Kotlin·Jetpack Compose·Material 3, Camera 권한, Manifest, 업로드 경계 관련 내용은 Seed에서 보존한 제약사항이며 새로운 설계 결정으로 추가한 것이 아니다.

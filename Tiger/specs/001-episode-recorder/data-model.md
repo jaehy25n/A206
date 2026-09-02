@@ -8,7 +8,8 @@
 | `displayName` | `episode_0001` 형식 |
 | `task`, `object` | 비어 있지 않은 자유 텍스트 |
 | `recordingState` | `RECORDING` → `COMPLETED` 또는 `INTERRUPTED` |
-| `syncState` | `LOCAL_ONLY` |
+| `uploadState` | `LOCAL_ONLY` → `UPLOADING` → `UPLOADED`, success receipt가 아닌 모든 HTTP·transport 결과는 `FAILED` |
+| `uploadAttempt` | 마지막 시도 시각, 결과, 사용자에게 표시할 실패 요약. 원본 bundle과 분리해 보존 |
 | `cameraConfig` | logical/selected physical ID, lens facing, focal length, sensor physical size, active/pre-correction array, size, FPS, zoom, OIS/EIS, timestamp source |
 | `timebaseMetadata` | Camera `REALTIME` source와 `VERIFIED` status |
 | `captureLog` | 중단 사유, 마지막 timestamp, frame/sensor 수, 오류 요약 |
@@ -18,10 +19,16 @@ RECORDING --six-file validation--> COMPLETED
 RECORDING --cancel/onStop/buffer-lost/capture-failed/sequence-abort/camera-session/encoder/muxer/writer error--> INTERRUPTED
 INTERRUPTED --next launch--> raw staging cleanup + diagnostic log
 COMPLETED --user-confirmed delete--> removed
+COMPLETED/LOCAL_ONLY --user-started upload--> UPLOADING
+UPLOADING --server success--> UPLOADED
+UPLOADING --non-success HTTP/transport result or malformed/mismatched success receipt--> FAILED
+FAILED --user-started upload--> UPLOADING
 CaptureLogs --user-confirmed clear-all--> removed
 ```
 
 `COMPLETED`만 목록에 들어간다.
+
+업로드는 [episode upload 계약](contracts/episode-upload.md)이 정의한 여섯 파일 bundle의 단일 multipart 요청이다. 업로드 성공·실패·재시도는 `recordingState`를 바꾸지 않으며, 어느 상태에서도 원본 bundle을 자동 삭제하거나 변경하지 않는다.
 
 ## 센서 record
 
