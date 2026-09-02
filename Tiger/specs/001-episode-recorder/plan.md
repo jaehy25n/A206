@@ -1,6 +1,6 @@
 # 구현 계획: Episode Recorder MVP
 
-**브랜치**: `001-episode-recorder` | **작성일**: 2026-09-01 | **명세**: [spec.md](spec.md)
+**작성일**: 2026-09-01 | **명세**: [spec.md](spec.md)
 
 ## 요약
 
@@ -31,7 +31,7 @@ Galaxy S10 SM-G973N의 후면 main 1× 영상과 accelerometer·gyroscope·rotat
 - 녹화 중 Activity `onStop`은 interruption이며 일시적인 `onPause`만으로는 interruption이 아니다.
 - completed episode와 진단 로그는 자동 삭제하지 않으며, 저장 공간이 부족하면 새 녹화를 시작하지 않는다.
 - Camera capture frame number·timestamp·source는 앱이 보존한다. MP4 frame↔timestamp 대응의 완전 검증과 후처리는 서버 측 후속 범위다.
-- completed episode는 개별 삭제하고, CaptureLog는 전체 삭제만 제공한다.
+- completed episode는 개별 삭제하고, `UPLOADING` 중인 episode의 삭제는 비활성화한다. CaptureLog는 전체 삭제만 제공한다.
 - 업로드는 completed episode 한 건을 단위로 수동 시작하며, 성공 전·실패 후에도 원본 bundle을 유지한다. 중단된 요청은 업로드 세션·오프셋 재개 없이 같은 `episode_id`·`Idempotency-Key`로 여섯 파일 전체를 재전송한다. 단일 `POST /episodes` multipart 요청, 상태·오류는 `contracts/episode-upload.md`를 따른다.
 
 ## Constitution Check
@@ -82,7 +82,7 @@ app/src/main/java/com/ssafy/s15p21a206/tiger/
 3. SensorManager 등록·종료 flush·센서별 CSV 기록을 구현한다.
 4. Camera2 preflight·preview·Camera capture timestamp·metadata와 video 경로를 구현한다.
 5. completed bundle의 파일 hash·크기 재검증, 수동 multipart 업로드, idempotent 재전송과 로컬 업로드 상태 보존을 구현한다.
-6. Room catalog의 Flow를 lifecycle-aware Compose state로 수집해 입력 검증, 녹화/목록/업로드 상태 UI, episode 개별 삭제, CaptureLog 전체 삭제 및 확정 lifecycle interruption 정책을 연결한다.
+6. Room catalog의 Flow를 lifecycle-aware Compose state로 수집해 UTF-8 task 입력 검증, 녹화/목록/업로드 상태 UI, `UPLOADING` 중 비활성화되는 episode 개별 삭제, CaptureLog 전체 삭제 및 확정 lifecycle interruption 정책을 연결한다.
 7. 단위 테스트·linter·build·Galaxy S10 six-file bundle/중단·삭제·서버 연동 흐름을 검증한다.
 
 ## 복잡성 추적

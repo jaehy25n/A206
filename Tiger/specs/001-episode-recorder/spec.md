@@ -1,6 +1,5 @@
 # 기능 명세: Episode Recorder MVP
 
-**기능 브랜치**: `master`  
 **작성일**: 2026-09-01  
 **상태**: 초안  
 **입력**: Galaxy S10 로봇 End-Effector 데이터 수집 MVP를 위한 사용자 제공 Ouroboros Seed YAML.
@@ -10,6 +9,11 @@
 로봇 End-Effector 측 브래킷에 Galaxy S10을 강체 고정하고, 후면 메인 1× 카메라 영상과 accelerometer·gyroscope·`TYPE_ROTATION_VECTOR` 데이터를 동기화하여 episode 단위로 로컬 기록·저장하는 Android 데이터 수집 MVP를 구축한다.
 
 ## 명확화
+
+### 세션 2026-09-02
+
+- Q: task 입력값을 폴더명으로 그대로 사용할 때 어떤 문자 규칙을 적용할까요? → A: `task`는 한국어를 포함하는 UTF-8 자유 텍스트다. 입력 텍스트를 변환하지 않고 task 폴더명과 metadata의 `task` 값에 동일하게 사용하며, 경로 구분자와 제어 문자만 허용하지 않는다.
+- Q: 업로드가 진행 중인 episode를 사용자가 삭제하려 하면 어떻게 해야 할까요? → A: `UPLOADING` 중에는 삭제를 비활성화한다.
 
 ### 세션 2026-09-01
 
@@ -90,7 +94,7 @@
 ### 기능 요구사항
 
 - **FR-001**: 시스템은 로봇 End-Effector 측 브래킷에 강체 고정된 Galaxy S10에서 후면 메인 1× 카메라, accelerometer, gyroscope, `TYPE_ROTATION_VECTOR`가 제공하는 원시값을 수집해야 한다.
-- **FR-002**: 시스템은 녹화 시작 전에 비어 있지 않은 자유 텍스트 작업 이름과 대상 물체 입력을 요구해야 하며, 두 입력에 고정 카테고리 목록을 제공해서는 안 된다.
+- **FR-002**: 시스템은 녹화 시작 전에 비어 있지 않은 UTF-8 자유 텍스트 task와 대상 물체 입력을 요구해야 하며, 두 입력에 고정 카테고리 목록을 제공해서는 안 된다. task는 한국어를 포함할 수 있고, 입력 텍스트를 변환하지 않은 값을 task 폴더명과 metadata의 `task` 값에 동일하게 사용해야 한다. 경로 구분자와 제어 문자가 포함된 task는 허용해서는 안 된다.
 - **FR-003**: 시스템은 녹화 중 후면 메인 카메라 실시간 프리뷰, 녹화 경과 시간, 카메라 상태, IMU 상태를 표시해야 한다.
 - **FR-004**: 시스템은 1920×1080, 30 FPS 및 고정 zoom ratio 1.0을 기본 촬영 설정으로 사용해야 하며, episode 중 카메라 설정 변경을 막아야 한다.
 - **FR-005**: 시스템은 녹화 시작 전에 수집자가 1920×1080, 30 FPS 또는 1280×720, 30 FPS를 선택할 수 있게 해야 한다. 기본값은 1920×1080, 30 FPS이며, 선택된 설정은 episode 중 변경할 수 없다.
@@ -104,11 +108,11 @@
 - **FR-012**: 시스템은 Activity가 완전히 보이지 않는 `onStop`, 사용자 취소, Camera 또는 IMU 오류, 비정상 앱 종료로 중단된 녹화를 완료 episode 목록에서 제외해야 한다. 일시적인 `onPause`만으로는 녹화를 중단해서는 안 된다.
 - **FR-013**: 시스템은 다음 앱 실행 시 중단 원시 데이터를 정리하되, 중단 사유, 마지막 timestamp, frame 및 sensor 샘플 수, 오류 요약을 포함한 구조화된 로컬 진단 로그는 보존해야 한다.
 - **FR-013a**: 시스템은 completed episode와 구조화된 진단 로그를 자동 삭제해서는 안 되며, 저장 공간이 부족하면 새 녹화를 시작해서는 안 된다.
-- **FR-013b**: 시스템은 수집자가 확인한 completed episode bundle 하나를 개별 삭제할 수 있게 해야 한다.
+- **FR-013b**: 시스템은 수집자가 확인한 completed episode bundle 하나를 개별 삭제할 수 있게 해야 한다. 단, upload state가 `UPLOADING`인 동안에는 삭제를 비활성화해야 한다.
 - **FR-013c**: 시스템은 수집자가 확인한 경우에만 모든 CaptureLog를 한 번에 삭제할 수 있게 해야 하며, completed episode를 삭제해서는 안 된다.
 - **FR-014**: 시스템은 수명주기 상태 `RECORDING`, `COMPLETED`, `INTERRUPTED` 및 업로드 상태 `LOCAL_ONLY`, `UPLOADING`, `UPLOADED`, `FAILED`를 표현해야 한다.
 - **FR-015**: 정상 완료 episode는 먼저 로컬 `LOCAL_ONLY` 상태로 유지하고, 수집자가 수동 업로드를 시작할 수 있게 해야 한다.
-- **FR-016**: 시스템은 [episode upload 계약](contracts/episode-upload.md)이 정의한 `POST /episodes` multipart 통신 계약으로 completed episode를 서버에 전송하고, 서버 수신 성공 전에는 원본 bundle을 삭제하거나 변경해서는 안 된다.
+- **FR-016**: 시스템은 [episode upload 계약](contracts/episode-upload.md)이 정의한 `POST /episodes` multipart 통신 계약으로 completed episode를 서버에 전송하고, 서버 수신 성공 전에는 원본 bundle을 삭제하거나 변경해서는 안 된다. 업로드 완료 표시는 bundle 수신 영수증만 뜻하며 원격 검증·후처리·결과 파일의 완료를 뜻해서는 안 된다.
 - **FR-017**: 시스템은 `onCaptureBufferLost`, `onCaptureFailed`, capture sequence abort, Camera device/session, encoder·muxer·writer 오류를 앱에서 감지하면 해당 녹화를 `INTERRUPTED`로 처리하고 정식 episode에서 제외해야 한다. 앱은 Camera capture timestamp와 frame number를 보존하되, MP4 frame↔timestamp 대응·frame 유실·동기화 품질의 완전 검증은 이 MVP 범위 밖이다.
 
 ### 제약사항
@@ -123,6 +127,7 @@
 - 카메라-EE 외부 보정.
 - Task Representation 생성.
 - 서버의 데이터베이스·저장소·배포·후처리 구현과 서버 측 MP4 frame↔timestamp 최종 검증.
+- 원격 ingestion 상태, 검증 결과, 후처리 상태·결과 또는 다운로드 목록을 조회하는 모바일 기능. 제공된 MVP의 P1은 단순 POST와 수동 재전송까지만 요구하므로, 필요해질 경우 별도 기능으로 명세한다.
 
 ### 핵심 엔터티
 

@@ -18,7 +18,7 @@
 RECORDING --six-file validation--> COMPLETED
 RECORDING --cancel/onStop/buffer-lost/capture-failed/sequence-abort/camera-session/encoder/muxer/writer error--> INTERRUPTED
 INTERRUPTED --next launch--> raw staging cleanup + diagnostic log
-COMPLETED --user-confirmed delete--> removed
+COMPLETED with uploadState != UPLOADING --user-confirmed delete--> removed
 COMPLETED/LOCAL_ONLY --user-started upload--> UPLOADING
 UPLOADING --server success--> UPLOADED
 UPLOADING --non-success HTTP/transport result or malformed/mismatched success receipt--> FAILED
@@ -28,7 +28,7 @@ CaptureLogs --user-confirmed clear-all--> removed
 
 `COMPLETED`만 목록에 들어간다.
 
-업로드는 [episode upload 계약](contracts/episode-upload.md)이 정의한 여섯 파일 bundle의 단일 multipart 요청이다. 업로드 성공·실패·재시도는 `recordingState`를 바꾸지 않으며, 어느 상태에서도 원본 bundle을 자동 삭제하거나 변경하지 않는다.
+업로드는 [episode upload 계약](contracts/episode-upload.md)이 정의한 여섯 파일 bundle의 단일 multipart 요청이다. 업로드 성공·실패·재시도는 `recordingState`를 바꾸지 않으며, 어느 상태에서도 원본 bundle을 자동 삭제하거나 변경하지 않는다. `UPLOADING` 중인 bundle은 수동 삭제도 허용하지 않는다.
 
 ## 센서 record
 

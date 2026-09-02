@@ -1,6 +1,6 @@
 # 보조 계획: Mobile Episode Transfer
 
-**상위 기능**: `001-episode-recorder` | **작성일**: 2026-09-02 | **명세**: [spec.md](spec.md)
+**상위 명세**: [Episode Recorder MVP](spec.md) | **작성일**: 2026-09-02
 
 ## 요약
 
