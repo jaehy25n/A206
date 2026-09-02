@@ -29,8 +29,8 @@ description: "Episode Recorder MVP 구현 작업"
 **⚠️ CRITICAL**: 이 단계가 끝나기 전에는 실제 녹화 화면을 연결하지 않는다.
 
 - [ ] T004 [P] Episode, CameraConfig, TimebaseMetadata, CaptureLog, RecordingState, `LOCAL_ONLY`·`UPLOADING`·`UPLOADED`·`FAILED` UploadState 및 metadata/receipt/error의 `@Serializable` 모델을 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/EpisodeModels.kt`에 구현한다.
-- [ ] T005 [P] task·object 입력과 허용 해상도/30 FPS 설정을 검증하는 순수 함수를 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/RecordingInputValidator.kt`에 구현한다.
-- [ ] T006 [P] 입력 검증과 녹화 상태 전이를 단위 테스트하는 `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/RecordingInputValidatorTest.kt` 및 `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/EpisodeModelsTest.kt`를 작성한다.
+- [ ] T005 [P] 한국어를 포함한 UTF-8 task·object 입력과 task의 경로 구분자·제어 문자 거부, 허용 해상도/30 FPS 설정을 검증하는 순수 함수를 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/RecordingInputValidator.kt`에 구현한다.
+- [ ] T006 [P] UTF-8 task·object 입력 검증과 녹화 상태 전이를 단위 테스트하는 `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/RecordingInputValidatorTest.kt` 및 `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/EpisodeModelsTest.kt`를 작성한다.
 - [ ] T007 staging directory, episode UUID/display name, 여섯 출력 파일 경로, metadata 최종 commit marker를 관리하는 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/EpisodeBundleStore.kt`를 구현한다.
 - [ ] T008 필수 여섯 파일·CSV 헤더·metadata commit marker를 검사하는 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/EpisodeBundleValidator.kt`를 구현한다.
 - [ ] T009 [P] bundle 완결성·누락 파일 거부·display name 생성 규칙을 단위 테스트하는 `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/EpisodeBundleValidatorTest.kt`를 작성한다.
@@ -101,13 +101,13 @@ description: "Episode Recorder MVP 구현 작업"
 ### Tests for User Story 2
 
 - [ ] T031 [P] [US2] Room in-memory database를 사용해 completed episode만 정렬·표시하고 업로드 상태를 보존하는 repository 규칙을 단위 테스트하는 `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/EpisodeRepositoryTest.kt`를 작성한다.
-- [ ] T032 [P] [US2] 앱 전용 completed root 안의 episode bundle만 개별 삭제하는 규칙을 단위 테스트하는 `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/EpisodeDeletionTest.kt`를 작성한다.
+- [ ] T032 [P] [US2] 앱 전용 completed root 안의 `UPLOADING`이 아닌 episode bundle만 개별 삭제하는 규칙을 단위 테스트하는 `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/EpisodeDeletionTest.kt`를 작성한다.
 - [ ] T033 [P] [US2] 목록 항목의 task·object·시각·길이·sync state와 삭제 확인 상태를 단위 테스트하는 `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/EpisodeListViewModelTest.kt`를 작성한다.
 
 ### Implementation for User Story 2
 
-- [ ] T034 [US2] completed catalog을 목록 표시 모델로 변환하고 확인 후 단일 bundle을 안전하게 삭제하는 `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/EpisodeListViewModel.kt` 및 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/EpisodeRepository.kt`를 구현한다.
-- [ ] T035 [US2] Room Flow를 `collectAsStateWithLifecycle`로 수집하는 완료 episode 목록·필수 다섯 필드·개별 삭제 확인 UI를 `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/EpisodeListScreen.kt`에 구현하고 `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`에 연결한다.
+- [ ] T034 [US2] completed catalog을 목록 표시 모델로 변환하고, `UPLOADING`이 아닌 경우에만 확인 후 단일 bundle을 안전하게 삭제하는 `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/EpisodeListViewModel.kt` 및 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/EpisodeRepository.kt`를 구현한다.
+- [ ] T035 [US2] Room Flow를 `collectAsStateWithLifecycle`로 수집하는 완료 episode 목록·필수 다섯 필드·`UPLOADING` 중 비활성화되는 개별 삭제 확인 UI를 `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/EpisodeListScreen.kt`에 구현하고 `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`에 연결한다.
 
 **Checkpoint**: 사용자는 completed episode와 현재 업로드 상태를 식별하고 필요한 bundle 하나만 삭제한다.
 
@@ -138,7 +138,7 @@ description: "Episode Recorder MVP 구현 작업"
 
 ---
 
-## Phase 8: User Story 4 - completed episode 수동 업로드 (Priority: P1, 002 US1)
+## Phase 8: User Story 4 - completed episode 수동 업로드 (Priority: P1)
 
 **Goal**: 수집자가 여섯 파일 completed bundle 하나를 API 명세대로 서버에 전송하고 `201 created` 또는 `200 duplicate` 결과를 `UPLOADED`로 확인한다.
 
@@ -161,7 +161,7 @@ description: "Episode Recorder MVP 구현 작업"
 
 ---
 
-## Phase 9: User Story 5 - 실패 업로드 수동 재전송 (Priority: P2, 002 US2)
+## Phase 9: User Story 5 - 실패 업로드 수동 재전송 (Priority: P2)
 
 **Goal**: 수집자가 실패한 episode를 원본 손상·중복 생성 없이 전체 bundle로 다시 전송한다.
 
@@ -181,7 +181,7 @@ description: "Episode Recorder MVP 구현 작업"
 
 ---
 
-## Phase 10: User Story 6 - 업로드 상태 확인 (Priority: P2, 002 US3)
+## Phase 10: User Story 6 - 업로드 상태 확인 (Priority: P2)
 
 **Goal**: 수집자가 목록에서 수동 업로드·재전송 제어와 현재 상태·마지막 시도 결과를 확인한다.
 
@@ -204,7 +204,7 @@ description: "Episode Recorder MVP 구현 작업"
 
 **Purpose**: 계약 준수와 실제 Galaxy S10 HTTPS 연결을 검증한다.
 
-- [ ] T057 [P] API 명세의 `201`, `200`, `400`, `409` error code 둘, `413`, `415`, `422`, `429` fixture가 모두 `FAILED` 마지막 시도로 기록되는지 `specs/001-episode-recorder/contracts/episode-upload.md` 및 `app/src/test/java/com/ssafy/s15p21a206/tiger/upload/` 테스트에 대조한다.
+- [ ] T057 [P] API 명세의 `201 created`와 `200 duplicate` receipt는 `UPLOADED`로, `400`, `409` error code 둘, `413`, `415`, `422`, `429` fixture는 `FAILED` 마지막 시도로 기록되는지 `contracts/episode-upload.md` 및 `app/src/test/java/com/ssafy/s15p21a206/tiger/upload/` 테스트에 대조한다.
 - [ ] T058 `.\gradlew.bat testDebugUnitTest`, `.\gradlew.bat lintDebug`, `.\gradlew.bat assembleDebug`를 실행하고 네트워크 관련 결과를 `specs/001-episode-recorder/mobile-transfer-quickstart.md`에 기록한다.
 - [ ] T059 Galaxy S10 SM-G973N에서 신뢰 가능한 HTTPS 인증서와 실제 server base URL로 신규 업로드·duplicate·연결 중단·재전송·`4xx` 흐름과 업로드 시작 후 5초 이내 `UPLOADING` 표시를 `specs/001-episode-recorder/mobile-transfer-quickstart.md`에 따라 수동 검증하고 결과를 기록한다.
 
