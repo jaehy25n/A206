@@ -26,7 +26,7 @@
 
 ## frame correspondence와 timebase
 
-**결정**: 대상 Galaxy S10 SM-G973N 후면 Camera device 0에서 실측한 `SENSOR_INFO_TIMESTAMP_SOURCE = REALTIME`를 preflight에서 확인한다. `CaptureResult.SENSOR_TIMESTAMP`와 `SensorEvent.timestamp`를 common monotonic timebase로 기록하고 `VERIFIED`를 metadata에 남긴다. MVP는 서버 전송·서버 검증을 구현하지 않는다.
+**결정**: 대상 Galaxy S10 SM-G973N 후면 Camera device 0에서 실측한 `SENSOR_INFO_TIMESTAMP_SOURCE = REALTIME`를 preflight에서 확인한다. `CaptureResult.SENSOR_TIMESTAMP`와 `SensorEvent.timestamp`를 common monotonic timebase로 기록하고 `VERIFIED`를 metadata에 남긴다. MVP는 completed bundle의 모바일 서버 업로드를 구현하되, 서버 측 MP4 frame↔timestamp 대응·동기화 품질 검증은 구현하지 않는다.
 
 **근거**: image buffer timestamp는 해당 capture의 sensor timestamp와 같지만, 일반 encoder Surface/MediaRecorder는 app-visible per-frame mapping을 주지 않는다. 앱은 원본 ns timestamp를 CSV에 보존하고 서버가 MP4와의 대응을 검증한다.
 
