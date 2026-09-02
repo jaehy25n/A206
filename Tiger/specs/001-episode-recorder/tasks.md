@@ -16,9 +16,9 @@ description: "Episode Recorder MVP 구현 작업"
 
 **Purpose**: 구현을 시작할 수 있는 앱 권한과 공통 리소스를 준비한다.
 
-- [ ] T001 사용자 승인을 받은 뒤 Camera 권한을 `app/src/main/AndroidManifest.xml`에 추가한다.
-- [ ] T002 [P] 녹화·업로드 상태·오류·삭제 확인 화면의 사용자 표시 문자열을 `app/src/main/res/values/strings.xml`에 정의한다.
-- [ ] T003 [P] 사용자 승인을 확인한 뒤 `gradle/libs.versions.toml`, 최상위 `build.gradle.kts`, `app/build.gradle.kts`에 OkHttp·MockWebServer·Room Runtime/KTX·Room compiler(KSP)·Room testing·Kotlin Coroutines Android·Lifecycle Runtime Compose·Kotlinx Serialization JSON/compiler plugin을 추가하고, 수동 constructor injection을 전제로 `capture/`, `sensor/`, `episode/`, `data/local/`, `upload/`, `ui/` 패키지 진입점을 만든다.
+- [X] T001 사용자 승인을 받은 뒤 Camera 권한을 `app/src/main/AndroidManifest.xml`에 추가한다.
+- [X] T002 [P] 녹화·업로드 상태·오류·삭제 확인 화면의 사용자 표시 문자열을 `app/src/main/res/values/strings.xml`에 정의한다.
+- [X] T003 [P] 사용자 승인을 확인한 뒤 `gradle/libs.versions.toml`, 최상위 `build.gradle.kts`, `app/build.gradle.kts`에 OkHttp·MockWebServer·Room Runtime/KTX·Room compiler(KSP)·Room testing·Kotlin Coroutines Android·Lifecycle Runtime Compose·Kotlinx Serialization JSON/compiler plugin을 추가하고, 수동 constructor injection을 전제로 `capture/`, `sensor/`, `episode/`, `data/local/`, `upload/`, `ui/` 패키지 진입점을 만든다.
 
 ---
 
