@@ -28,17 +28,17 @@ description: "Episode Recorder MVP 구현 작업"
 
 **⚠️ CRITICAL**: 이 단계가 끝나기 전에는 실제 녹화 화면을 연결하지 않는다.
 
-- [ ] T004 [P] Episode, CameraConfig, TimebaseMetadata, CaptureLog, RecordingState, `LOCAL_ONLY`·`UPLOADING`·`UPLOADED`·`FAILED` UploadState 및 metadata/receipt/error의 `@Serializable` 모델을 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/EpisodeModels.kt`에 구현한다.
-- [ ] T005 [P] 한국어를 포함한 UTF-8 task·object 입력과 task의 경로 구분자·제어 문자 거부, 허용 해상도/30 FPS 설정을 검증하는 순수 함수를 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/RecordingInputValidator.kt`에 구현한다.
-- [ ] T006 [P] UTF-8 task·object 입력 검증과 녹화 상태 전이를 단위 테스트하는 `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/RecordingInputValidatorTest.kt` 및 `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/EpisodeModelsTest.kt`를 작성한다.
-- [ ] T007 staging directory, episode UUID/display name, 여섯 출력 파일 경로, metadata 최종 commit marker를 관리하는 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/EpisodeBundleStore.kt`를 구현한다.
-- [ ] T008 필수 여섯 파일·CSV 헤더·metadata commit marker를 검사하는 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/EpisodeBundleValidator.kt`를 구현한다.
-- [ ] T009 [P] bundle 완결성·누락 파일 거부·display name 생성 규칙을 단위 테스트하는 `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/EpisodeBundleValidatorTest.kt`를 작성한다.
-- [ ] T010 Room의 `EpisodeEntity`, `EpisodeDao`, `TigerDatabase`와 이를 사용한 `EpisodeRepository`를 `app/src/main/java/com/ssafy/s15p21a206/tiger/data/local/` 및 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/EpisodeRepository.kt`에 구현하여 staging recovery와 completed catalog의 Flow 조회·갱신을 처리한다.
-- [ ] T011 Room의 `CaptureLogEntity`, `CaptureLogDao`와 `CaptureLogStore`를 `app/src/main/java/com/ssafy/s15p21a206/tiger/data/local/` 및 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/CaptureLogStore.kt`에 구현하여 CaptureLog 영속화와 전체 삭제를 처리한다.
-- [ ] T012 [P] physical main 1× 후보, 1080p/720p 30 FPS, zoom 1.0, OIS OFF, `SENSOR_INFO_TIMESTAMP_SOURCE = REALTIME`와 S10 기준 focal length `4.32000017 mm`·sensor physical size `[5.64499998, 4.23400021] mm`·active/pre-correction array `[0, 0, 4032, 3024]`의 존재 및 일치를 확인하고 불일치 시 시작을 막는 `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/CameraCapabilityPreflight.kt`를 구현한다.
-- [ ] T013 [P] accelerometer·gyroscope·`TYPE_ROTATION_VECTOR` 존재와 rotation vector 5값을 확인하는 `app/src/main/java/com/ssafy/s15p21a206/tiger/sensor/SensorCapabilityPreflight.kt`를 구현한다.
-- [ ] T014 저장 공간 부족 및 preflight 실패를 녹화 시작 불가 상태로 표현하는 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/RecordingReadiness.kt`를 구현한다.
+- [X] T004 [P] Episode, CameraConfig, TimebaseMetadata, CaptureLog, RecordingState, `LOCAL_ONLY`·`UPLOADING`·`UPLOADED`·`FAILED` UploadState 및 metadata/receipt/error의 `@Serializable` 모델을 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/EpisodeModels.kt`에 구현한다.
+- [X] T005 [P] 한국어를 포함한 UTF-8 task·object 입력과 task의 경로 구분자·제어 문자 거부, 허용 해상도/30 FPS 설정을 검증하는 순수 함수를 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/RecordingInputValidator.kt`에 구현한다.
+- [X] T006 [P] UTF-8 task·object 입력 검증과 녹화 상태 전이를 단위 테스트하는 `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/RecordingInputValidatorTest.kt` 및 `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/EpisodeModelsTest.kt`를 작성한다.
+- [X] T007 staging directory, episode UUID/display name, 여섯 출력 파일 경로, metadata 최종 commit marker를 관리하는 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/EpisodeBundleStore.kt`를 구현한다.
+- [X] T008 필수 여섯 파일·CSV 헤더·metadata commit marker를 검사하는 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/EpisodeBundleValidator.kt`를 구현한다.
+- [X] T009 [P] bundle 완결성·누락 파일 거부·display name 생성 규칙을 단위 테스트하는 `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/EpisodeBundleValidatorTest.kt`를 작성한다.
+- [X] T010 Room의 `EpisodeEntity`, `EpisodeDao`, `TigerDatabase`와 이를 사용한 `EpisodeRepository`를 `app/src/main/java/com/ssafy/s15p21a206/tiger/data/local/` 및 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/EpisodeRepository.kt`에 구현하여 staging recovery와 completed catalog의 Flow 조회·갱신을 처리한다.
+- [X] T011 Room의 `CaptureLogEntity`, `CaptureLogDao`와 `CaptureLogStore`를 `app/src/main/java/com/ssafy/s15p21a206/tiger/data/local/` 및 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/CaptureLogStore.kt`에 구현하여 CaptureLog 영속화와 전체 삭제를 처리한다.
+- [X] T012 [P] physical main 1× 후보, 1080p/720p 30 FPS, zoom 1.0, OIS OFF, `SENSOR_INFO_TIMESTAMP_SOURCE = REALTIME`와 S10 기준 focal length `4.32000017 mm`·sensor physical size `[5.64499998, 4.23400021] mm`·active/pre-correction array `[0, 0, 4032, 3024]`의 존재 및 일치를 확인하고 불일치 시 시작을 막는 `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/CameraCapabilityPreflight.kt`를 구현한다.
+- [X] T013 [P] accelerometer·gyroscope·`TYPE_ROTATION_VECTOR` 존재와 rotation vector 5값을 확인하는 `app/src/main/java/com/ssafy/s15p21a206/tiger/sensor/SensorCapabilityPreflight.kt`를 구현한다.
+- [X] T014 저장 공간 부족 및 preflight 실패를 녹화 시작 불가 상태로 표현하는 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/RecordingReadiness.kt`를 구현한다.
 
 **Checkpoint**: staging bundle, 업로드 상태를 보존할 completed catalog, CaptureLog store, capability 및 시작 가능 여부가 준비된다.
 
