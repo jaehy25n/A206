@@ -24,10 +24,10 @@ description: "Capture Session Recorder MVP 구현 작업"
 
 ## Phase 3: P1 finalize와 업로드
 
-- [ ] T010 Session finalize 순서, file validation, checksum, metadata-last commit, completed/LOCAL_ONLY 공개를 구현하고 테스트한다.
-- [ ] T011 Session metadata와 main-only CSV schema를 `contracts/episode-bundle.md`에 맞게 직렬화하는 writer와 테스트를 구현한다.
-- [ ] T012 Session bundle pre-upload validator와 `POST /sessions` multipart request factory를 구현하고, `Authorization`·cookie·custom credential header 없이 `Idempotency-Key = session_id`만 전송되는 contract test를 작성한다.
-- [ ] T013 receipt/transport error를 `UPLOADED` 또는 `FAILED`로 기록하고 same-session manual retry를 구현·테스트한다.
+- [X] T010 Session finalize 순서, file validation, checksum, metadata-last commit, completed/LOCAL_ONLY 공개를 구현하고 테스트한다.
+- [X] T011 Session metadata와 main-only CSV schema를 `contracts/episode-bundle.md`에 맞게 직렬화하는 writer와 테스트를 구현한다.
+- [X] T012 Session bundle pre-upload validator와 `POST /sessions` multipart request factory를 구현하고, `Authorization`·cookie·custom credential header 없이 `Idempotency-Key = session_id`만 전송되는 contract test를 작성한다.
+- [X] T013 receipt/transport error를 `UPLOADED` 또는 `FAILED`로 기록하고 same-session manual retry를 구현·테스트한다.
 
 ## Phase 4: P1 UI와 P2 Ultra-wide probe
 
