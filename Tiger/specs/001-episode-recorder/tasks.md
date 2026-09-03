@@ -37,7 +37,7 @@ description: "Capture Session Recorder MVP 구현 작업"
 
 ## Phase 5: 검증
 
-- [ ] T017 `./gradlew.bat testDebugUnitTest`, `./gradlew.bat lintDebug`, `./gradlew.bat assembleDebug`를 실행하고 결과를 quickstart에 기록한다.
+- [X] T017 `./gradlew.bat testDebugUnitTest`, `./gradlew.bat lintDebug`, `./gradlew.bat assembleDebug`를 실행하고 결과를 quickstart에 기록한다.
 - [ ] T018 Galaxy S10에서 main-only 2분 Session, Episode idle/reposition, tracking loss, interrupted recovery, upload retry를 수동 검증하고 결과를 기록한다. UW probe를 수행하면 10~30분 timebox 내 supported/unsupported 판정과 실패 시 main-only fallback 여부를 함께 기록한다.
 
 ## 의존성 순서
