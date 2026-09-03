@@ -1,15 +1,20 @@
 package com.ssafy.s15p21a206.tiger.episode
 
+import android.content.Context
 import java.io.File
 import java.util.UUID
 
-class SessionBundleStore(private val filesRoot: File) {
-    val stagingRoot = File(filesRoot, "capture/staging")
-    val completedRoot = File(filesRoot, "capture/completed")
+class SessionBundleStore(private val externalFilesRoot: File) {
+    constructor(context: Context) : this(
+        requireNotNull(context.getExternalFilesDir(null)) { "App-specific external storage is unavailable" }
+    )
+
+    val stagingRoot = File(externalFilesRoot, "capture/staging")
+    val completedRoot = File(externalFilesRoot, "capture/completed")
 
     fun createStagingBundle(displayNumber: Int, sessionId: UUID = UUID.randomUUID()): SessionBundle {
         val displayName = "session_%04d".format(displayNumber)
-        val directory = File(stagingRoot, "${displayName}_${sessionId.toString().take(8)}").apply { mkdirs() }
+        val directory = File(stagingRoot, sessionId.toString()).apply { mkdirs() }
         return SessionBundle(sessionId.toString(), displayNumber, displayName, directory)
     }
 
