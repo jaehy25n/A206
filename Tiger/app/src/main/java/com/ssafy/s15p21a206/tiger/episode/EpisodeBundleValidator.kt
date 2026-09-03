@@ -12,12 +12,12 @@ object SessionBundleValidator {
         SessionBundle.EPISODES_FILE to "episode_id,start_timestamp_ns,end_timestamp_ns,task,object,outcome"
     )
 
-    fun validate(directory: File, includesUltraWide: Boolean = false): BundleValidationResult {
+    fun validate(directory: File, includesUltraWide: Boolean = false, requireMetadata: Boolean = true): BundleValidationResult {
         if (!directory.isDirectory) return BundleValidationResult.Invalid("bundle directory is missing")
         if (!File(directory, SessionBundle.MAIN_VIDEO_FILE).hasContent()) return BundleValidationResult.Invalid("main video is missing")
         for ((fileName, header) in requiredCsvHeaders) if (!File(directory, fileName).hasHeader(header)) return BundleValidationResult.Invalid("invalid $fileName")
         if (includesUltraWide && (!File(directory, SessionBundle.ULTRAWIDE_VIDEO_FILE).hasContent() || !File(directory, SessionBundle.ULTRAWIDE_FRAME_TIMESTAMPS_FILE).hasHeader("frame_number,timestamp_ns,timestamp_source"))) return BundleValidationResult.Invalid("invalid ultra-wide stream")
-        if (!File(directory, SessionBundle.METADATA_FILE).hasContent()) return BundleValidationResult.Invalid("metadata commit marker is missing")
+        if (requireMetadata && !File(directory, SessionBundle.METADATA_FILE).hasContent()) return BundleValidationResult.Invalid("metadata commit marker is missing")
         return BundleValidationResult.Valid
     }
 
