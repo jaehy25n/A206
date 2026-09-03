@@ -16,11 +16,11 @@ description: "Capture Session Recorder MVP 구현 작업"
 
 ## Phase 2: P1 연속 수집
 
-- [ ] T005 REALTIME timestamp source와 저장 공간 preflight를 구현하고 시작 불가 상태를 UI에 연결한다.
-- [ ] T006 Session start/end가 main camera recording, raw accelerometer·gyroscope·rotation-vector writer, ARCore pose writer를 각각 한 번만 시작·종료하도록 coordinator를 구현한다.
-- [ ] T007 main frame timestamp와 ARCore pose CSV writer를 구현해 canonical Android camera timestamp와 tracking failure reason을 보존한다.
-- [ ] T008 tracking 1초 READY gate, task와 object가 모두 비어 있지 않을 때만 허용되는 Episode marker START/END/CANCEL, metadata snapshot, Episode 사이 raw stream 유지 규칙을 구현하고 테스트한다.
-- [ ] T009 0.5초 tracking loss 시 임계 timestamp로 `INVALID_TRACKING` Episode를 자동 종료하고, `onStop`·Camera·encoder·IMU·storage 오류 시 writers를 안전하게 finalize한 뒤 Session을 `INTERRUPTED`로 기록하는 로직과 structured diagnostics를 구현·테스트한다.
+- [X] T005 REALTIME timestamp source와 저장 공간 preflight를 구현하고 시작 불가 상태를 UI에 연결한다.
+- [X] T006 Session start/end가 main camera recording, raw accelerometer·gyroscope·rotation-vector writer, ARCore pose writer를 각각 한 번만 시작·종료하도록 coordinator를 구현한다.
+- [X] T007 main frame timestamp와 ARCore pose CSV writer를 구현해 canonical Android camera timestamp와 tracking failure reason을 보존한다.
+- [X] T008 tracking 1초 READY gate, task와 object가 모두 비어 있지 않을 때만 허용되는 Episode marker START/END/CANCEL, metadata snapshot, Episode 사이 raw stream 유지 규칙을 구현하고 테스트한다.
+- [X] T009 0.5초 tracking loss 시 임계 timestamp로 `INVALID_TRACKING` Episode를 자동 종료하고, `onStop`·Camera·encoder·IMU·storage 오류 시 writers를 안전하게 finalize한 뒤 Session을 `INTERRUPTED`로 기록하는 로직과 structured diagnostics를 구현·테스트한다.
 
 ## Phase 3: P1 finalize와 업로드
 
