@@ -14,20 +14,22 @@ import org.junit.Test
 
 class SessionExportRepositoryTest {
     @Test
-    fun `export state tree uri and failure reason survive repository recreation`() = runBlocking {
-        val dao = FakeSessionDao()
-        dao.upsert(CaptureSessionEntity("session", 1, "COMPLETED", "LOCAL_ONLY", 1, 2, "/completed/session"))
-        val root = Files.createTempDirectory("store").toFile()
+    fun `export state tree uri and failure reason survive repository recreation`() {
+        runBlocking {
+            val dao = FakeSessionDao()
+            dao.upsert(CaptureSessionEntity("session", 1, "COMPLETED", "LOCAL_ONLY", 1, 2, "/completed/session"))
+            val root = Files.createTempDirectory("store").toFile()
 
-        SessionRepository(dao, FakeMarkerDao(), SessionBundleStore(root)).updateExport(
-            SessionExport("session").start("content://tree", "attempt").fail("grant lost")
-        )
-        val restored = SessionRepository(dao, FakeMarkerDao(), SessionBundleStore(root)).exportFor("session")
+            SessionRepository(dao, FakeMarkerDao(), SessionBundleStore(root)).updateExport(
+                SessionExport("session").start("content://tree", "attempt").fail("grant lost")
+            )
+            val restored = SessionRepository(dao, FakeMarkerDao(), SessionBundleStore(root)).exportFor("session")
 
-        assertEquals(ExportState.EXPORT_FAILED, restored?.state)
-        assertEquals("content://tree", restored?.treeUri)
-        assertEquals("grant lost", restored?.failureReason)
-        root.deleteRecursively()
+            assertEquals(ExportState.EXPORT_FAILED, restored?.state)
+            assertEquals("content://tree", restored?.treeUri)
+            assertEquals("grant lost", restored?.failureReason)
+            root.deleteRecursively()
+        }
     }
 
     private class FakeSessionDao : CaptureSessionDao {
