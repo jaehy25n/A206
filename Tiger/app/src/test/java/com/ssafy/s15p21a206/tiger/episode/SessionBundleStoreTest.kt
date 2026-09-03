@@ -51,7 +51,7 @@ class SessionBundleStoreTest {
 
     private fun writeCompleteBundle(directory: File, sessionId: String) {
         writeRawFiles(directory)
-        File(directory, SessionBundle.METADATA_FILE).writeText(metadataJson(sessionId))
+        File(directory, SessionBundle.METADATA_FILE).writeText(metadataJson(directory, sessionId))
     }
 
     private fun writeRawFiles(directory: File) {
@@ -64,5 +64,13 @@ class SessionBundleStoreTest {
         File(directory, SessionBundle.EPISODES_FILE).writeText("episode_id,start_timestamp_ns,end_timestamp_ns,task,object,outcome\n")
     }
 
-    private fun metadataJson(sessionId: String) = """{"session_id":"$sessionId","camera_streams":{"main":true,"ultrawide":false},"files":[]}"""
+    private fun metadataJson(directory: File, sessionId: String): String {
+        val files = directory.listFiles().orEmpty().sortedBy(File::getName).joinToString(",") { file ->
+            """{"path":"${file.name}","sizeBytes":${file.length()},"sha256":"${sha256(file)}"}"""
+        }
+        return """{"session_id":"$sessionId","camera_streams":{"main":true,"ultrawide":false},"files":[$files]}"""
+    }
+
+    private fun sha256(file: File): String = java.security.MessageDigest.getInstance("SHA-256")
+        .digest(file.readBytes()).joinToString("") { "%02x".format(it) }
 }
