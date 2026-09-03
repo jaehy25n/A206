@@ -19,4 +19,5 @@
     <string name="capture_log_delete_confirmation">모든 CaptureLog를 삭제할까요?</string>
     <string name="action_cancel">취소</string>
     <string name="action_delete">삭제</string>
+    <string name="data_collection_start">DATA COLLECTION START</string><string name="data_collection_end">DATA COLLECTION END</string><string name="episode_start">EPISODE START</string><string name="episode_end">EPISODE END</string><string name="episode_cancel">EPISODE CANCEL</string><string name="episode_task">Task</string><string name="episode_object">Object</string><string name="active_episode_end_required">ACTIVE Episode를 먼저 END 또는 CANCEL 하세요.</string>
 </resources>

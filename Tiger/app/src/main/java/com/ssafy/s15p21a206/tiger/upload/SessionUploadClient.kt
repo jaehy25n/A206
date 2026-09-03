@@ -9,7 +9,7 @@ import okhttp3.OkHttpClient
 import com.ssafy.s15p21a206.tiger.episode.UploadState
 
 class SessionUploadRequestFactory(private val baseUrl: String) {
-    fun create(bundle: SessionBundle): Request {
+    fun create(bundle: SessionBundle, includesUltraWide: Boolean = false): Request {
         val body = MultipartBody.Builder().setType(MultipartBody.FORM).apply {
             add("metadata", bundle.metadata, "application/json")
             add("main_video", bundle.mainVideo, "video/mp4")
@@ -19,6 +19,7 @@ class SessionUploadRequestFactory(private val baseUrl: String) {
             add("rotation_vector", bundle.rotationVector, "text/csv")
             add("arcore_poses", bundle.arcorePoses, "text/csv")
             add("episodes", bundle.episodes, "text/csv")
+            if (includesUltraWide) { add("ultrawide_video", java.io.File(bundle.directory, SessionBundle.ULTRAWIDE_VIDEO_FILE), "video/mp4"); add("ultrawide_frame_timestamps", java.io.File(bundle.directory, SessionBundle.ULTRAWIDE_FRAME_TIMESTAMPS_FILE), "text/csv") }
         }.build()
         return Request.Builder().url("$baseUrl/sessions").header("Idempotency-Key", bundle.sessionId).post(body).build()
     }

@@ -1,7 +1,7 @@
 # Specification Quality Checklist: Capture Session Recorder MVP
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
-**Created**: 2026-09-02
+**Created**: 2026-09-03
 **Feature**: [spec.md](../spec.md)
 
 ## Content Quality
@@ -31,5 +31,6 @@
 
 ## Notes
 
-- The API path, multipart field names, and file schemas are intentionally maintained in the linked contract documents, not in this user-facing specification.
-- No clarification marker is necessary: the provided requirements decide the P0 session lifecycle, tracking thresholds, and main-only fallback.
+- The API path, multipart field names, file schemas, app-specific staging path, and SAF tree-URI behavior are intentionally maintained in the linked contract documents; the specification retains the user-visible storage and retention outcomes.
+- No clarification marker is necessary: the provided requirements decide the P0 session lifecycle, export default, permission boundary, validation gate, retry preservation, and Galaxy S10 verification scope.
+- Revalidated 2026-09-03: all content, completeness, and readiness items pass. The mandated Android storage and SAF terms are contractual requirements rather than unscoped implementation choices.
