@@ -9,10 +9,10 @@ description: "Capture Session Recorder MVP 구현 작업"
 
 ## Phase 1: Session domain과 로컬 bundle 기반
 
-- [ ] T001 `CaptureSession`, `EpisodeMarker`, recording/upload state, tracking state, probe result 모델과 전이 규칙을 구현하고 테스트한다.
-- [ ] T002 Session ID/display number, staging/completed directory, Session raw file 경로와 metadata-last commit을 관리하는 store를 구현한다.
-- [ ] T003 main-only/UW file 구성, CSV header, marker row, SHA-256 manifest, metadata stream 선언을 검사하는 validator와 테스트를 구현한다.
-- [ ] T004 기존 episode catalog를 Session catalog와 child Episode marker catalog로 바꾸고 interrupted staging recovery를 구현한다.
+- [X] T001 `CaptureSession`, `EpisodeMarker`, recording/upload state, tracking state, probe result 모델과 전이 규칙을 구현하고 테스트한다.
+- [X] T002 Session ID/display number, staging/completed directory, Session raw file 경로와 metadata-last commit을 관리하는 store를 구현한다.
+- [X] T003 main-only/UW file 구성, CSV header, marker row, SHA-256 manifest, metadata stream 선언을 검사하는 validator와 테스트를 구현한다.
+- [X] T004 기존 episode catalog를 Session catalog와 child Episode marker catalog로 바꾸고 interrupted staging recovery를 구현한다.
 
 ## Phase 2: P1 연속 수집
 
