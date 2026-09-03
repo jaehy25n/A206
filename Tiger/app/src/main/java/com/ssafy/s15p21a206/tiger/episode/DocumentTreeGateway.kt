@@ -12,6 +12,7 @@ data class DocumentNode(val uri: String, val name: String, val isDirectory: Bool
 
 interface DocumentTreeGateway {
     fun hasPersistedWriteGrant(treeUri: String): Boolean
+    fun hasRequiredCapabilities(treeUri: String): Boolean = true
     fun list(directoryUri: String): List<DocumentNode>
     fun createDirectory(parentUri: String, name: String): DocumentNode?
     fun createFile(parentUri: String, name: String, mimeType: String): DocumentNode?
@@ -20,7 +21,7 @@ interface DocumentTreeGateway {
     fun rename(uri: String, name: String): DocumentNode?
     fun delete(uri: String): Boolean
 
-    fun supportsPublish(treeUri: String): Boolean = hasPersistedWriteGrant(treeUri)
+    fun supportsPublish(treeUri: String): Boolean = hasPersistedWriteGrant(treeUri) && hasRequiredCapabilities(treeUri)
 }
 
 class SafDocumentTreeGateway(private val context: Context) : DocumentTreeGateway {
@@ -37,6 +38,17 @@ class SafDocumentTreeGateway(private val context: Context) : DocumentTreeGateway
 
     override fun hasPersistedWriteGrant(treeUri: String): Boolean = resolver.persistedUriPermissions.any {
         it.uri.toString() == treeUri && it.isReadPermission && it.isWritePermission
+    }
+
+    override fun hasRequiredCapabilities(treeUri: String): Boolean {
+        val tree = Uri.parse(treeUri)
+        return resolver.query(tree, arrayOf(DocumentsContract.Document.COLUMN_FLAGS), null, null, null)?.use { cursor ->
+            if (!cursor.moveToFirst()) return@use false
+            val flags = cursor.getLong(0)
+            flags and DocumentsContract.Document.FLAG_DIR_SUPPORTS_CREATE.toLong() != 0L &&
+                flags and DocumentsContract.Document.FLAG_SUPPORTS_DELETE.toLong() != 0L &&
+                flags and DocumentsContract.Document.FLAG_SUPPORTS_RENAME.toLong() != 0L
+        } ?: false
     }
 
     override fun list(directoryUri: String): List<DocumentNode> {
