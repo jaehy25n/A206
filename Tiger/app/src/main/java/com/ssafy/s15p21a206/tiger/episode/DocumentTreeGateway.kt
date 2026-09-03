@@ -13,6 +13,7 @@ data class DocumentNode(val uri: String, val name: String, val isDirectory: Bool
 interface DocumentTreeGateway {
     fun hasPersistedWriteGrant(treeUri: String): Boolean
     fun hasRequiredCapabilities(treeUri: String): Boolean = true
+    fun isWithinTree(treeUri: String, documentUri: String): Boolean = true
     fun list(directoryUri: String): List<DocumentNode>
     fun createDirectory(parentUri: String, name: String): DocumentNode?
     fun createFile(parentUri: String, name: String, mimeType: String): DocumentNode?
@@ -50,6 +51,11 @@ class SafDocumentTreeGateway(private val context: Context) : DocumentTreeGateway
                 flags and DocumentsContract.Document.FLAG_SUPPORTS_RENAME.toLong() != 0L
         } ?: false
     }
+
+    override fun isWithinTree(treeUri: String, documentUri: String): Boolean = runCatching {
+        val treeId = DocumentsContract.getTreeDocumentId(Uri.parse(treeUri))
+        DocumentsContract.getDocumentId(Uri.parse(documentUri)).startsWith(treeId)
+    }.getOrDefault(false)
 
     override fun list(directoryUri: String): List<DocumentNode> {
         val tree = Uri.parse(directoryUri)

@@ -44,6 +44,23 @@ class SessionBundleExporterTest {
         root.deleteRecursively()
     }
 
+    @Test
+    fun `tree boundary escape fails without changing source`() {
+        val root = Files.createTempDirectory("export").toFile()
+        val source = File(root, "source").apply { mkdirs() }
+        writeBundle(source)
+        val destination = File(root, "tree").apply { mkdirs() }
+        val gateway = object : FileGateway(destination) {
+            override fun isWithinTree(treeUri: String, documentUri: String) = false
+        }
+
+        val result = SessionBundleExporter(gateway).export(source, "session", destination.path, "escape")
+
+        assertTrue(result is SessionBundleExporter.ExportAttemptResult.Failed)
+        assertTrue(File(source, SessionBundle.METADATA_FILE).exists())
+        root.deleteRecursively()
+    }
+
     private fun writeBundle(directory: File) {
         val headers = mapOf(SessionBundle.MAIN_FRAME_TIMESTAMPS_FILE to "frame_number,timestamp_ns,timestamp_source", SessionBundle.ACCELEROMETER_FILE to "timestamp_ns,x,y,z,accuracy", SessionBundle.GYROSCOPE_FILE to "timestamp_ns,x,y,z,accuracy", SessionBundle.ROTATION_VECTOR_FILE to "timestamp_ns,x,y,z,scalar_component,heading_accuracy_rad,accuracy", SessionBundle.ARCORE_POSES_FILE to "android_camera_timestamp_ns,tx,ty,tz,qx,qy,qz,qw,tracking_state,tracking_failure_reason", SessionBundle.EPISODES_FILE to "episode_id,start_timestamp_ns,end_timestamp_ns,task,object,outcome")
         File(directory, SessionBundle.MAIN_VIDEO_FILE).writeBytes(byteArrayOf(1))
@@ -54,8 +71,9 @@ class SessionBundleExporterTest {
 
     private fun hash(file: File) = MessageDigest.getInstance("SHA-256").digest(file.readBytes()).joinToString("") { "%02x".format(it) }
 
-    private class FileGateway(private val root: File) : DocumentTreeGateway {
+    private open class FileGateway(private val root: File) : DocumentTreeGateway {
         override fun hasPersistedWriteGrant(treeUri: String) = treeUri == root.path
+        override fun isWithinTree(treeUri: String, documentUri: String) = File(documentUri).canonicalPath.startsWith(root.canonicalPath)
         override fun list(directoryUri: String) = File(directoryUri).listFiles().orEmpty().map { DocumentNode(it.path, it.name, it.isDirectory) }
         override fun createDirectory(parentUri: String, name: String) = File(parentUri, name).let { if (it.mkdir()) DocumentNode(it.path, name, true) else null }
         override fun createFile(parentUri: String, name: String, mimeType: String) = File(parentUri, name).let { if (it.createNewFile()) DocumentNode(it.path, name, false) else null }

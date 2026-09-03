@@ -31,7 +31,9 @@ class SessionBundleExporter(private val documentTreeGateway: DocumentTreeGateway
         return runCatching {
             val tigerCapture = documentTreeGateway.list(treeUri).firstOrNull { it.name == EXPORT_ROOT && it.isDirectory }
                 ?: requireNotNull(documentTreeGateway.createDirectory(treeUri, EXPORT_ROOT)) { "Cannot create export root" }
+            check(documentTreeGateway.isWithinTree(treeUri, tigerCapture.uri)) { "Export root escapes selected tree" }
             val temporary = requireNotNull(documentTreeGateway.createDirectory(tigerCapture.uri, ".$sessionId.exporting-$attemptId")) { "Cannot create export attempt directory" }
+            check(documentTreeGateway.isWithinTree(treeUri, temporary.uri)) { "Export attempt escapes selected tree" }
             copyBundle(source, temporary)
             validateDestination(temporary, source)
 
