@@ -46,7 +46,7 @@ class MainActivity : ComponentActivity() { override fun onCreate(state: Bundle?)
 }
 
 @Composable
-private fun ExportControls(state: ExportState, failureReason: String?, onSelectTree: () -> Unit) {
+internal fun ExportControls(state: ExportState, failureReason: String?, onSelectTree: () -> Unit) {
     val label = when (state) {
         ExportState.NOT_EXPORTED -> stringResource(R.string.export_not_exported)
         ExportState.EXPORTING -> stringResource(R.string.export_exporting)
