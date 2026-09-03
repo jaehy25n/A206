@@ -1,46 +1,33 @@
 package com.ssafy.s15p21a206.tiger.episode
 
-import com.ssafy.s15p21a206.tiger.data.local.EpisodeDao
-import com.ssafy.s15p21a206.tiger.data.local.EpisodeEntity
+import com.ssafy.s15p21a206.tiger.data.local.CaptureSessionDao
+import com.ssafy.s15p21a206.tiger.data.local.CaptureSessionEntity
+import com.ssafy.s15p21a206.tiger.data.local.EpisodeMarkerDao
+import com.ssafy.s15p21a206.tiger.data.local.EpisodeMarkerEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.io.File
 
-class EpisodeRepository(
-    private val episodeDao: EpisodeDao,
-    private val bundleStore: EpisodeBundleStore
+class SessionRepository(
+    private val sessionDao: CaptureSessionDao,
+    private val markerDao: EpisodeMarkerDao,
+    private val bundleStore: SessionBundleStore
 ) {
-    fun observeCompleted(): Flow<List<Episode>> = episodeDao.observeCompleted().map { episodes ->
-        episodes.map(EpisodeEntity::toEpisode)
+    fun observeCompleted(): Flow<List<CaptureSession>> = sessionDao.observeCompleted().map { sessions -> sessions.map(CaptureSessionEntity::toCaptureSession) }
+    fun observeMarkers(sessionId: String): Flow<List<EpisodeMarker>> = markerDao.observeForSession(sessionId).map { markers -> markers.map(EpisodeMarkerEntity::toEpisodeMarker) }
+    suspend fun save(session: CaptureSession) = sessionDao.upsert(session.toEntity())
+    suspend fun save(marker: EpisodeMarker) = markerDao.upsert(marker.toEntity())
+    suspend fun updateUploadState(sessionId: String, state: UploadState) = sessionDao.updateUploadState(sessionId, state.name)
+
+    suspend fun recoverInterruptedStaging() {
+        val stagingPaths = bundleStore.interruptedStagingBundles().map(File::getAbsolutePath).toSet()
+        sessionDao.activeSessions().filter { it.bundlePath in stagingPaths }.forEach { session ->
+            sessionDao.upsert(session.copy(recordingState = RecordingState.INTERRUPTED.name))
+        }
     }
-
-    suspend fun save(episode: Episode) = episodeDao.upsert(episode.toEntity())
-
-    suspend fun updateUploadState(episodeId: String, state: UploadState) =
-        episodeDao.updateUploadState(episodeId, state.name)
-
-    fun recoverStaging() = bundleStore.clearStaging()
 }
 
-private fun EpisodeEntity.toEpisode() = Episode(
-    episodeId = episodeId,
-    displayName = displayName,
-    task = task,
-    objectName = objectName,
-    recordingState = RecordingState.valueOf(recordingState),
-    uploadState = UploadState.valueOf(uploadState),
-    recordingStartMonotonicTimestampNs = recordingStartNs,
-    recordingEndMonotonicTimestampNs = recordingEndNs,
-    bundlePath = bundlePath
-)
-
-private fun Episode.toEntity() = EpisodeEntity(
-    episodeId = episodeId,
-    displayName = displayName,
-    task = task,
-    objectName = objectName,
-    recordingState = recordingState.name,
-    uploadState = uploadState.name,
-    recordingStartNs = recordingStartMonotonicTimestampNs,
-    recordingEndNs = recordingEndMonotonicTimestampNs,
-    bundlePath = bundlePath
-)
+private fun CaptureSessionEntity.toCaptureSession() = CaptureSession(sessionId, displayNumber, RecordingState.valueOf(recordingState), UploadState.valueOf(uploadState), recordingStartNs, recordingEndNs, bundlePath)
+private fun CaptureSession.toEntity() = CaptureSessionEntity(sessionId, displayNumber, recordingState.name, uploadState.name, recordingStartMonotonicTimestampNs, recordingEndMonotonicTimestampNs, bundlePath)
+private fun EpisodeMarkerEntity.toEpisodeMarker() = EpisodeMarker(episodeId, sessionId, startTimestampNs, endTimestampNs, task, objectName, EpisodeState.valueOf(outcome))
+private fun EpisodeMarker.toEntity() = EpisodeMarkerEntity(episodeId, sessionId, startTimestampNs, endTimestampNs, task, objectName, outcome.name)
