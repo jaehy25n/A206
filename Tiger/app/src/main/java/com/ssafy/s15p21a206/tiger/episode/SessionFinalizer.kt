@@ -14,18 +14,28 @@ class SessionFinalizer(private val bundleStore: SessionBundleStore) {
         if (validation is BundleValidationResult.Invalid) return FinalizeResult.Failed(validation.reason)
         val manifest = bundle.directory.listFiles().orEmpty()
             .filter { it.isFile && it.name != SessionBundle.METADATA_FILE }
-            .associate { it.name to sha256(it) }
+            .associate { file -> file.name to ManifestEntry(file.length(), sha256(file)) }
         bundle.metadata.writeText(Json.encodeToString(buildJsonObject {
             put("session_id", bundle.sessionId)
             put("camera_streams", buildJsonObject { put("main", true); put("ultrawide", includesUltraWide) })
-            put("files", buildJsonArray { manifest.keys.sorted().forEach { add(JsonPrimitive(it)) } })
+            put("files", buildJsonArray {
+                manifest.toSortedMap().forEach { (path, entry) ->
+                    add(buildJsonObject {
+                        put("path", path)
+                        put("sizeBytes", entry.sizeBytes)
+                        put("sha256", entry.sha256)
+                    })
+                }
+            })
         }))
-        return FinalizeResult.Completed(bundleStore.publish(bundle, includesUltraWide), manifest)
+        return FinalizeResult.Completed(bundleStore.publish(bundle, includesUltraWide), manifest.mapValues { it.value.sha256 })
     }
 
     private fun sha256(file: File): String = MessageDigest.getInstance("SHA-256")
         .digest(file.readBytes()).joinToString("") { "%02x".format(it) }
 }
+
+private data class ManifestEntry(val sizeBytes: Long, val sha256: String)
 
 sealed interface FinalizeResult {
     data class Completed(val directory: File, val checksums: Map<String, String>) : FinalizeResult
