@@ -1,35 +1,58 @@
-# 로컬 Episode Bundle 계약
+# 로컬 Capture Session Bundle 계약
 
-## 완료 조건
+## 저장과 완료 조건
 
-completed episode는 `video.mp4`, `frame_timestamps.csv`, `accelerometer.csv`, `gyroscope.csv`, `rotation_vector.csv`, `metadata.json`을 모두 포함한다. `metadata.json`은 파일 완결성 검증 뒤 마지막으로 작성하는 commit marker다.
+모든 raw 파일은 `capture/staging/session_<display>_<short_session_id>/`에 기록한다. `DATA COLLECTION END` 뒤 모든 writer를 finalize하고 필수 파일 존재·0보다 큰 크기·CSV header를 검사한다. 파일 SHA-256을 계산할 수 있으면 metadata manifest에 남긴다. 검증 후 `metadata.json`을 마지막으로 작성하고 `capture/completed/`에 Session directory를 공개한다.
 
-필수 파일 누락·파싱 실패·`onCaptureBufferLost`·`onCaptureFailed`·capture sequence abort·Camera device/session·encoder·muxer·writer 오류는 `INTERRUPTED`이며 completed 목록에서 제외한다.
+`metadata.json`은 commit marker다. 파일 누락, writer 오류, 저장 공간 부족, process death 또는 회복 불가능한 Camera/IMU 오류가 발생한 Session은 `INTERRUPTED`로 남고 completed 목록 및 upload 대상에서 제외한다.
 
-## 센서 CSV
+## 필수 파일
+
+main-only Session은 다음 파일을 정확히 포함한다.
+
+```text
+metadata.json
+main_rgb.mp4
+main_frame_timestamps.csv
+accelerometer.csv
+gyroscope.csv
+rotation_vector.csv
+arcore_poses.csv
+episodes.csv
+```
+
+`metadata.camera_streams.ultrawide`가 `true`인 Session은 다음 두 파일도 정확히 포함한다.
+
+```text
+ultrawide_rgb.mp4
+ultrawide_frame_timestamps.csv
+```
+
+## CSV 형식
 
 ```csv
-# accelerometer.csv / gyroscope.csv
+# main_frame_timestamps.csv, ultrawide_frame_timestamps.csv
+frame_number,timestamp_ns,timestamp_source
+
+# accelerometer.csv, gyroscope.csv
 timestamp_ns,x,y,z,accuracy
 
 # rotation_vector.csv
 timestamp_ns,x,y,z,scalar_component,heading_accuracy_rad,accuracy
+
+# arcore_poses.csv
+android_camera_timestamp_ns,tx,ty,tz,qx,qy,qz,qw,tracking_state,tracking_failure_reason
+
+# episodes.csv
+episode_id,start_timestamp_ns,end_timestamp_ns,task,object,outcome
 ```
 
-각 row는 Android callback 하나다. timestamp와 값은 제공 원본을 보존한다.
+Camera frame timestamp는 `SENSOR_TIMESTAMP`, IMU timestamp는 sensor event의 원본 timestamp, Episode event timestamp는 monotonic timestamp를 기록한다. ARCore row의 canonical join key는 `android_camera_timestamp_ns`다. 모든 timestamp 열은 decimal nanosecond integer를 보존한다. `end_timestamp_ns`는 열린 Episode인 동안 비어 있을 수 있으나 completed Session에는 비어 있으면 안 된다.
 
-## Frame timestamp
+## Metadata 최소 계약
 
-`frame_timestamps.csv`의 헤더는 다음과 같다.
+`metadata.json`은 최소한 `session_id` UUID, display number, recording/upload state, start/end monotonic timestamp, device model, camera streams, main camera 설정, ARCore enabled/shared-camera/camera ID, timestamp comparability 결과, sample counts와 raw file manifest를 기록한다.
 
-```csv
-frame_number,timestamp_ns,timestamp_source
-```
+`camera_streams.main`은 항상 `true`다. `camera_streams.ultrawide`는 실제 optional 파일 존재 여부와 반드시 같아야 한다. 기기에서 제공되는 focal length, sensor size, intrinsic calibration, distortion 정보는 metadata에 반드시 기록한다. 지원되지 않는 값은 임의로 생성하지 않는다.
 
-각 row는 성공한 Camera capture 하나다. MP4 frame↔timestamp 대응의 완전 검증은 이 MVP 범위 밖이다.
-
-## Metadata
-
-JSON은 `episode_id`(불변 UUID 문자열), `task`, `object`, `outcome`, `recording_start_monotonic_timestamp_ns`, `recording_end_monotonic_timestamp_ns`, `recording_duration_ns`, `device`, `camera`, `timebase.camera_imu_comparability`, `sample_counts`, `files`를 기록한다. 정확한 nested schema는 `episode-upload.md`를 따른다. 로컬 클래스의 `episodeId`는 metadata JSON에서 `episode_id`로 직렬화한다. `intrinsicCalibration`, `distortion`, `poseRotation`, `poseTranslation`, `poseReference`는 기록하지 않는다.
-
-`files` object에는 `metadata.json`을 제외한 다섯 원본 파일 각각의 상대 path, `size_bytes`, `sha256`을 기록한다. `metadata.json` 자신의 크기·해시를 그 안에 기록하면 내용을 수정할 때마다 값이 바뀌므로 manifest 대상에서 제외한다. 이 값은 finalized bundle의 실제 파일과 일치해야 하며, 서버 업로드 계약의 `metadata` part는 이 `metadata.json` 원문을 변경 없이 사용한다.
+Episode는 독립 raw directory나 file manifest를 소유하지 않는다. 각 Episode row의 outcome은 `COMPLETED`, `CANCELLED`, `INVALID_TRACKING` 중 하나다.
