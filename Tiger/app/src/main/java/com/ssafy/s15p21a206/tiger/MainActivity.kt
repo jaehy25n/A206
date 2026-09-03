@@ -3,45 +3,25 @@ package com.ssafy.s15p21a206.tiger
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerTheme
 
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            TigerTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
-            }
-        }
-    }
-}
+class MainActivity : ComponentActivity() { override fun onCreate(state: Bundle?) { super.onCreate(state); setContent { TigerTheme { CaptureScreen() } } } }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    TigerTheme {
-        Greeting("Android")
+@Composable fun CaptureScreen() {
+    var collecting by remember { mutableStateOf(false) }; var active by remember { mutableStateOf(false) }
+    var task by remember { mutableStateOf("") }; var objectName by remember { mutableStateOf("") }; var message by remember { mutableStateOf("") }
+    Column(Modifier.fillMaxSize()) {
+        Text("ARCore · Camera · IMU: ${if (collecting) "READY" else "IDLE"}")
+        OutlinedTextField(task, { task = it }, label = { Text("Task") }); OutlinedTextField(objectName, { objectName = it }, label = { Text("Object") })
+        Button(onClick = { if (active) message = "ACTIVE Episode를 먼저 END 또는 CANCEL 하세요." else collecting = !collecting }) { Text(if (collecting) "DATA COLLECTION END" else "DATA COLLECTION START") }
+        Button(enabled = collecting && !active && task.isNotBlank() && objectName.isNotBlank(), onClick = { active = true }) { Text("EPISODE START") }
+        Button(enabled = active, onClick = { active = false }) { Text("EPISODE END") }; Button(enabled = active, onClick = { active = false }) { Text("EPISODE CANCEL") }; Text(message)
     }
 }

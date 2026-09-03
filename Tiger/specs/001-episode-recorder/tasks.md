@@ -31,9 +31,9 @@ description: "Capture Session Recorder MVP 구현 작업"
 
 ## Phase 4: P1 UI와 P2 Ultra-wide probe
 
-- [ ] T014 DATA COLLECTION START/END, ARCore·Camera·IMU·Episode 상태, Episode metadata 입력, ACTIVE 제어와 finalization/upload 상태 UI를 구현한다. ACTIVE Episode 중에는 DATA COLLECTION END를 차단하고 Episode END 또는 CANCEL을 먼저 안내하는 UI·테스트를 포함한다.
-- [ ] T015 main-only baseline이 안정된 뒤 camera topology·ARCore camera ID를 기록하고, 10~30분 timebox 안에 low-rate Ultra-wide probe의 `UW_SUPPORTED` 또는 `UW_UNSUPPORTED_FOR_MVP` 결론을 기록하는 debug flow를 구현한다. probe 실패 시 추가 UW 디버깅 없이 main-only MVP를 계속한다.
-- [ ] T016 UW_SUPPORTED일 때만 UW writers, files, metadata declaration, upload parts를 추가하고 contract consistency test를 작성한다.
+- [X] T014 DATA COLLECTION START/END, ARCore·Camera·IMU·Episode 상태, Episode metadata 입력, ACTIVE 제어와 finalization/upload 상태 UI를 구현한다. ACTIVE Episode 중에는 DATA COLLECTION END를 차단하고 Episode END 또는 CANCEL을 먼저 안내하는 UI·테스트를 포함한다.
+- [X] T015 main-only baseline이 안정된 뒤 camera topology·ARCore camera ID를 기록하고, 10~30분 timebox 안에 low-rate Ultra-wide probe의 `UW_SUPPORTED` 또는 `UW_UNSUPPORTED_FOR_MVP` 결론을 기록하는 debug flow를 구현한다. probe 실패 시 추가 UW 디버깅 없이 main-only MVP를 계속한다.
+- [X] T016 UW_SUPPORTED일 때만 UW writers, files, metadata declaration, upload parts를 추가하고 contract consistency test를 작성한다.
 
 ## Phase 5: 검증
 
