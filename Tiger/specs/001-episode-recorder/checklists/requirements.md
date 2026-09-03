@@ -1,36 +1,35 @@
-# 명세 품질 체크리스트: Episode Recorder MVP
+# Specification Quality Checklist: Capture Session Recorder MVP
 
-**목적**: 계획 단계 전에 명세의 완전성과 품질을 검증한다.  
-**작성일**: 2026-09-02
-**기능**: [spec.md](../spec.md)
+**Purpose**: Validate specification completeness and quality before proceeding to planning
+**Created**: 2026-09-02
+**Feature**: [spec.md](../spec.md)
 
-## 내용 품질
+## Content Quality
 
-- [x] Seed에서 보존한 제약사항 외에 구현 세부사항(언어, 프레임워크, API)이 없다.
-- [x] 사용자 가치와 비즈니스 요구에 초점을 둔다.
-- [x] 비기술 이해관계자가 읽을 수 있는 언어로 작성됐다.
-- [x] 모든 필수 섹션이 작성됐다.
+- [x] No implementation details (languages, frameworks, APIs)
+- [x] Focused on user value and business needs
+- [x] Written for non-technical stakeholders
+- [x] All mandatory sections completed
 
-## 요구사항 완전성
+## Requirement Completeness
 
-- [x] `[NEEDS CLARIFICATION]` 표식이 없고, 현재 MVP 정책이 모두 확정됐다.
-- [x] 요구사항은 Seed가 정의한 범위 안에서 테스트 가능하고 모호하지 않다.
-- [x] 성공 기준은 측정 가능하다.
-- [x] 성공 기준은 Seed가 명시한 기기·촬영 설정 제약을 제외하면 기술 독립적이다.
-- [x] 모든 Seed 인수 시나리오가 정의됐다.
-- [x] 예외 상황이 식별됐다.
-- [x] 범위가 명확히 제한됐다.
-- [x] 의존성 및 유예된 항목이 식별됐다.
+- [x] No [NEEDS CLARIFICATION] markers remain
+- [x] Requirements are testable and unambiguous
+- [x] Success criteria are measurable
+- [x] Success criteria are technology-agnostic (no implementation details)
+- [x] All acceptance scenarios are defined
+- [x] Edge cases are identified
+- [x] Scope is clearly bounded
+- [x] Dependencies and assumptions identified
 
-## 기능 준비 상태
+## Feature Readiness
 
-- [x] 모든 기능 요구사항에 명확한 인수 기준이 있다.
-- [x] 사용자 시나리오가 주요 흐름을 포괄한다.
-- [x] 기능이 성공 기준에 정의된 측정 가능 결과를 충족한다.
-- [x] 승인되지 않은 구현 세부사항이 명세에 포함되지 않았다.
+- [x] All functional requirements have clear acceptance criteria
+- [x] User scenarios cover primary flows
+- [x] Feature meets measurable outcomes defined in Success Criteria
+- [x] No implementation details leak into specification
 
-## 참고
+## Notes
 
-- 서버 내부 설계는 범위 밖으로 유지한다. 모바일의 실제 서버 통신 계약은 `contracts/episode-upload.md`에 정의하며, HTTPS server base URL·수신 응답 계약은 구현 전에 제공돼야 한다.
-- Kotlin·Jetpack Compose·Material 3, Camera 권한, Manifest, 업로드 경계 관련 내용은 Seed에서 보존한 제약사항이며 새로운 설계 결정으로 추가한 것이 아니다.
-- 제공된 MVP 우선순위 표를 다시 대조했다. 원격 상태·검증 결과·후처리 결과·다운로드 목록 조회는 “단순 POST/수동 재전송”의 P1 인수 기준에 없으므로 별도 기능으로 분리했다. 수신 receipt와 원격 처리 완료를 혼동하지 않는다.
+- The API path, multipart field names, and file schemas are intentionally maintained in the linked contract documents, not in this user-facing specification.
+- No clarification marker is necessary: the provided requirements decide the P0 session lifecycle, tracking thresholds, and main-only fallback.
