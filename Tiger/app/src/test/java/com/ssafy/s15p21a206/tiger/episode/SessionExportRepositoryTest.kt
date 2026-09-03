@@ -4,15 +4,25 @@ import com.ssafy.s15p21a206.tiger.data.local.CaptureSessionDao
 import com.ssafy.s15p21a206.tiger.data.local.CaptureSessionEntity
 import com.ssafy.s15p21a206.tiger.data.local.EpisodeMarkerDao
 import com.ssafy.s15p21a206.tiger.data.local.EpisodeMarkerEntity
+import com.ssafy.s15p21a206.tiger.data.local.EXPORT_MIGRATION_SQL
 import java.nio.file.Files
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SessionExportRepositoryTest {
+    @Test
+    fun `migration preserves export state tree uri and failure reason columns`() {
+        assertEquals(3, EXPORT_MIGRATION_SQL.size)
+        assertTrue(EXPORT_MIGRATION_SQL.any { it.contains("exportState") && it.contains("NOT_EXPORTED") })
+        assertTrue(EXPORT_MIGRATION_SQL.any { it.contains("exportTreeUri") })
+        assertTrue(EXPORT_MIGRATION_SQL.any { it.contains("exportFailureReason") })
+    }
+
     @Test
     fun `export state tree uri and failure reason survive repository recreation`() {
         runBlocking {

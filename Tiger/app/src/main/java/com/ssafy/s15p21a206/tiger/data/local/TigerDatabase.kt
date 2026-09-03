@@ -86,8 +86,12 @@ abstract class TigerDatabase : RoomDatabase() {
 
 val MIGRATION_2_3 = object : Migration(2, 3) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL("ALTER TABLE sessions ADD COLUMN exportState TEXT NOT NULL DEFAULT 'NOT_EXPORTED'")
-        db.execSQL("ALTER TABLE sessions ADD COLUMN exportTreeUri TEXT")
-        db.execSQL("ALTER TABLE sessions ADD COLUMN exportFailureReason TEXT")
+        EXPORT_MIGRATION_SQL.forEach(db::execSQL)
     }
 }
+
+val EXPORT_MIGRATION_SQL = listOf(
+    "ALTER TABLE sessions ADD COLUMN exportState TEXT NOT NULL DEFAULT 'NOT_EXPORTED'",
+    "ALTER TABLE sessions ADD COLUMN exportTreeUri TEXT",
+    "ALTER TABLE sessions ADD COLUMN exportFailureReason TEXT"
+)
