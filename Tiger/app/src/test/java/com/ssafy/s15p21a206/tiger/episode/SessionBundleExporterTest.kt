@@ -26,6 +26,24 @@ class SessionBundleExporterTest {
         root.deleteRecursively()
     }
 
+    @Test
+    fun `retry uses a new attempt and overwrites only after validation`() {
+        val root = Files.createTempDirectory("export").toFile()
+        val source = File(root, "source").apply { mkdirs() }
+        writeBundle(source)
+        val destination = File(root, "tree").apply { mkdirs() }
+        val exporter = SessionBundleExporter(FileGateway(destination))
+
+        exporter.export(source, "session", destination.path, "first")
+        val result = exporter.export(source, "session", destination.path, "second")
+
+        assertTrue(result is SessionBundleExporter.ExportAttemptResult.Exported)
+        assertTrue(SessionBundleValidator.validate(File(destination, "TigerCapture/session")).isValid)
+        assertFalse(File(destination, "TigerCapture/.session.exporting-first").exists())
+        assertFalse(File(destination, "TigerCapture/.session.exporting-second").exists())
+        root.deleteRecursively()
+    }
+
     private fun writeBundle(directory: File) {
         val headers = mapOf(SessionBundle.MAIN_FRAME_TIMESTAMPS_FILE to "frame_number,timestamp_ns,timestamp_source", SessionBundle.ACCELEROMETER_FILE to "timestamp_ns,x,y,z,accuracy", SessionBundle.GYROSCOPE_FILE to "timestamp_ns,x,y,z,accuracy", SessionBundle.ROTATION_VECTOR_FILE to "timestamp_ns,x,y,z,scalar_component,heading_accuracy_rad,accuracy", SessionBundle.ARCORE_POSES_FILE to "android_camera_timestamp_ns,tx,ty,tz,qx,qy,qz,qw,tracking_state,tracking_failure_reason", SessionBundle.EPISODES_FILE to "episode_id,start_timestamp_ns,end_timestamp_ns,task,object,outcome")
         File(directory, SessionBundle.MAIN_VIDEO_FILE).writeBytes(byteArrayOf(1))
