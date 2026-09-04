@@ -13,7 +13,7 @@ class SessionExportUiTest {
 
     @Test
     fun completedSessionExportControlIsVisible() {
-        composeRule.setContent { CaptureScreen() }
+        composeRule.setContent { ExportControls(ExportState.NOT_EXPORTED, null) {} }
 
         composeRule.onNodeWithText("Not exported").assertIsDisplayed()
         composeRule.onNodeWithText("Select export folder").assertIsDisplayed()
