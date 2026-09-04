@@ -42,7 +42,7 @@ class SafDocumentTreeGateway(private val context: Context) : DocumentTreeGateway
     }
 
     override fun hasRequiredCapabilities(treeUri: String): Boolean {
-        val tree = Uri.parse(treeUri)
+        val tree = documentUri(treeUri)
         return resolver.query(tree, arrayOf(DocumentsContract.Document.COLUMN_FLAGS), null, null, null)?.use { cursor ->
             if (!cursor.moveToFirst()) return@use false
             val flags = cursor.getLong(0)
@@ -54,17 +54,17 @@ class SafDocumentTreeGateway(private val context: Context) : DocumentTreeGateway
 
     override fun isWithinTree(treeUri: String, documentUri: String): Boolean = runCatching {
         val treeId = DocumentsContract.getTreeDocumentId(Uri.parse(treeUri))
-        DocumentsContract.getDocumentId(Uri.parse(documentUri)).startsWith(treeId)
+        documentId(Uri.parse(documentUri)).startsWith(treeId)
     }.getOrDefault(false)
 
     override fun list(directoryUri: String): List<DocumentNode> {
-        val tree = Uri.parse(directoryUri)
-        val children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, DocumentsContract.getDocumentId(tree))
+        val parent = documentUri(directoryUri)
+        val children = DocumentsContract.buildChildDocumentsUriUsingTree(parent, documentId(parent))
         return resolver.query(children, arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID, DocumentsContract.Document.COLUMN_DISPLAY_NAME, DocumentsContract.Document.COLUMN_MIME_TYPE), null, null, null)?.use { cursor ->
             buildList {
                 while (cursor.moveToNext()) {
                     val id = cursor.getString(0)
-                    add(DocumentNode(DocumentsContract.buildDocumentUriUsingTree(tree, id).toString(), cursor.getString(1), cursor.getString(2) == DocumentsContract.Document.MIME_TYPE_DIR))
+                    add(DocumentNode(DocumentsContract.buildDocumentUriUsingTree(parent, id).toString(), cursor.getString(1), cursor.getString(2) == DocumentsContract.Document.MIME_TYPE_DIR))
                 }
             }
         }.orEmpty()
@@ -78,5 +78,15 @@ class SafDocumentTreeGateway(private val context: Context) : DocumentTreeGateway
     override fun delete(uri: String): Boolean = DocumentsContract.deleteDocument(resolver, Uri.parse(uri))
 
     private fun create(parentUri: String, mimeType: String, name: String, directory: Boolean): DocumentNode? =
-        DocumentsContract.createDocument(resolver, Uri.parse(parentUri), mimeType, name)?.let { uri -> DocumentNode(uri.toString(), name, directory) }
+        DocumentsContract.createDocument(resolver, documentUri(parentUri), mimeType, name)?.let { uri -> DocumentNode(uri.toString(), name, directory) }
+
+    private fun documentUri(uri: String): Uri {
+        val parsed = Uri.parse(uri)
+        return runCatching { DocumentsContract.getDocumentId(parsed) }
+            .map { parsed }
+            .getOrElse { DocumentsContract.buildDocumentUriUsingTree(parsed, DocumentsContract.getTreeDocumentId(parsed)) }
+    }
+
+    private fun documentId(uri: Uri): String = runCatching { DocumentsContract.getDocumentId(uri) }
+        .getOrElse { DocumentsContract.getTreeDocumentId(uri) }
 }
