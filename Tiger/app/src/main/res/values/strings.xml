@@ -5,6 +5,9 @@
     <string name="recording_in_progress">녹화 중</string>
     <string name="recording_elapsed_time">경과 시간: %1$s</string>
     <string name="recording_camera_unavailable">카메라를 사용할 수 없습니다.</string>
+    <string name="arcore_install_requested">Google Play Services for AR 설치 또는 업데이트를 완료한 뒤 다시 시작하세요.</string>
+    <string name="arcore_unavailable">이 기기에서 ARCore를 사용할 수 없거나 Google Play Services for AR를 시작할 수 없습니다.</string>
+    <string name="arcore_session_start_failed">ARCore 녹화를 시작할 수 없습니다</string>
     <string name="recording_sensor_unavailable">센서를 사용할 수 없습니다.</string>
     <string name="recording_storage_insufficient">저장 공간이 부족합니다.</string>
     <string name="recording_preflight_failed">녹화 준비를 완료할 수 없습니다.</string>
@@ -20,7 +23,7 @@
     <string name="action_cancel">취소</string>
     <string name="action_delete">삭제</string>
     <string name="data_collection_start">DATA COLLECTION START</string><string name="data_collection_end">DATA COLLECTION END</string><string name="episode_start">EPISODE START</string><string name="episode_end">EPISODE END</string><string name="episode_cancel">EPISODE CANCEL</string><string name="episode_task">Task</string><string name="episode_object">Object</string><string name="active_episode_end_required">ACTIVE Episode를 먼저 END 또는 CANCEL 하세요.</string>
-    <string name="capture_finalize_failed">녹화를 완료할 수 없습니다: %1$s</string>
+    <string name="capture_finalize_failed">녹화를 완료할 수 없습니다</string>
     <string name="export_session">Export session</string>
     <string name="export_select_tree">Select export folder</string>
     <string name="export_retry">Retry export</string>

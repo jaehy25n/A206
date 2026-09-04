@@ -2,6 +2,11 @@ package com.ssafy.s15p21a206.tiger
 
 import android.os.Bundle
 import android.os.SystemClock
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
@@ -38,6 +43,8 @@ import com.ssafy.s15p21a206.tiger.episode.EpisodeMarker
 import com.ssafy.s15p21a206.tiger.episode.EpisodeState
 import com.ssafy.s15p21a206.tiger.capture.AndroidCaptureRuntime
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerTheme
+import com.google.ar.core.ArCoreApk
+import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException
 import java.util.UUID
 
 class MainActivity : ComponentActivity() { override fun onCreate(state: Bundle?) { super.onCreate(state); setContent { TigerTheme { CaptureScreen() } } } }
@@ -60,7 +67,16 @@ class MainActivity : ComponentActivity() { override fun onCreate(state: Bundle?)
     var recordingStartNs by remember { mutableLongStateOf(0L) }
     var activeEpisode by remember { mutableStateOf<EpisodeMarker?>(null) }
     var nextDisplayNumber by remember { mutableIntStateOf(1) }
+    var arCoreInstallRequested by remember { mutableStateOf(false) }
     val pickerCancelled = stringResource(R.string.export_picker_cancelled)
+    val exportGrantFailed = stringResource(R.string.export_grant_failed)
+    val exportFailedUnexpected = stringResource(R.string.export_failed_unexpected)
+    val recordingCameraUnavailable = stringResource(R.string.recording_camera_unavailable)
+    val activeEpisodeEndRequired = stringResource(R.string.active_episode_end_required)
+    val captureFinalizeFailed = stringResource(R.string.capture_finalize_failed)
+    val arCoreUnavailable = stringResource(R.string.arcore_unavailable)
+    val arCoreInstallMessage = stringResource(R.string.arcore_install_requested)
+    val arCoreSessionStartFailed = stringResource(R.string.arcore_session_start_failed)
     val treePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri == null) {
             exportState = ExportState.EXPORT_FAILED
@@ -72,13 +88,13 @@ class MainActivity : ComponentActivity() { override fun onCreate(state: Bundle?)
             }.exceptionOrNull()
             if (grantFailure != null) {
                 exportState = ExportState.EXPORT_FAILED
-                exportMessage = grantFailure.message ?: context.getString(R.string.export_grant_failed)
+                exportMessage = grantFailure.message ?: exportGrantFailed
                 return@rememberLauncherForActivityResult
             }
             scope.launch {
                 exportState = ExportState.EXPORTING
                 when (val result = runCatching { exporter.exportCompleted(repository, sessionId, uri.toString()) }
-                    .getOrElse { SessionBundleExporter.ExportAttemptResult.Failed(it.message ?: context.getString(R.string.export_failed_unexpected), "") }) {
+                    .getOrElse { SessionBundleExporter.ExportAttemptResult.Failed(it.message ?: exportFailedUnexpected, "") }) {
                     is SessionBundleExporter.ExportAttemptResult.Exported -> { exportState = ExportState.EXPORTED; exportMessage = null }
                     is SessionBundleExporter.ExportAttemptResult.Failed -> { exportState = ExportState.EXPORT_FAILED; exportMessage = result.reason }
                 }
@@ -87,6 +103,19 @@ class MainActivity : ComponentActivity() { override fun onCreate(state: Bundle?)
     }
     val cameraPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) {
+            val activity = context.findActivity()
+            val installStatus = runCatching {
+                requireNotNull(activity) { "Activity is required to install ARCore." }
+                ArCoreApk.getInstance().requestInstall(activity, !arCoreInstallRequested)
+            }.getOrElse {
+                message = arCoreUnavailable
+                return@rememberLauncherForActivityResult
+            }
+            if (installStatus == ArCoreApk.InstallStatus.INSTALL_REQUESTED) {
+                arCoreInstallRequested = true
+                message = arCoreInstallMessage
+                return@rememberLauncherForActivityResult
+            }
             runCatching { captureRuntime.start(nextDisplayNumber) }.onSuccess { bundle ->
                 activeBundle = bundle
                 recordingStartNs = SystemClock.elapsedRealtimeNanos()
@@ -105,8 +134,13 @@ class MainActivity : ComponentActivity() { override fun onCreate(state: Bundle?)
                 }
                 nextDisplayNumber++
             }
-                .onFailure { message = it.message.orEmpty() }
-        } else message = context.getString(R.string.recording_camera_unavailable)
+                .onFailure { error ->
+                    message = "$arCoreSessionStartFailed: ${error.message.orEmpty()}"
+                    if (error is UnavailableArcoreNotInstalledException) {
+                        context.openArCoreStore()
+                    }
+                }
+        } else message = recordingCameraUnavailable
     }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
         val interruptedBundle = activeBundle ?: return@LifecycleEventEffect
@@ -134,13 +168,13 @@ class MainActivity : ComponentActivity() { override fun onCreate(state: Bundle?)
         OutlinedTextField(task, { task = it }, label = { Text("Task") }); OutlinedTextField(objectName, { objectName = it }, label = { Text("Object") })
         Button(onClick = {
             if (!collecting) cameraPermission.launch(Manifest.permission.CAMERA)
-            else if (active) message = context.getString(R.string.active_episode_end_required)
+            else if (active) message = activeEpisodeEndRequired
             else scope.launch {
                 when (val result = runCatching { captureRuntime.stop() }.getOrElse { FinalizeResult.Failed(it.message.orEmpty()) }) {
                     is FinalizeResult.Completed -> activeBundle?.let { bundle ->
                         repository.save(CaptureSession(bundle.sessionId, bundle.displayNumber, RecordingState.COMPLETED, UploadState.LOCAL_ONLY, recordingStartNs, SystemClock.elapsedRealtimeNanos(), result.directory.absolutePath))
                     }
-                    is FinalizeResult.Failed -> message = context.getString(R.string.capture_finalize_failed, result.reason)
+                    is FinalizeResult.Failed -> message = "$captureFinalizeFailed: ${result.reason}"
                 }
                 activeBundle = null; collecting = false
             }
@@ -165,6 +199,18 @@ class MainActivity : ComponentActivity() { override fun onCreate(state: Bundle?)
             ExportControls(exportState, exportMessage, onSelectTree = { pendingSessionId = session.sessionId; treePicker.launch(null) })
         }
     }
+}
+
+private fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
+private fun Context.openArCoreStore() {
+    val marketIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.ar.core"))
+    val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.google.ar.core"))
+    startActivity(if (marketIntent.resolveActivity(packageManager) != null) marketIntent else webIntent)
 }
 
 @Composable
