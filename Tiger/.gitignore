@@ -19,6 +19,7 @@
 *.log
 .env*
 /out/
+/tmp/
 
 # OS 메타데이터
 .DS_Store

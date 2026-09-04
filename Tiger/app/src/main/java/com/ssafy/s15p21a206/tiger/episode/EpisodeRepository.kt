@@ -18,6 +18,9 @@ class SessionRepository(
     suspend fun save(session: CaptureSession) = sessionDao.upsert(session.toEntity())
     suspend fun save(marker: EpisodeMarker) = markerDao.upsert(marker.toEntity())
     suspend fun updateUploadState(sessionId: String, state: UploadState) = sessionDao.updateUploadState(sessionId, state.name)
+    suspend fun completedSource(sessionId: String): CaptureSession? = sessionDao.completedSession(sessionId)?.toCaptureSession()
+    suspend fun exportFor(sessionId: String): SessionExport? = sessionDao.session(sessionId)?.toSessionExport()
+    suspend fun updateExport(export: SessionExport) = sessionDao.updateExport(export.sessionId, export.state.name, export.treeUri, export.failureReason)
 
     suspend fun recoverInterruptedStaging() {
         val stagingPaths = bundleStore.interruptedStagingBundles().map(File::getAbsolutePath).toSet()
@@ -31,3 +34,4 @@ private fun CaptureSessionEntity.toCaptureSession() = CaptureSession(sessionId, 
 private fun CaptureSession.toEntity() = CaptureSessionEntity(sessionId, displayNumber, recordingState.name, uploadState.name, recordingStartMonotonicTimestampNs, recordingEndMonotonicTimestampNs, bundlePath)
 private fun EpisodeMarkerEntity.toEpisodeMarker() = EpisodeMarker(episodeId, sessionId, startTimestampNs, endTimestampNs, task, objectName, EpisodeState.valueOf(outcome))
 private fun EpisodeMarker.toEntity() = EpisodeMarkerEntity(episodeId, sessionId, startTimestampNs, endTimestampNs, task, objectName, outcome.name)
+private fun CaptureSessionEntity.toSessionExport() = SessionExport(sessionId, ExportState.valueOf(exportState), exportTreeUri, exportFailureReason)
