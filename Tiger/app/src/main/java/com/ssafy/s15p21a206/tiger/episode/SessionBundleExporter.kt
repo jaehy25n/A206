@@ -6,29 +6,33 @@ import java.util.UUID
 
 class SessionBundleExporter(private val documentTreeGateway: DocumentTreeGateway) {
     suspend fun exportCompleted(repository: SessionRepository, sessionId: String, treeUri: String): ExportAttemptResult {
-        val source = repository.completedSource(sessionId)
-            ?: return ExportAttemptResult.Failed("Only completed sessions can be exported", UUID.randomUUID().toString())
-        val previous = repository.exportFor(sessionId) ?: SessionExport(sessionId)
         val attemptId = UUID.randomUUID().toString()
-        val exporting = previous.start(treeUri, attemptId)
-        repository.updateExport(exporting)
-        return when (val result = export(File(source.bundlePath), sessionId, treeUri, attemptId)) {
-            is ExportAttemptResult.Exported -> {
-                repository.updateExport(exporting.complete())
-                result
+        return runCatching {
+            val source = repository.completedSource(sessionId)
+                ?: return ExportAttemptResult.Failed("Only completed sessions can be exported", attemptId)
+            val previous = repository.exportFor(sessionId) ?: SessionExport(sessionId)
+            val exporting = previous.start(treeUri, attemptId)
+            repository.updateExport(exporting)
+            when (val result = export(File(source.bundlePath), sessionId, treeUri, attemptId)) {
+                is ExportAttemptResult.Exported -> {
+                    repository.updateExport(exporting.complete())
+                    result
+                }
+                is ExportAttemptResult.Failed -> {
+                    repository.updateExport(exporting.fail(result.reason))
+                    result
+                }
             }
-            is ExportAttemptResult.Failed -> {
-                repository.updateExport(exporting.fail(result.reason))
-                result
-            }
+        }.getOrElse { error ->
+            recordUnexpectedFailure(repository, sessionId, treeUri, error.message ?: "Export failed")
+            ExportAttemptResult.Failed(error.message ?: "Export failed", attemptId)
         }
     }
 
     fun export(source: File, sessionId: String, treeUri: String, attemptId: String = UUID.randomUUID().toString()): ExportAttemptResult {
-        if (!SessionBundleValidator.validate(source).isValid) return ExportAttemptResult.Failed("Completed source bundle is invalid", attemptId)
-        if (!documentTreeGateway.supportsPublish(treeUri)) return ExportAttemptResult.Failed("Selected folder does not support persisted write access", attemptId)
-
         return runCatching {
+            if (!SessionBundleValidator.validate(source).isValid) return ExportAttemptResult.Failed("Completed source bundle is invalid", attemptId)
+            if (!documentTreeGateway.supportsPublish(treeUri)) return ExportAttemptResult.Failed("Selected folder does not support persisted write access", attemptId)
             val tigerCapture = documentTreeGateway.list(treeUri).firstOrNull { it.name == EXPORT_ROOT && it.isDirectory }
                 ?: requireNotNull(documentTreeGateway.createDirectory(treeUri, EXPORT_ROOT)) { "Cannot create export root" }
             check(documentTreeGateway.isWithinTree(treeUri, tigerCapture.uri)) { "Export root escapes selected tree" }
@@ -43,6 +47,14 @@ class SessionBundleExporter(private val documentTreeGateway: DocumentTreeGateway
             check(documentTreeGateway.rename(temporary.uri, sessionId) != null) { "Cannot publish export attempt" }
             ExportAttemptResult.Exported(attemptId)
         }.getOrElse { ExportAttemptResult.Failed(it.message ?: "Export failed", attemptId) }
+    }
+
+    private suspend fun recordUnexpectedFailure(repository: SessionRepository, sessionId: String, treeUri: String, reason: String) {
+        runCatching {
+            val previous = repository.exportFor(sessionId) ?: SessionExport(sessionId)
+            if (previous.state == ExportState.EXPORTING) repository.updateExport(previous.fail(reason))
+            else if (previous.state != ExportState.EXPORTED) repository.updateExport(previous.copy(state = ExportState.EXPORT_FAILED, treeUri = treeUri, failureReason = reason))
+        }
     }
 
     private fun copyBundle(source: File, destination: DocumentNode) {

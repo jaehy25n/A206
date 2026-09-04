@@ -67,10 +67,18 @@ class MainActivity : ComponentActivity() { override fun onCreate(state: Bundle?)
             exportMessage = pickerCancelled
         } else {
             val sessionId = pendingSessionId ?: return@rememberLauncherForActivityResult
-            runCatching { gateway.persistGrant(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION) }
+            val grantFailure = runCatching {
+                gateway.persistGrant(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+            }.exceptionOrNull()
+            if (grantFailure != null) {
+                exportState = ExportState.EXPORT_FAILED
+                exportMessage = grantFailure.message ?: context.getString(R.string.export_grant_failed)
+                return@rememberLauncherForActivityResult
+            }
             scope.launch {
                 exportState = ExportState.EXPORTING
-                when (val result = exporter.exportCompleted(repository, sessionId, uri.toString())) {
+                when (val result = runCatching { exporter.exportCompleted(repository, sessionId, uri.toString()) }
+                    .getOrElse { SessionBundleExporter.ExportAttemptResult.Failed(it.message ?: context.getString(R.string.export_failed_unexpected), "") }) {
                     is SessionBundleExporter.ExportAttemptResult.Exported -> { exportState = ExportState.EXPORTED; exportMessage = null }
                     is SessionBundleExporter.ExportAttemptResult.Failed -> { exportState = ExportState.EXPORT_FAILED; exportMessage = result.reason }
                 }

@@ -30,4 +30,6 @@
     <string name="export_failed">Export failed: %1$s</string>
     <string name="export_tree_required">Select a folder to export this completed session.</string>
     <string name="export_picker_cancelled">Folder selection was cancelled</string>
+    <string name="export_grant_failed">The selected folder could not be authorized for export.</string>
+    <string name="export_failed_unexpected">Unexpected export failure</string>
 </resources>
