@@ -21,6 +21,7 @@
 - Q: 앱을 다시 연 뒤 export를 재시도할 때 마지막으로 선택한 Documents tree를 자동으로 다시 사용할까요? → A: 마지막 선택 tree의 접근 권한을 유지해 재사용하고, 권한을 잃었을 때만 다시 선택한다.
 - Q: export 대상은 Android의 Documents 위치로 제한할까요, 아니면 사용자가 SAF에서 선택한 모든 tree URI를 허용할까요? → A: Documents 위치에서 선택을 시작하되 사용자가 명시적으로 선택한 모든 SAF tree URI를 허용한다.
 - Q: 기존 export를 덮어쓰는 중 실패해 부분 파일이 남으면, 앱이 그 대상 폴더를 자동 정리할까요? → A: 부분 파일을 자동 삭제하지 않고 `EXPORT_FAILED`로 표시하며, 다음 재시도에서 같은 대상 폴더를 다시 덮어쓴다.
+- Q: 대상 bundle의 정확한 파일 집합과 부분 export 보존을 함께 보장하려면 어떤 publish 정책을 사용할까요? → A: 선택 tree 안의 새 임시 directory에 복사·검증한 뒤에만 최종 `<session_id>` directory를 덮어쓴다. 실패한 임시 directory는 자동 삭제하지 않고, 재시도는 새 임시 directory에서 시작한다.
 
 ## 사용자 시나리오 및 테스트 *(필수)*
 
@@ -103,7 +104,7 @@
 - export 대상 tree 선택이 취소되거나 쓰기 권한을 잃으면 export는 실패 상태가 되며, completed 원본과 staging 원본을 삭제하거나 변경하지 않는다.
 - 앱 재시작 뒤에도 마지막으로 선택한 tree URI의 접근 권한이 유효하면 export 재시도에 재사용하며, 유효하지 않으면 사용자가 tree를 다시 선택해야 한다.
 - export 대상에 일부 파일만 기록됐거나 manifest·metadata·CSV header 검증에 실패하면 bundle을 성공으로 표시해서는 안 되며, 사용자는 같은 Session으로 재시도할 수 있다.
-- 대상 덮어쓰기 중 실패해 부분 파일이 남아도 앱은 이를 자동 삭제하지 않고 `EXPORT_FAILED`로 표시하며, 다음 재시도에서 같은 대상 bundle을 다시 덮어쓴다.
+- export는 선택된 tree 안의 새 임시 directory에 raw file을 먼저 쓰고 `metadata.json`을 마지막으로 쓴 뒤 검증해야 한다. 검증된 임시 bundle만 최종 `<session_id>` directory를 덮어쓸 수 있으며, 실패한 임시 directory는 자동 삭제하지 않는다. 다음 재시도는 새 임시 directory에서 시작한다.
 - 사용자가 선택하지 않은 공용 Documents 경로에는 쓰지 않으며, 앱은 broad storage permission을 요청하지 않는다.
 - Ultra-wide가 metadata 선언과 실제 파일 구성 중 하나와만 일치하면 Session 검증 또는 업로드를 거부한다.
 - Capture Session에는 인위적인 시간 상한이 없으며, 저장 공간 부족은 Session interruption으로 처리한다.
@@ -137,9 +138,10 @@
 - **FR-021**: 시스템은 export 실패·취소·대상 검증 실패 때 staging 또는 completed 원본을 삭제·변경하지 않고, 사용자에게 같은 completed bundle의 수동 재시도 수단과 실패 원인을 제공해야 한다.
 - **FR-022**: 시스템은 공용 Documents 저장소에 직접 쓰기 위한 broad storage permission을 요청하거나 사용해서는 안 된다. 앱 삭제 전에 bundle을 보존하려면 사용자가 완료 bundle을 명시적으로 export해야 한다.
 - **FR-023**: 시스템은 export 상태를 `NOT_EXPORTED → EXPORTING → EXPORTED` 또는 `EXPORTING → EXPORT_FAILED`로 표시해야 하며, `EXPORT_FAILED`에서는 같은 completed bundle을 변경하지 않고 `EXPORTING`으로 재시도할 수 있게 해야 한다. export 상태는 recording 및 upload 상태를 변경해서는 안 된다.
-- **FR-024**: 시스템은 선택된 tree URI 아래에 같은 `session_id`의 export 대상 directory가 이미 있으면 해당 대상 bundle을 덮어쓰고 같은 immutable completed source를 다시 export해야 한다. 대상 덮어쓰기 실패로 남은 부분 파일은 자동 삭제하지 않고 `EXPORT_FAILED`로 표시하며, staging 및 completed 원본을 변경해서는 안 된다.
+- **FR-024**: 시스템은 선택된 tree URI 안의 새 임시 directory에 immutable completed source를 복사하고, 필수 파일·CSV header·SHA-256 manifest·metadata 선언을 검증한 뒤에만 같은 `session_id`의 최종 export directory를 덮어써야 한다. 대상 덮어쓰기 또는 publish 실패로 남은 임시 directory는 자동 삭제하지 않고 `EXPORT_FAILED`로 표시하며, staging 및 completed 원본을 변경해서는 안 된다. 재시도는 기존 임시 directory를 재개하지 않고 새 임시 directory에서 시작해야 한다.
 - **FR-025**: 시스템은 사용자가 선택한 tree URI의 접근 권한을 앱 재시작 뒤에도 export 재시도에 사용할 수 있도록 유지해야 하며, 권한이 유효하지 않거나 철회되면 export를 `EXPORT_FAILED`로 표시하고 tree를 다시 선택하게 해야 한다.
 - **FR-026**: 시스템은 Documents 위치에서 SAF tree 선택을 시작하되, 사용자가 명시적으로 선택한 모든 접근 가능한 tree URI를 export 대상으로 허용해야 한다. 선택된 tree가 Documents 밖이어도 실제 export는 해당 tree URI 하위로 제한해야 한다.
+- **FR-027**: 시스템은 tree URI가 create, write, enumerate 및 publish에 필요한 rename/delete document operation을 제공할 때만 export를 시작해야 한다. 필요한 operation을 지원하지 않거나 권한이 유효하지 않으면 source를 변경하지 않고 `EXPORT_FAILED`로 표시하고 사용자가 다른 tree를 선택하게 해야 한다.
 
 ### 핵심 엔터티
 
@@ -164,7 +166,7 @@
 - **SC-008**: 수집자는 저장 가능 공간이 유지되는 한 인위적인 시간 제한 없이 Session을 계속 기록하고 원하는 시점에 종료할 수 있다.
 - **SC-009**: 정상 finalize된 completed Session은 사용자가 선택한 Documents tree URI 하위로 export할 때 필수 파일, 모든 CSV header, SHA-256 manifest 및 metadata 선언 검증을 모두 통과한 경우에만 성공으로 표시된다.
 - **SC-010**: export가 실패하거나 취소된 경우 100%의 사례에서 staging 및 completed 원본이 보존되고, 사용자는 같은 Session을 다시 export할 수 있다.
-- **SC-011**: 같은 `session_id`의 기존 export directory가 있을 때도 사용자는 같은 tree URI 아래에서 bundle을 덮어써 다시 export할 수 있으며, 실패 시 source bundle은 보존된다.
+- **SC-011**: 같은 `session_id`의 기존 export directory가 있을 때도 사용자는 검증된 임시 bundle을 통해 같은 tree URI 아래에서 bundle을 덮어써 다시 export할 수 있으며, 실패 시 source bundle은 보존되고 실패한 임시 directory는 성공 bundle으로 표시되지 않는다.
 
 ## 가정 및 범위
 
