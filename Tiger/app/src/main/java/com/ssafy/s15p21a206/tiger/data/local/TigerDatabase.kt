@@ -131,6 +131,9 @@ val EXPORT_MIGRATION_SQL =
 val MIGRATION_3_4 =
     object : Migration(3, 4) {
         override fun migrate(db: SupportSQLiteDatabase) {
-            db.execSQL("ALTER TABLE sessions ADD COLUMN recordingStartEpochMs INTEGER NOT NULL DEFAULT 0")
+            db.execSQL(RECORDING_START_EPOCH_MIGRATION_SQL)
         }
     }
+
+const val RECORDING_START_EPOCH_MIGRATION_SQL =
+    "ALTER TABLE sessions ADD COLUMN recordingStartEpochMs INTEGER NOT NULL DEFAULT 0"
