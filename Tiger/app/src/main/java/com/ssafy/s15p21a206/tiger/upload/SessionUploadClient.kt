@@ -3,6 +3,7 @@ package com.ssafy.s15p21a206.tiger.upload
 import com.ssafy.s15p21a206.tiger.episode.RemoteReceipt
 import com.ssafy.s15p21a206.tiger.episode.SessionBundle
 import com.ssafy.s15p21a206.tiger.episode.SessionBundleValidator
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -120,20 +121,30 @@ class SessionUploader(
                         call: Call,
                         error: java.io.IOException,
                     ) {
-                        if (continuation.isActive) continuation.resume(UploadResult.Failed("Network upload failed"))
+                        continuation.resumeIfActive(UploadResult.Failed("Network upload failed"))
                     }
 
                     override fun onResponse(
                         call: Call,
                         response: okhttp3.Response,
                     ) {
-                        response.use {
-                            if (continuation.isActive) continuation.resume(responseResult(response, bundle))
-                        }
+                        completeResponse(continuation, response, bundle)
                     }
                 },
             )
         }
+
+    private fun CancellableContinuation<UploadResult>.resumeIfActive(result: UploadResult) {
+        if (isActive) resume(result)
+    }
+
+    private fun completeResponse(
+        continuation: CancellableContinuation<UploadResult>,
+        response: okhttp3.Response,
+        bundle: SessionBundle,
+    ) {
+        response.use { continuation.resumeIfActive(responseResult(response, bundle)) }
+    }
 
     private fun responseResult(
         response: okhttp3.Response,
