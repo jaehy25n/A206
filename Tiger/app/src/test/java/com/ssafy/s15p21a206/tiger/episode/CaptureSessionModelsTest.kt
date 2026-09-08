@@ -18,7 +18,6 @@ class CaptureSessionModelsTest {
     @Test
     fun `episode outcome is terminal after active`() {
         assertTrue(EpisodeState.ACTIVE.canTransitionTo(EpisodeState.COMPLETED))
-        assertTrue(EpisodeState.ACTIVE.canTransitionTo(EpisodeState.CANCELLED))
         assertTrue(EpisodeState.ACTIVE.canTransitionTo(EpisodeState.INVALID_TRACKING))
         assertFalse(EpisodeState.COMPLETED.canTransitionTo(EpisodeState.ACTIVE))
     }

@@ -15,7 +15,7 @@ class SessionRepository(
 ) : com.ssafy.s15p21a206.tiger.upload.UploadSessionStore {
     fun observeCompleted(): Flow<List<CaptureSession>> =
         sessionDao.observeCompleted().map { sessions ->
-            sessions.map(CaptureSessionEntity::toCaptureSession)
+            sessions.filter { bundleStore.isManagedCompletedDirectory(it.bundlePath) }.map(CaptureSessionEntity::toCaptureSession)
         }
 
     fun observeMarkers(sessionId: String): Flow<List<EpisodeMarker>> =
@@ -30,11 +30,19 @@ class SessionRepository(
         state: UploadState,
     ) = sessionDao.updateUploadState(sessionId, state.name)
 
-    override suspend fun completedSource(sessionId: String): CaptureSession? = sessionDao.completedSession(sessionId)?.toCaptureSession()
+    override suspend fun completedSource(sessionId: String): CaptureSession? =
+        sessionDao
+            .completedSession(sessionId)
+            ?.takeIf { bundleStore.isManagedCompletedDirectory(it.bundlePath) }
+            ?.toCaptureSession()
 
     suspend fun failInterruptedUploads() = sessionDao.failInterruptedUploads()
 
-    suspend fun exportFor(sessionId: String): SessionExport? = sessionDao.session(sessionId)?.toSessionExport()
+    suspend fun exportFor(sessionId: String): SessionExport? =
+        sessionDao
+            .session(sessionId)
+            ?.takeIf { bundleStore.isManagedCompletedDirectory(it.bundlePath) }
+            ?.toSessionExport()
 
     suspend fun updateExport(export: SessionExport) =
         sessionDao.updateExport(export.sessionId, export.state.name, export.treeUri, export.failureReason)
@@ -56,6 +64,7 @@ private fun CaptureSessionEntity.toCaptureSession() =
         recordingStartNs,
         recordingEndNs,
         bundlePath,
+        recordingStartEpochMs,
     )
 
 private fun CaptureSession.toEntity() =
@@ -67,6 +76,7 @@ private fun CaptureSession.toEntity() =
         recordingStartMonotonicTimestampNs,
         recordingEndMonotonicTimestampNs,
         bundlePath,
+        recordingStartEpochMs = recordingStartEpochMs,
     )
 
 private fun EpisodeMarkerEntity.toEpisodeMarker() =

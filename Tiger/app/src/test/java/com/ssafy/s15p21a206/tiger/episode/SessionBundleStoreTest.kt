@@ -49,6 +49,19 @@ class SessionBundleStoreTest {
         }
     }
 
+    @Test
+    fun `only direct child of internal completed root is managed`() {
+        val root = Files.createTempDirectory("sessions").toFile()
+        val store = SessionBundleStore(root)
+        val completed = store.completedDirectory("session").apply { mkdirs() }
+        val nested = File(completed, "nested").apply { mkdirs() }
+
+        assertTrue(store.isManagedCompletedDirectory(completed.path))
+        assertFalse(store.isManagedCompletedDirectory(nested.path))
+        assertFalse(store.isManagedCompletedDirectory(File(root, "legacy/session").path))
+        root.deleteRecursively()
+    }
+
     private fun writeCompleteBundle(
         directory: File,
         sessionId: String,

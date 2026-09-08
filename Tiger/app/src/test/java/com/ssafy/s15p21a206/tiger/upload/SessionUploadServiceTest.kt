@@ -4,7 +4,10 @@ import com.ssafy.s15p21a206.tiger.episode.CaptureSession
 import com.ssafy.s15p21a206.tiger.episode.RecordingState
 import com.ssafy.s15p21a206.tiger.episode.SessionBundle
 import com.ssafy.s15p21a206.tiger.episode.UploadState
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.nio.file.Files
@@ -30,6 +33,26 @@ class SessionUploadServiceTest {
             assertEquals(UploadResult.Failed("network error"), service.upload(store.session.sessionId))
             assertEquals(listOf(UploadState.UPLOADING, UploadState.FAILED), store.states)
             assertEquals(store.session.sessionId, gateway.uploadedBundle?.sessionId)
+        }
+
+    @Test
+    fun `cancelled upload persists failed`() =
+        runBlocking {
+            val store = FakeStore(completedSession())
+            val service =
+                SessionUploadService(
+                    store,
+                    object : SessionUploadGateway {
+                        override suspend fun upload(bundle: SessionBundle): UploadResult = awaitCancellation()
+                    },
+                )
+
+            val job = launch { service.upload(store.session.sessionId) }
+            yield()
+            job.cancel()
+            job.join()
+
+            assertEquals(listOf(UploadState.UPLOADING, UploadState.FAILED), store.states)
         }
 
     private fun completedSession(uploadState: UploadState = UploadState.LOCAL_ONLY): CaptureSession {

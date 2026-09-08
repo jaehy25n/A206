@@ -4,6 +4,8 @@ import com.ssafy.s15p21a206.tiger.episode.RemoteReceipt
 import com.ssafy.s15p21a206.tiger.episode.SessionBundle
 import com.ssafy.s15p21a206.tiger.episode.SessionBundleValidator
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.boolean
@@ -96,20 +98,29 @@ class SessionUploader(
                 return@withContext UploadResult.Failed("Completed bundle is invalid")
             }
             runCatching {
-                client.newCall(factory.create(bundle)).execute().use { response ->
-                    if (response.code !in setOf(200, 201) || response.isRedirect) {
-                        return@use UploadResult.Failed("Upload was rejected (${response.code})")
+                val call = client.newCall(factory.create(bundle))
+                val cancellation =
+                    currentCoroutineContext()[Job]?.invokeOnCompletion { cause ->
+                        if (cause != null) call.cancel()
                     }
-                    val contentType = response.body.contentType()
-                    if (contentType?.type != "application" || contentType.subtype != "json") {
-                        return@use UploadResult.Failed("Upload receipt is not JSON")
+                try {
+                    call.execute().use { response ->
+                        if (response.code !in setOf(200, 201) || response.isRedirect) {
+                            return@use UploadResult.Failed("Upload was rejected (${response.code})")
+                        }
+                        val contentType = response.body.contentType()
+                        if (contentType?.type != "application" || contentType.subtype != "json") {
+                            return@use UploadResult.Failed("Upload receipt is not JSON")
+                        }
+                        val receipt = json.decodeFromString<RemoteReceipt>(response.body.string())
+                        if (receipt.sessionId == bundle.sessionId && receipt.result in setOf("created", "duplicate")) {
+                            UploadResult.Uploaded
+                        } else {
+                            UploadResult.Failed("Upload receipt does not match the session")
+                        }
                     }
-                    val receipt = json.decodeFromString<RemoteReceipt>(response.body.string())
-                    if (receipt.sessionId == bundle.sessionId && receipt.result in setOf("created", "duplicate")) {
-                        UploadResult.Uploaded
-                    } else {
-                        UploadResult.Failed("Upload receipt does not match the session")
-                    }
+                } finally {
+                    cancellation?.dispose()
                 }
             }.getOrElse { UploadResult.Failed("Network upload failed") }
         }

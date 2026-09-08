@@ -37,6 +37,7 @@ import com.google.ar.core.ArCoreApk
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException
 import com.ssafy.s15p21a206.tiger.capture.AndroidCaptureRuntime
 import com.ssafy.s15p21a206.tiger.data.local.MIGRATION_2_3
+import com.ssafy.s15p21a206.tiger.data.local.MIGRATION_3_4
 import com.ssafy.s15p21a206.tiger.data.local.TigerDatabase
 import com.ssafy.s15p21a206.tiger.episode.CaptureSession
 import com.ssafy.s15p21a206.tiger.episode.EpisodeMarker
@@ -75,7 +76,7 @@ fun CaptureScreen() {
                     context.applicationContext,
                     TigerDatabase::class.java,
                     "tiger.db",
-                ).addMigrations(MIGRATION_2_3)
+                ).addMigrations(MIGRATION_2_3, MIGRATION_3_4)
                 .build()
         }
     val repository =
@@ -204,6 +205,7 @@ fun CaptureScreen() {
                                     UploadState.LOCAL_ONLY,
                                     recordingStartNs,
                                     bundlePath = bundle.directory.absolutePath,
+                                    recordingStartEpochMs = System.currentTimeMillis(),
                                 ),
                             )
                         }
@@ -231,6 +233,7 @@ fun CaptureScreen() {
                     recordingStartNs,
                     SystemClock.elapsedRealtimeNanos(),
                     interruptedBundle.directory.absolutePath,
+                    System.currentTimeMillis(),
                 ),
             )
         }
@@ -262,6 +265,7 @@ fun CaptureScreen() {
                                         recordingStartNs,
                                         SystemClock.elapsedRealtimeNanos(),
                                         result.directory.absolutePath,
+                                        System.currentTimeMillis(),
                                     ),
                                 )
                             }
@@ -296,16 +300,6 @@ fun CaptureScreen() {
             activeEpisode = null
             active = false
         }) { Text("EPISODE END") }
-        Button(enabled = active, onClick = {
-            activeEpisode?.copy(endTimestampNs = SystemClock.elapsedRealtimeNanos(), outcome = EpisodeState.CANCELLED)?.let { marker ->
-                scope.launch {
-                    repository.save(marker)
-                    captureRuntime.appendEpisode(marker)
-                }
-            }
-            activeEpisode = null
-            active = false
-        }) { Text("EPISODE CANCEL") }
         Text(message)
         completedSessions.forEach { session ->
             UploadControls(session.uploadState, onUpload = {
