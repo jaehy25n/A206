@@ -56,6 +56,7 @@ interface CaptureSessionDao {
     fun observeCompleted(): Flow<List<CaptureSessionEntity>>
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsert(session: CaptureSessionEntity)
     @Query("UPDATE sessions SET uploadState = :uploadState WHERE sessionId = :sessionId") suspend fun updateUploadState(sessionId: String, uploadState: String)
+    @Query("UPDATE sessions SET uploadState = 'FAILED' WHERE uploadState = 'UPLOADING'") suspend fun failInterruptedUploads()
     @Query("UPDATE sessions SET exportState = :state, exportTreeUri = :treeUri, exportFailureReason = :failureReason WHERE sessionId = :sessionId")
     suspend fun updateExport(sessionId: String, state: String, treeUri: String?, failureReason: String?)
     @Query("SELECT * FROM sessions WHERE sessionId = :sessionId AND recordingState = 'COMPLETED' LIMIT 1")

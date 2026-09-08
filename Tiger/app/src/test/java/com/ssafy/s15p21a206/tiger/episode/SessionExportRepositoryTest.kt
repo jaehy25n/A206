@@ -47,6 +47,7 @@ class SessionExportRepositoryTest {
         override fun observeCompleted(): Flow<List<CaptureSessionEntity>> = flowOf(sessions.values.filter { it.recordingState == "COMPLETED" })
         override suspend fun upsert(session: CaptureSessionEntity) { sessions[session.sessionId] = session }
         override suspend fun updateUploadState(sessionId: String, uploadState: String) { sessions[sessionId] = sessions.getValue(sessionId).copy(uploadState = uploadState) }
+        override suspend fun failInterruptedUploads() = Unit
         override suspend fun updateExport(sessionId: String, state: String, treeUri: String?, failureReason: String?) { sessions[sessionId] = sessions.getValue(sessionId).copy(exportState = state, exportTreeUri = treeUri, exportFailureReason = failureReason) }
         override suspend fun completedSession(sessionId: String): CaptureSessionEntity? = sessions[sessionId]?.takeIf { it.recordingState == "COMPLETED" }
         override suspend fun session(sessionId: String): CaptureSessionEntity? = sessions[sessionId]

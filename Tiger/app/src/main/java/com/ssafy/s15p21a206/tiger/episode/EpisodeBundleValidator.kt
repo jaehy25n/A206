@@ -84,8 +84,18 @@ object SessionBundleValidator {
 
     private fun File.hasContent() = isFile && length() > 0L
     private fun File.hasHeader(header: String) = hasContent() && bufferedReader().use { it.readLine() == header }
-    private fun sha256(file: File): String = MessageDigest.getInstance("SHA-256")
-        .digest(file.readBytes()).joinToString("") { "%02x".format(it) }
+    private fun sha256(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        file.inputStream().use { input ->
+            while (true) {
+                val count = input.read(buffer)
+                if (count <= 0) break
+                digest.update(buffer, 0, count)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
 
     private data class BundleMetadata(val sessionId: String, val cameraStreams: JsonObject, val manifest: List<ManifestEntry?>)
     private data class ManifestEntry(val path: String, val sizeBytes: Long, val sha256: String)
