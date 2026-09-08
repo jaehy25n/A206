@@ -10,7 +10,8 @@ Content-Type: multipart/form-data; boundary=<boundary>
 Idempotency-Key: <session_id>
 ```
 
-- `{BASE_URL}`은 신뢰 가능한 인증서의 HTTPS URL이다.
+- 현재 프로젝트의 `{BASE_URL}`은 HTTP URL을 사용한다. Android 앱은 해당 endpoint에 연결할 수 있도록 cleartext traffic을 허용한다.
+- 서버가 HTTPS로 전환되면 `{BASE_URL}`과 Android 네트워크 설정을 HTTPS 기준으로 함께 변경한다.
 - endpoint는 신뢰된 폐쇄망에서 운영하며, MVP 앱은 `Authorization`, cookie 또는 custom credential header를 전송하지 않는다.
 - `session_id`는 immutable UUID이며 `Idempotency-Key`와 metadata의 `session_id`가 정확히 같아야 한다.
 - 재시도는 같은 key로 전체 multipart를 다시 보낸다. background, resumable, partial upload는 지원하지 않는다.

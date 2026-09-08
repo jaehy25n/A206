@@ -16,7 +16,7 @@
 - Q: Episode START를 누르기 전에 task와 object를 모두 입력하도록 필수로 둘까요? → A: task와 object가 모두 비어 있지 않을 때만 Episode START를 허용한다.
 - Q: 수집 중 앱이 완전히 백그라운드로 전환되어 `onStop` 상태가 되면, Capture Session을 어떻게 처리해야 하나요? → A: `onStop`에서 writers를 안전하게 정리하고 Session을 `INTERRUPTED`로 기록한다.
 - Q: MVP에서 Capture Session의 최대 길이를 어떻게 제한할까요? → A: 시간 상한은 두지 않고, 저장 가능 공간 안에서 사용자가 직접 종료한다.
-- Q: MVP 서버는 Session 업로드 요청을 어떤 접근 정책으로 받을까요? → A: 신뢰된 폐쇄망의 HTTPS endpoint이며, 앱 수준 인증은 MVP에서 사용하지 않는다.
+- Q: MVP 서버는 Session 업로드 요청을 어떤 접근 정책으로 받을까요? → A: 현재 프로젝트에서는 HTTP endpoint를 사용하며, 앱 수준 인증은 MVP에서 사용하지 않는다. 서버가 HTTPS로 전환되면 endpoint와 Android 네트워크 설정을 함께 변경한다.
 - Q: 동일한 `session_id`의 export 대상 폴더가 이미 선택된 tree URI 아래에 있으면 어떻게 처리해야 하나요? → A: 기존 export 대상 bundle을 덮어쓰고 같은 completed source로 다시 export한다.
 - Q: 앱을 다시 연 뒤 export를 재시도할 때 마지막으로 선택한 Documents tree를 자동으로 다시 사용할까요? → A: 마지막 선택 tree의 접근 권한을 유지해 재사용하고, 권한을 잃었을 때만 다시 선택한다.
 - Q: export 대상은 Android의 Documents 위치로 제한할까요, 아니면 사용자가 SAF에서 선택한 모든 tree URI를 허용할까요? → A: Documents 위치에서 선택을 시작하되 사용자가 명시적으로 선택한 모든 SAF tree URI를 허용한다.
@@ -130,7 +130,7 @@
 - **FR-014**: main-only completed Session은 metadata, main RGB video, main frame timestamps, accelerometer, gyroscope, rotation vector, ARCore poses, episodes marker 파일을 모두 포함해야 한다. Ultra-wide 지원 Session은 Ultra-wide video와 frame timestamp 파일도 추가해야 한다.
 - **FR-015**: 시스템은 Session·Camera·IMU·ARCore·Episode 상태와 tracking loss 또는 치명 오류를 수집자에게 즉시 표시해야 한다. `INITIALIZING`, `READY`, `ACTIVE`, finalization 및 upload 상태에 맞게 버튼을 활성화해야 한다.
 - **FR-016**: 시스템은 completed Session 전체만 업로드하고 `POST /sessions`와 `Idempotency-Key = session_id`를 사용해야 한다. metadata가 선언한 stream과 multipart 파일 구성은 정확히 일치해야 한다.
-- **FR-016a**: 시스템은 신뢰된 폐쇄망의 HTTPS endpoint로 Session을 전송해야 하며, MVP에서는 앱 또는 사용자 인증 정보를 전송·저장하지 않아야 한다.
+- **FR-016a**: 시스템은 현재 프로젝트의 HTTP endpoint로 Session을 전송할 수 있도록 cleartext traffic을 허용해야 하며, MVP에서는 앱 또는 사용자 인증 정보를 전송·저장하지 않아야 한다. 서버가 HTTPS로 전환되면 endpoint와 Android 네트워크 설정을 함께 변경한다.
 - **FR-017**: 시스템은 업로드 성공 전 또는 실패 후에도 local Session 원본을 보존하고 수동 재전송을 허용해야 한다. 자동 삭제, background upload, resumable upload는 MVP 범위 밖이다.
 - **FR-018**: 시스템은 Galaxy S10에서 main+Ultra-wide 동시 수집을 짧은 실기기 probe로만 평가해야 한다. probe가 실패하면 main-only Session으로 진행해야 하며, Ultra-wide를 MVP 필수 조건으로 만들면 안 된다.
 - **FR-019**: 시스템은 finalize 검증을 통과한 completed Session에만 export를 허용해야 하며, export 전과 대상 기록 후에 필수 파일 구성, CSV header, SHA-256 manifest 및 metadata 선언의 일치를 검증해야 한다.
@@ -173,7 +173,7 @@
 - 지원 대상은 Galaxy S10이며 main-only baseline은 30 FPS로 검증한다. 해상도는 기기 호환성을 위해 720p에서 먼저 검증한 뒤 1080p를 적용할 수 있다.
 - ARCore pose의 canonical join key는 Android camera timestamp이며, 다른 ARCore frame timestamp는 선택적 진단 정보일 뿐이다.
 - 서버의 ORB-SLAM3 처리, camera-to-end-effector 외부 보정, dataset 학습 선정 및 server-side video/frame correspondence 최종 검증은 범위 밖이다.
-- 서버는 HTTPS Session upload endpoint와 Session idempotency receipt를 제공한다. 모바일 앱은 서버 내부 저장·후처리 상태를 조회하지 않는다.
+- 서버는 HTTP Session upload endpoint와 Session idempotency receipt를 제공한다. 모바일 앱은 서버 내부 저장·후처리 상태를 조회하지 않는다.
 - Session upload endpoint는 신뢰된 폐쇄망에서 운영되며, 앱 수준 인증은 별도 보안 기능으로 유예한다.
 - Session 또는 Episode 자동 복구, upload retry queue, background upload, 업로드 뒤 자동 삭제, 고해상도 Ultra-wide, 복잡한 tracking recovery UI는 MVP 범위 밖이다.
 - export는 사용자가 명시적으로 시작하는 completed bundle 복사이며, 자동 export·앱 삭제 뒤 staging 보존·공용 저장소 직접 쓰기는 MVP 범위 밖이다.
