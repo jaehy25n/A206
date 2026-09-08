@@ -2,7 +2,7 @@
 
 ## CaptureSession
 
-기존 Session identity와 recording/upload lifecycle을 유지한다. raw stream source는 앱 전용 외부 저장소의 `capture/staging/<session_id>/`에서 finalize 후 `capture/completed/<session_id>/`로 공개된다.
+기존 Session identity와 recording/upload lifecycle을 유지한다. raw stream source는 앱 전용 내부 저장 영역의 `capture/staging/<session_id>/`에서 finalize 후 `capture/completed/<session_id>/`로 공개된다. 원시 bundle은 일반 파일 관리자가 직접 수정·삭제할 수 있는 위치에 두지 않으며, Session 메타데이터와 상태는 별도 색인으로 관리한다.
 
 | Field | Rule |
 | --- | --- |

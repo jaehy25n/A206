@@ -99,7 +99,7 @@
 - Camera timestamp source가 Android monotonic timeline과 비교 가능하다고 사전 확인되지 않으면 Session을 시작하지 않는다.
 - ACTIVE Episode가 남아 있을 때 Session 종료는 Episode END 또는 CANCEL을 먼저 요구한다.
 - task 또는 object가 비어 있으면 Episode START는 비활성화한다.
-- `CANCELLED` 또는 `INVALID_TRACKING` Episode는 Session raw stream에는 남지만 학습 후보에서 제외한다.
+- `INVALID_TRACKING` Episode는 Session raw stream에는 남지만 학습 후보에서 제외한다. `CANCELLED` 상태는 사용하지 않는다.
 - `onStop`, 앱 재시작 또는 비정상 종료 뒤 staging Session은 `INTERRUPTED`로 식별되며 completed 목록에 공개되지 않는다.
 - export 대상 tree 선택이 취소되거나 쓰기 권한을 잃으면 export는 실패 상태가 되며, completed 원본과 staging 원본을 삭제하거나 변경하지 않는다.
 - 앱 재시작 뒤에도 마지막으로 선택한 tree URI의 접근 권한이 유효하면 export 재시도에 재사용하며, 유효하지 않으면 사용자가 tree를 다시 선택해야 한다.
@@ -117,7 +117,7 @@
 - **FR-002**: 시스템은 한 Session에서 main RGB, accelerometer, gyroscope, rotation vector, ARCore pose를 Session 시작부터 종료까지 연속 저장해야 하며, Episode event가 이 수집을 시작·정지해서는 안 된다.
 - **FR-003**: 시스템은 ARCore tracking이 약 1초 연속 안정화될 때까지 `INITIALIZING`을 표시하고 Episode START를 비활성화해야 한다. 별도 수동 IMU calibration은 제공하지 않는다.
 - **FR-004**: 시스템은 tracking이 READY 상태이고 task와 object가 모두 비어 있지 않을 때만 Episode START를 허용해야 하며, START 시 새 UUID `episode_id`, monotonic start timestamp와 두 metadata의 snapshot을 기록해야 한다.
-- **FR-005**: 시스템은 Episode END 시 end timestamp와 `COMPLETED` outcome을, Episode CANCEL 시 `CANCELLED` outcome을 기록해야 하며 각 Episode가 별도 raw directory를 소유하게 해서는 안 된다.
+- **FR-005**: 시스템은 Episode 종료 시 end timestamp와 `COMPLETED` outcome을 기록해야 하며, `CANCELLED` outcome이나 Episode 취소 조작을 제공해서는 안 된다. 각 Episode가 별도 raw directory를 소유하게 해서도 안 된다.
 - **FR-006**: 시스템은 pose row마다 Android camera timestamp, pose translation·rotation, tracking state 및 tracking failure reason을 기록해야 한다.
 - **FR-007**: 시스템은 Episode 중 tracking loss가 약 0.5초 이상 지속되면 0.5초 임계값 도달 timestamp를 end timestamp로 하여 해당 Episode를 자동 종료하고 `INVALID_TRACKING`으로 기록해야 한다. 짧은 `PAUSED`와 `INVALID_TRACKING`은 Session raw recording을 중단해서는 안 된다.
 - **FR-008**: 시스템은 Camera, video writer, IMU writer 또는 저장 공간의 치명 오류가 raw stream을 깨뜨릴 때, 또는 recording 중 앱이 `onStop` 상태가 될 때 writers를 안전하게 정리하고 Session을 `INTERRUPTED`로 표시하여 정상 dataset 후보에서 제외해야 한다.
@@ -125,7 +125,7 @@
 - **FR-010**: 시스템은 각 main camera frame의 timestamp를 별도 기록해야 하며, 영상 파일 시간만을 Session timeline의 기준으로 사용해서는 안 된다.
 - **FR-011**: 시스템은 main physical camera와 ARCore tracking을 일관되게 사용하고, 해상도·FPS·zoom·stabilization 같은 촬영 설정이 Session 중 변경되지 않도록 해야 한다.
 - **FR-012**: 시스템은 Session metadata에 session ID, device model, main camera 및 ARCore camera 식별, 촬영 설정, stream 사용 여부, timebase 검증 결과 및 기기에서 제공되는 intrinsic·distortion·focal/sensor 정보를 기록해야 한다. 제공되지 않는 값은 임의로 생성하지 않는다.
-- **FR-013**: 시스템은 모든 raw stream을 앱 전용 외부 저장소 `Android/data/com.ssafy.s15p21a206.tiger/files/capture/staging/<session_id>/`에 기록해야 한다. Session 종료 뒤 video·sensor·pose·marker writer를 finalize한 후 필수 파일의 존재와 크기를 확인하고, SHA-256 manifest를 기록한 뒤 `metadata.json`을 마지막 commit marker로 작성해야 한다. 이 검증을 통과한 Session만 completed로 공개해야 한다.
+- **FR-013**: 시스템은 모든 raw stream을 일반 파일 관리자가 직접 수정·삭제할 수 없는 앱 전용 내부 저장 영역 `capture/staging/<session_id>/`에 기록해야 한다. Session 종료 뒤 video·sensor·pose·marker writer를 finalize한 후 필수 파일의 존재와 크기를 확인하고, SHA-256 manifest를 기록한 뒤 `metadata.json`을 마지막 commit marker로 작성해야 한다. 이 검증을 통과한 Session만 completed로 공개해야 한다.
 - **FR-013a**: 시스템은 Capture Session에 인위적인 최대 시간을 적용해서는 안 되며, 수집자가 `DATA COLLECTION END`로 종료하게 해야 한다. 시작 전 저장 가능 공간을 확인하고 수집 중 공간 부족으로 raw stream을 보존할 수 없으면 Session을 `INTERRUPTED`로 처리해야 한다.
 - **FR-014**: main-only completed Session은 metadata, main RGB video, main frame timestamps, accelerometer, gyroscope, rotation vector, ARCore poses, episodes marker 파일을 모두 포함해야 한다. Ultra-wide 지원 Session은 Ultra-wide video와 frame timestamp 파일도 추가해야 한다.
 - **FR-015**: 시스템은 Session·Camera·IMU·ARCore·Episode 상태와 tracking loss 또는 치명 오류를 수집자에게 즉시 표시해야 한다. `INITIALIZING`, `READY`, `ACTIVE`, finalization 및 upload 상태에 맞게 버튼을 활성화해야 한다.
