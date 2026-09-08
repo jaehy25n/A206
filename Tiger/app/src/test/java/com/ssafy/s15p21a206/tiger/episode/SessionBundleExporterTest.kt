@@ -145,13 +145,15 @@ class SessionBundleExporterTest {
         override fun rename(
             uri: String,
             name: String,
-        ) = File(
-            uri,
-        ).let { file ->
-            File(
-                file.parentFile,
-                name,
-            ).let { target -> if (file.renameTo(target)) DocumentNode(target.path, name, true) else null }
+        ): DocumentNode? {
+            val file = File(uri)
+            val target = File(file.parentFile, name)
+
+            return if (file.renameTo(target)) {
+                DocumentNode(target.path, name, true)
+            } else {
+                null
+            }
         }
 
         override fun delete(uri: String) = File(uri).deleteRecursively()
