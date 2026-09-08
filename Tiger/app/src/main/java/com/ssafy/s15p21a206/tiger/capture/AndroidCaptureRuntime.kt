@@ -1,8 +1,8 @@
 package com.ssafy.s15p21a206.tiger.capture
 
+import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.Manifest
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -19,7 +19,6 @@ import android.os.HandlerThread
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.google.ar.core.Session
-import com.google.ar.core.TrackingState
 import com.ssafy.s15p21a206.tiger.episode.EpisodeMarker
 import com.ssafy.s15p21a206.tiger.episode.FinalizeResult
 import com.ssafy.s15p21a206.tiger.episode.SessionBundle
@@ -30,7 +29,10 @@ import java.util.EnumSet
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-class AndroidCaptureRuntime(context: Context, private val store: SessionBundleStore) : SensorEventListener {
+class AndroidCaptureRuntime(
+    context: Context,
+    private val store: SessionBundleStore,
+) : SensorEventListener {
     private val appContext = context.applicationContext
     private val sensorManager = appContext.getSystemService(SensorManager::class.java)
     private val cameraManager = appContext.getSystemService(CameraManager::class.java)
@@ -41,6 +43,7 @@ class AndroidCaptureRuntime(context: Context, private val store: SessionBundleSt
     private var mediaRecorder: MediaRecorder? = null
     private var arSession: Session? = null
     private var poseThread: Thread? = null
+
     @Volatile private var poseCollectionRunning = false
     private var bundle: SessionBundle? = null
     private var lastFrameTimestampNs = Long.MIN_VALUE
@@ -52,15 +55,16 @@ class AndroidCaptureRuntime(context: Context, private val store: SessionBundleSt
         writeHeaders(next)
         try {
             val session = Session(appContext, EnumSet.of(Session.Feature.SHARED_CAMERA))
-            val recorder = MediaRecorder().apply {
-                setVideoSource(MediaRecorder.VideoSource.SURFACE)
-                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-                setVideoEncoder(MediaRecorder.VideoEncoder.H264)
-                setVideoFrameRate(30)
-                setVideoSize(session.cameraConfig.imageSize.width, session.cameraConfig.imageSize.height)
-                setOutputFile(next.mainVideo.absolutePath)
-                prepare()
-            }
+            val recorder =
+                MediaRecorder().apply {
+                    setVideoSource(MediaRecorder.VideoSource.SURFACE)
+                    setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                    setVideoEncoder(MediaRecorder.VideoEncoder.H264)
+                    setVideoFrameRate(30)
+                    setVideoSize(session.cameraConfig.imageSize.width, session.cameraConfig.imageSize.height)
+                    setOutputFile(next.mainVideo.absolutePath)
+                    prepare()
+                }
             arSession = session
             mediaRecorder = recorder
             bundle = next
@@ -97,78 +101,135 @@ class AndroidCaptureRuntime(context: Context, private val store: SessionBundleSt
     override fun onSensorChanged(event: SensorEvent) {
         val target = sensorFiles[event.sensor.type] ?: return
         val values = event.values
-        val row = when (event.sensor.type) {
-            Sensor.TYPE_ROTATION_VECTOR -> "${event.timestamp},${values.getOrElse(0) { 0f }},${values.getOrElse(1) { 0f }},${values.getOrElse(2) { 0f }},${values.getOrElse(3) { 0f }},${values.getOrElse(4) { 0f }},${event.accuracy}"
-            else -> "${event.timestamp},${values.getOrElse(0) { 0f }},${values.getOrElse(1) { 0f }},${values.getOrElse(2) { 0f }},${event.accuracy}"
-        }
+        val row =
+            when (event.sensor.type) {
+                Sensor.TYPE_ROTATION_VECTOR -> "${event.timestamp},${values.getOrElse(
+                    0,
+                ) { 0f }},${values.getOrElse(
+                    1,
+                ) { 0f }},${values.getOrElse(2) { 0f }},${values.getOrElse(3) { 0f }},${values.getOrElse(4) { 0f }},${event.accuracy}"
+                else -> "${event.timestamp},${values.getOrElse(
+                    0,
+                ) { 0f }},${values.getOrElse(1) { 0f }},${values.getOrElse(2) { 0f }},${event.accuracy}"
+            }
         target.appendText("$row\n")
     }
 
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+    override fun onAccuracyChanged(
+        sensor: Sensor?,
+        accuracy: Int,
+    ) = Unit
 
     fun appendEpisode(marker: EpisodeMarker) {
         val active = bundle ?: return
-        active.episodes.appendText(listOf(marker.episodeId, marker.startTimestampNs.toString(), marker.endTimestampNs.orEmpty(), marker.task.csvField(), marker.objectName.csvField(), marker.outcome.name).joinToString(",") + "\n")
+        active.episodes.appendText(
+            listOf(
+                marker.episodeId,
+                marker.startTimestampNs.toString(),
+                marker.endTimestampNs.orEmpty(),
+                marker.task.csvField(),
+                marker.objectName.csvField(),
+                marker.outcome.name,
+            ).joinToString(",") +
+                "\n",
+        )
     }
 
-    private fun openSharedCamera(session: Session, recorder: MediaRecorder) {
+    private fun openSharedCamera(
+        session: Session,
+        recorder: MediaRecorder,
+    ) {
         check(ContextCompat.checkSelfPermission(appContext, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             "Camera permission is required for ARCore capture"
         }
         val sharedCamera = session.sharedCamera
         val cameraId = session.cameraConfig.cameraId
-        val handler = Handler(HandlerThread("TigerCamera").also { cameraThread = it; it.start() }.looper)
+        val handler =
+            Handler(
+                HandlerThread("TigerCamera")
+                    .also {
+                        cameraThread = it
+                        it.start()
+                    }.looper,
+            )
         val ready = CountDownLatch(1)
         var failure: Throwable? = null
-        val captureCallback = object : CameraCaptureSession.CaptureCallback() {
-            override fun onCaptureCompleted(cameraSession: CameraCaptureSession, request: CaptureRequest, result: TotalCaptureResult) {
-                val timestampNs = result.get(CaptureResult.SENSOR_TIMESTAMP) ?: return
-                if (timestampNs != lastFrameTimestampNs) {
-                    lastFrameTimestampNs = timestampNs
-                    bundle?.mainFrameTimestamps?.appendText("${timestampNs},${timestampNs},SENSOR_TIMESTAMP\n")
+        val captureCallback =
+            object : CameraCaptureSession.CaptureCallback() {
+                override fun onCaptureCompleted(
+                    cameraSession: CameraCaptureSession,
+                    request: CaptureRequest,
+                    result: TotalCaptureResult,
+                ) {
+                    val timestampNs = result.get(CaptureResult.SENSOR_TIMESTAMP) ?: return
+                    if (timestampNs != lastFrameTimestampNs) {
+                        lastFrameTimestampNs = timestampNs
+                        bundle?.mainFrameTimestamps?.appendText("$timestampNs,$timestampNs,SENSOR_TIMESTAMP\n")
+                    }
                 }
             }
-        }
-        val deviceCallback = object : CameraDevice.StateCallback() {
-            override fun onOpened(device: CameraDevice) {
-                cameraDevice = device
-                try {
-                    val surfaces = sharedCamera.arCoreSurfaces.toMutableList().apply { add(recorder.surface) }
-                    sharedCamera.setAppSurfaces(cameraId, listOf(recorder.surface))
-                    val request = device.createCaptureRequest(CameraDevice.TEMPLATE_RECORD).apply { surfaces.forEach(::addTarget) }
-                    device.createCaptureSession(surfaces, sharedCamera.createARSessionStateCallback(object : CameraCaptureSession.StateCallback() {
-                        override fun onConfigured(configured: CameraCaptureSession) {
-                            captureSession = configured
-                            configured.setRepeatingRequest(request.build(), captureCallback, handler)
-                        }
+        val deviceCallback =
+            object : CameraDevice.StateCallback() {
+                override fun onOpened(device: CameraDevice) {
+                    cameraDevice = device
+                    try {
+                        val surfaces = sharedCamera.arCoreSurfaces.toMutableList().apply { add(recorder.surface) }
+                        sharedCamera.setAppSurfaces(cameraId, listOf(recorder.surface))
+                        val request = device.createCaptureRequest(CameraDevice.TEMPLATE_RECORD).apply { surfaces.forEach(::addTarget) }
+                        device.createCaptureSession(
+                            surfaces,
+                            sharedCamera.createARSessionStateCallback(
+                                object : CameraCaptureSession.StateCallback() {
+                                    override fun onConfigured(configured: CameraCaptureSession) {
+                                        captureSession = configured
+                                        configured.setRepeatingRequest(request.build(), captureCallback, handler)
+                                    }
 
-                        override fun onActive(activeSession: CameraCaptureSession) {
-                            try {
-                                session.resume()
-                                sharedCamera.setCaptureCallback(captureCallback, handler)
-                                recorder.start()
-                                startPoseCollection(session)
-                            } catch (error: Exception) {
-                                failure = error
-                            } finally {
-                                ready.countDown()
-                            }
-                        }
+                                    override fun onActive(activeSession: CameraCaptureSession) {
+                                        try {
+                                            session.resume()
+                                            sharedCamera.setCaptureCallback(captureCallback, handler)
+                                            recorder.start()
+                                            startPoseCollection(session)
+                                        } catch (error: Exception) {
+                                            failure = error
+                                        } finally {
+                                            ready.countDown()
+                                        }
+                                    }
 
-                        override fun onConfigureFailed(failedSession: CameraCaptureSession) {
-                            failure = IllegalStateException("ARCore shared camera session configuration failed")
-                            ready.countDown()
-                        }
-                    }, handler), handler)
-                } catch (error: Exception) {
-                    failure = error
+                                    override fun onConfigureFailed(failedSession: CameraCaptureSession) {
+                                        failure = IllegalStateException("ARCore shared camera session configuration failed")
+                                        ready.countDown()
+                                    }
+                                },
+                                handler,
+                            ),
+                            handler,
+                        )
+                    } catch (error: Exception) {
+                        failure = error
+                        ready.countDown()
+                    }
+                }
+
+                override fun onDisconnected(device: CameraDevice) {
+                    device.close()
+                    failure =
+                        IllegalStateException("ARCore camera was disconnected")
+                    ready.countDown()
+                }
+
+                override fun onError(
+                    device: CameraDevice,
+                    error: Int,
+                ) {
+                    device.close()
+                    failure =
+                        IllegalStateException("ARCore camera error: $error")
                     ready.countDown()
                 }
             }
-
-            override fun onDisconnected(device: CameraDevice) { device.close(); failure = IllegalStateException("ARCore camera was disconnected"); ready.countDown() }
-            override fun onError(device: CameraDevice, error: Int) { device.close(); failure = IllegalStateException("ARCore camera error: $error"); ready.countDown() }
-        }
         cameraManager.openCamera(cameraId, sharedCamera.createARDeviceStateCallback(deviceCallback, handler), handler)
         check(ready.await(8, TimeUnit.SECONDS)) { "Timed out starting ARCore shared camera" }
         failure?.let { throw it }
@@ -176,25 +237,31 @@ class AndroidCaptureRuntime(context: Context, private val store: SessionBundleSt
 
     private fun startPoseCollection(session: Session) {
         poseCollectionRunning = true
-        poseThread = Thread {
-            val egl = OffscreenEgl()
-            try {
-                egl.makeCurrent()
-                session.setCameraTextureName(egl.createTexture())
-                while (poseCollectionRunning) {
-                    val frame = session.update()
-                    val timestampNs = frame.androidCameraTimestamp
-                    if (timestampNs == 0L || timestampNs == lastPoseTimestampNs) continue
-                    lastPoseTimestampNs = timestampNs
-                    val camera = frame.camera
-                    val translation = camera.pose.translation
-                    val rotation = camera.pose.rotationQuaternion
-                    bundle?.arcorePoses?.appendText("$timestampNs,${translation[0]},${translation[1]},${translation[2]},${rotation[0]},${rotation[1]},${rotation[2]},${rotation[3]},${camera.trackingState.name},${camera.trackingFailureReason}\n")
+        poseThread =
+            Thread {
+                val egl = OffscreenEgl()
+                try {
+                    egl.makeCurrent()
+                    session.setCameraTextureName(egl.createTexture())
+                    while (poseCollectionRunning) {
+                        val frame = session.update()
+                        val timestampNs = frame.androidCameraTimestamp
+                        if (timestampNs == 0L || timestampNs == lastPoseTimestampNs) continue
+                        lastPoseTimestampNs = timestampNs
+                        val camera = frame.camera
+                        val translation = camera.pose.translation
+                        val rotation = camera.pose.rotationQuaternion
+                        bundle?.arcorePoses?.appendText(
+                            "$timestampNs,${translation[0]},${translation[1]},${translation[2]},${rotation[0]},${rotation[1]},${rotation[2]},${rotation[3]},${camera.trackingState.name},${camera.trackingFailureReason}\n",
+                        )
+                    }
+                } finally {
+                    egl.close()
                 }
-            } finally {
-                egl.close()
+            }.apply {
+                name = "TigerArPose"
+                start()
             }
-        }.apply { name = "TigerArPose"; start() }
     }
 
     private fun releaseResources() {
@@ -202,15 +269,22 @@ class AndroidCaptureRuntime(context: Context, private val store: SessionBundleSt
         poseThread?.join(500)
         poseThread = null
         runCatching { arSession?.pause() }
-        arSession?.close(); arSession = null
-        captureSession?.close(); captureSession = null
-        cameraDevice?.close(); cameraDevice = null
-        mediaRecorder?.release(); mediaRecorder = null
-        cameraThread?.quitSafely(); cameraThread = null
+        arSession?.close()
+        arSession = null
+        captureSession?.close()
+        captureSession = null
+        cameraDevice?.close()
+        cameraDevice = null
+        mediaRecorder?.release()
+        mediaRecorder = null
+        cameraThread?.quitSafely()
+        cameraThread = null
         sensorFiles.clear()
     }
 
-    private fun register(type: Int) { sensorManager.getDefaultSensor(type)?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME) } }
+    private fun register(type: Int) {
+        sensorManager.getDefaultSensor(type)?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME) }
+    }
 
     private fun writeHeaders(bundle: SessionBundle) {
         bundle.mainFrameTimestamps.writeText("frame_number,timestamp_ns,timestamp_source\n")
@@ -225,7 +299,10 @@ class AndroidCaptureRuntime(context: Context, private val store: SessionBundleSt
     }
 
     private fun Long?.orEmpty() = this?.toString().orEmpty()
+
     private fun String.csvField(): String = if (contains(',') || contains('"') || contains('\n')) "\"${replace("\"", "\"\"")}\"" else this
 
-    private companion object { const val TAG = "TigerCapture" }
+    private companion object {
+        const val TAG = "TigerCapture"
+    }
 }

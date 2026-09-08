@@ -26,9 +26,13 @@ class CaptureSessionCoordinatorTest {
 
     @Test fun `tracking loss invalidates active episode at threshold`() {
         coordinator.start(displayNumber = 1, bundlePath = "staging")
-        coordinator.onTracking(true); now += 1_000_000_000; coordinator.onTracking(true)
+        coordinator.onTracking(true)
+        now += 1_000_000_000
+        coordinator.onTracking(true)
         coordinator.startEpisode("pick", "block")
-        coordinator.onTracking(false); now += 500_000_000; coordinator.onTracking(false)
+        coordinator.onTracking(false)
+        now += 500_000_000
+        coordinator.onTracking(false)
         assertEquals(EpisodeState.INVALID_TRACKING, coordinator.latestClosedEpisode!!.outcome)
         assertEquals(1_500_000_000L, coordinator.latestClosedEpisode!!.endTimestampNs)
     }
@@ -36,7 +40,8 @@ class CaptureSessionCoordinatorTest {
     @Test fun `fatal interruption finalizes writers once`() {
         coordinator.start(displayNumber = 1, bundlePath = "staging")
         coordinator.interrupt("camera")
-        assertEquals(1, writer.started); assertEquals(1, writer.finalized)
+        assertEquals(1, writer.started)
+        assertEquals(1, writer.finalized)
         assertEquals(RecordingState.INTERRUPTED, coordinator.session!!.recordingState)
     }
 
@@ -46,5 +51,16 @@ class CaptureSessionCoordinatorTest {
         assertFalse(SessionStartPreflight({ 100 }, 50).check(false) is SessionPreflightResult.Ready)
     }
 
-    private class CountingWriter : SessionWriter { var started = 0; var finalized = 0; override fun start() { started++ }; override fun finalizeWriter() { finalized++ } }
+    private class CountingWriter : SessionWriter {
+        var started = 0
+        var finalized = 0
+
+        override fun start() {
+            started++
+        }
+
+        override fun finalizeWriter() {
+            finalized++
+        }
+    }
 }

@@ -23,7 +23,7 @@ data class CaptureSessionEntity(
     val bundlePath: String,
     val exportState: String = "NOT_EXPORTED",
     val exportTreeUri: String? = null,
-    val exportFailureReason: String? = null
+    val exportFailureReason: String? = null,
 )
 
 @Entity(tableName = "episode_markers")
@@ -34,7 +34,7 @@ data class EpisodeMarkerEntity(
     val endTimestampNs: Long?,
     val task: String,
     val objectName: String,
-    val outcome: String
+    val outcome: String,
 )
 
 @Entity(tableName = "capture_logs")
@@ -47,51 +47,79 @@ data class CaptureLogEntity(
     val frameCount: Long,
     val accelerometerCount: Long,
     val gyroscopeCount: Long,
-    val rotationVectorCount: Long
+    val rotationVectorCount: Long,
 )
 
 @Dao
 interface CaptureSessionDao {
     @Query("SELECT * FROM sessions WHERE recordingState = 'COMPLETED' ORDER BY recordingStartNs DESC")
     fun observeCompleted(): Flow<List<CaptureSessionEntity>>
-    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsert(session: CaptureSessionEntity)
-    @Query("UPDATE sessions SET uploadState = :uploadState WHERE sessionId = :sessionId") suspend fun updateUploadState(sessionId: String, uploadState: String)
-    @Query("UPDATE sessions SET exportState = :state, exportTreeUri = :treeUri, exportFailureReason = :failureReason WHERE sessionId = :sessionId")
-    suspend fun updateExport(sessionId: String, state: String, treeUri: String?, failureReason: String?)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(session: CaptureSessionEntity)
+
+    @Query("UPDATE sessions SET uploadState = :uploadState WHERE sessionId = :sessionId")
+    suspend fun updateUploadState(
+        sessionId: String,
+        uploadState: String,
+    )
+
+    @Query(
+        "UPDATE sessions SET exportState = :state, exportTreeUri = :treeUri, exportFailureReason = :failureReason WHERE sessionId = :sessionId",
+    )
+    suspend fun updateExport(
+        sessionId: String,
+        state: String,
+        treeUri: String?,
+        failureReason: String?,
+    )
+
     @Query("SELECT * FROM sessions WHERE sessionId = :sessionId AND recordingState = 'COMPLETED' LIMIT 1")
     suspend fun completedSession(sessionId: String): CaptureSessionEntity?
+
     @Query("SELECT * FROM sessions WHERE sessionId = :sessionId LIMIT 1")
     suspend fun session(sessionId: String): CaptureSessionEntity?
-    @Query("SELECT * FROM sessions WHERE recordingState IN ('INITIALIZING', 'READY', 'FINALIZING')") suspend fun activeSessions(): List<CaptureSessionEntity>
+
+    @Query("SELECT * FROM sessions WHERE recordingState IN ('INITIALIZING', 'READY', 'FINALIZING')")
+    suspend fun activeSessions(): List<CaptureSessionEntity>
 }
 
 @Dao
 interface EpisodeMarkerDao {
-    @Query("SELECT * FROM episode_markers WHERE sessionId = :sessionId ORDER BY startTimestampNs") fun observeForSession(sessionId: String): Flow<List<EpisodeMarkerEntity>>
-    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsert(marker: EpisodeMarkerEntity)
+    @Query("SELECT * FROM episode_markers WHERE sessionId = :sessionId ORDER BY startTimestampNs")
+    fun observeForSession(sessionId: String): Flow<List<EpisodeMarkerEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(marker: EpisodeMarkerEntity)
 }
 
 @Dao
 interface CaptureLogDao {
     @Insert suspend fun insert(log: CaptureLogEntity)
-    @Query("DELETE FROM capture_logs") suspend fun clearAll()
+
+    @Query("DELETE FROM capture_logs")
+    suspend fun clearAll()
 }
 
 @Database(entities = [CaptureSessionEntity::class, EpisodeMarkerEntity::class, CaptureLogEntity::class], version = 3, exportSchema = false)
 abstract class TigerDatabase : RoomDatabase() {
     abstract fun captureSessionDao(): CaptureSessionDao
+
     abstract fun episodeMarkerDao(): EpisodeMarkerDao
+
     abstract fun captureLogDao(): CaptureLogDao
 }
 
-val MIGRATION_2_3 = object : Migration(2, 3) {
-    override fun migrate(db: SupportSQLiteDatabase) {
-        EXPORT_MIGRATION_SQL.forEach(db::execSQL)
+val MIGRATION_2_3 =
+    object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            EXPORT_MIGRATION_SQL.forEach(db::execSQL)
+        }
     }
-}
 
-val EXPORT_MIGRATION_SQL = listOf(
-    "ALTER TABLE sessions ADD COLUMN exportState TEXT NOT NULL DEFAULT 'NOT_EXPORTED'",
-    "ALTER TABLE sessions ADD COLUMN exportTreeUri TEXT",
-    "ALTER TABLE sessions ADD COLUMN exportFailureReason TEXT"
-)
+val EXPORT_MIGRATION_SQL =
+    listOf(
+        "ALTER TABLE sessions ADD COLUMN exportState TEXT NOT NULL DEFAULT 'NOT_EXPORTED'",
+        "ALTER TABLE sessions ADD COLUMN exportTreeUri TEXT",
+        "ALTER TABLE sessions ADD COLUMN exportFailureReason TEXT",
+    )
