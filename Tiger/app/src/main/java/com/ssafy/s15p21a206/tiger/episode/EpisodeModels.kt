@@ -28,15 +28,14 @@ enum class EpisodeState {
     NONE,
     ACTIVE,
     COMPLETED,
-    CANCELLED,
     INVALID_TRACKING,
     ;
 
     fun canTransitionTo(next: EpisodeState): Boolean =
         when (this) {
             NONE -> next == ACTIVE
-            ACTIVE -> next == COMPLETED || next == CANCELLED || next == INVALID_TRACKING
-            COMPLETED, CANCELLED, INVALID_TRACKING -> false
+            ACTIVE -> next == COMPLETED || next == INVALID_TRACKING
+            COMPLETED, INVALID_TRACKING -> false
         }
 }
 
@@ -99,6 +98,7 @@ data class CaptureSession(
     @SerialName("recording_start_monotonic_timestamp_ns") val recordingStartMonotonicTimestampNs: Long,
     @SerialName("recording_end_monotonic_timestamp_ns") val recordingEndMonotonicTimestampNs: Long? = null,
     @SerialName("bundle_path") val bundlePath: String,
+    @SerialName("recording_start_epoch_ms") val recordingStartEpochMs: Long = 0L,
 )
 
 @Serializable

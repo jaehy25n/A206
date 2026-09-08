@@ -26,13 +26,15 @@ class SessionExportRepositoryTest {
     fun `export state tree uri and failure reason survive repository recreation`() {
         runBlocking {
             val dao = FakeSessionDao()
-            dao.upsert(CaptureSessionEntity("session", 1, "COMPLETED", "LOCAL_ONLY", 1, 2, "/completed/session"))
             val root = Files.createTempDirectory("store").toFile()
+            val store = SessionBundleStore(root)
+            val completed = store.completedDirectory("session").apply { mkdirs() }
+            dao.upsert(CaptureSessionEntity("session", 1, "COMPLETED", "LOCAL_ONLY", 1, 2, completed.path))
 
-            SessionRepository(dao, FakeMarkerDao(), SessionBundleStore(root)).updateExport(
+            SessionRepository(dao, FakeMarkerDao(), store).updateExport(
                 SessionExport("session").start("content://tree", "attempt").fail("grant lost"),
             )
-            val restored = SessionRepository(dao, FakeMarkerDao(), SessionBundleStore(root)).exportFor("session")
+            val restored = SessionRepository(dao, FakeMarkerDao(), store).exportFor("session")
 
             assertEquals(ExportState.EXPORT_FAILED, restored?.state)
             assertEquals("content://tree", restored?.treeUri)

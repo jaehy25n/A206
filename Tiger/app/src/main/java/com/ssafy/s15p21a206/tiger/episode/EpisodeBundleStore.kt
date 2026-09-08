@@ -5,14 +5,14 @@ import java.io.File
 import java.util.UUID
 
 class SessionBundleStore(
-    private val externalFilesRoot: File,
+    private val internalFilesRoot: File,
 ) {
     constructor(context: Context) : this(
-        requireNotNull(context.getExternalFilesDir(null)) { "App-specific external storage is unavailable" },
+        context.filesDir,
     )
 
-    val stagingRoot = File(externalFilesRoot, "capture/staging")
-    val completedRoot = File(externalFilesRoot, "capture/completed")
+    val stagingRoot = File(internalFilesRoot, "capture/staging")
+    val completedRoot = File(internalFilesRoot, "capture/completed")
 
     fun createStagingBundle(
         displayNumber: Int,
@@ -24,6 +24,12 @@ class SessionBundleStore(
     }
 
     fun completedDirectory(sessionId: String): File = File(completedRoot, sessionId)
+
+    fun isManagedCompletedDirectory(path: String): Boolean {
+        val root = completedRoot.canonicalFile
+        val candidate = File(path).canonicalFile
+        return candidate.parentFile == root && candidate.isDirectory
+    }
 
     fun publish(
         bundle: SessionBundle,

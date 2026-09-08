@@ -24,6 +24,7 @@ data class CaptureSessionEntity(
     val exportState: String = "NOT_EXPORTED",
     val exportTreeUri: String? = null,
     val exportFailureReason: String? = null,
+    val recordingStartEpochMs: Long = 0L,
 )
 
 @Entity(tableName = "episode_markers")
@@ -104,7 +105,7 @@ interface CaptureLogDao {
     suspend fun clearAll()
 }
 
-@Database(entities = [CaptureSessionEntity::class, EpisodeMarkerEntity::class, CaptureLogEntity::class], version = 3, exportSchema = false)
+@Database(entities = [CaptureSessionEntity::class, EpisodeMarkerEntity::class, CaptureLogEntity::class], version = 4, exportSchema = false)
 abstract class TigerDatabase : RoomDatabase() {
     abstract fun captureSessionDao(): CaptureSessionDao
 
@@ -126,3 +127,10 @@ val EXPORT_MIGRATION_SQL =
         "ALTER TABLE sessions ADD COLUMN exportTreeUri TEXT",
         "ALTER TABLE sessions ADD COLUMN exportFailureReason TEXT",
     )
+
+val MIGRATION_3_4 =
+    object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE sessions ADD COLUMN recordingStartEpochMs INTEGER NOT NULL DEFAULT 0")
+        }
+    }

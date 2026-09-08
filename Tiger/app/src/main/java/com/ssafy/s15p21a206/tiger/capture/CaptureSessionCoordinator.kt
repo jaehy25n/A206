@@ -122,11 +122,11 @@ class CaptureSessionCoordinator(
         }
     }
 
-    fun endEpisode(cancelled: Boolean = false): EpisodeMarker {
+    fun endEpisode(): EpisodeMarker {
         val completed =
             requireNotNull(activeEpisode) {
                 "No active episode"
-            }.copy(endTimestampNs = clock.nowNs(), outcome = if (cancelled) EpisodeState.CANCELLED else EpisodeState.COMPLETED)
+            }.copy(endTimestampNs = clock.nowNs(), outcome = EpisodeState.COMPLETED)
         activeEpisode = null
         latestClosedEpisode = completed
         return completed
