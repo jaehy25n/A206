@@ -5,7 +5,12 @@ object RecordingInputValidator {
     private val pathSeparator = Regex("[/\\\\]")
     val supportedResolutions = setOf(RecordingResolution(1920, 1080), RecordingResolution(1280, 720))
 
-    fun validate(task: String, objectName: String, resolution: RecordingResolution, targetFps: Int): ValidationResult {
+    fun validate(
+        task: String,
+        objectName: String,
+        resolution: RecordingResolution,
+        targetFps: Int,
+    ): ValidationResult {
         if (task.isBlank()) return ValidationResult.Invalid(ValidationError.EMPTY_TASK)
         if (objectName.isBlank()) return ValidationResult.Invalid(ValidationError.EMPTY_OBJECT)
         if (task.contains(pathSeparator) || task.contains(controlCharacter)) {
@@ -20,12 +25,15 @@ object RecordingInputValidator {
 
 sealed interface ValidationResult {
     data object Valid : ValidationResult
-    data class Invalid(val error: ValidationError) : ValidationResult
+
+    data class Invalid(
+        val error: ValidationError,
+    ) : ValidationResult
 }
 
 enum class ValidationError {
     EMPTY_TASK,
     EMPTY_OBJECT,
     INVALID_TASK,
-    UNSUPPORTED_CAMERA_CONFIG
+    UNSUPPORTED_CAMERA_CONFIG,
 }

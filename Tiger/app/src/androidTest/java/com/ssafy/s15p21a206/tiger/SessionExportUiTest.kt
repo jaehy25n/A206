@@ -1,9 +1,9 @@
 package com.ssafy.s15p21a206.tiger
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.assertIsDisplayed
 import com.ssafy.s15p21a206.tiger.episode.ExportState
 import org.junit.Rule
 import org.junit.Test

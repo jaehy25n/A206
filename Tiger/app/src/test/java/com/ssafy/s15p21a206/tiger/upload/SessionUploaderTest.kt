@@ -1,9 +1,6 @@
 package com.ssafy.s15p21a206.tiger.upload
 
 import com.ssafy.s15p21a206.tiger.episode.SessionBundle
-import java.io.File
-import java.nio.file.Files
-import java.security.MessageDigest
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
@@ -13,6 +10,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.File
+import java.nio.file.Files
+import java.security.MessageDigest
 
 class SessionUploaderTest {
     private lateinit var server: MockWebServer
@@ -29,62 +29,72 @@ class SessionUploaderTest {
     }
 
     @Test
-    fun `created receipt uploads a main only bundle`() = runBlocking {
-        val bundle = createBundle()
-        server.enqueue(jsonResponse(201, bundle.sessionId, "created"))
+    fun `created receipt uploads a main only bundle`() =
+        runBlocking {
+            val bundle = createBundle()
+            server.enqueue(jsonResponse(201, bundle.sessionId, "created"))
 
-        val result = uploader().upload(bundle)
+            val result = uploader().upload(bundle)
 
-        assertEquals(UploadResult.Uploaded, result)
-        val request = server.takeRequest()
-        assertEquals(bundle.sessionId, request.getHeader("Idempotency-Key"))
-        val body = request.body.readUtf8()
-        assertTrue(body.contains("name=\"main_video\"; filename=\"main_rgb.mp4\""))
-        assertTrue(!body.contains("name=\"ultrawide_video\""))
-    }
-
-    @Test
-    fun `duplicate receipt is also an uploaded result`() = runBlocking {
-        val bundle = createBundle()
-        server.enqueue(jsonResponse(200, bundle.sessionId, "duplicate"))
-
-        assertEquals(UploadResult.Uploaded, uploader().upload(bundle))
-    }
+            assertEquals(UploadResult.Uploaded, result)
+            val request = server.takeRequest()
+            assertEquals(bundle.sessionId, request.getHeader("Idempotency-Key"))
+            val body = request.body.readUtf8()
+            assertTrue(body.contains("name=\"main_video\"; filename=\"main_rgb.mp4\""))
+            assertTrue(!body.contains("name=\"ultrawide_video\""))
+        }
 
     @Test
-    fun `ultra wide parts follow the metadata declaration`() = runBlocking {
-        val bundle = createBundle(includesUltraWide = true)
-        server.enqueue(jsonResponse(201, bundle.sessionId, "created"))
+    fun `duplicate receipt is also an uploaded result`() =
+        runBlocking {
+            val bundle = createBundle()
+            server.enqueue(jsonResponse(200, bundle.sessionId, "duplicate"))
 
-        assertEquals(UploadResult.Uploaded, uploader().upload(bundle))
-        val body = server.takeRequest().body.readUtf8()
-        assertTrue(body.contains("name=\"ultrawide_video\"; filename=\"ultrawide_rgb.mp4\""))
-        assertTrue(body.contains("name=\"ultrawide_frame_timestamps\"; filename=\"ultrawide_frame_timestamps.csv\""))
-    }
+            assertEquals(UploadResult.Uploaded, uploader().upload(bundle))
+        }
 
     @Test
-    fun `mismatched receipt or non JSON success is failed`() = runBlocking {
-        val bundle = createBundle()
-        server.enqueue(jsonResponse(201, "00000000-0000-0000-0000-000000000000", "created"))
-        server.enqueue(MockResponse().setResponseCode(201).setBody("ok"))
+    fun `ultra wide parts follow the metadata declaration`() =
+        runBlocking {
+            val bundle = createBundle(includesUltraWide = true)
+            server.enqueue(jsonResponse(201, bundle.sessionId, "created"))
 
-        assertTrue(uploader().upload(bundle) is UploadResult.Failed)
-        assertTrue(uploader().upload(bundle) is UploadResult.Failed)
-    }
+            assertEquals(UploadResult.Uploaded, uploader().upload(bundle))
+            val body = server.takeRequest().body.readUtf8()
+            assertTrue(body.contains("name=\"ultrawide_video\"; filename=\"ultrawide_rgb.mp4\""))
+            assertTrue(body.contains("name=\"ultrawide_frame_timestamps\"; filename=\"ultrawide_frame_timestamps.csv\""))
+        }
 
     @Test
-    fun `HTTP rejection is failed`() = runBlocking {
-        server.enqueue(MockResponse().setResponseCode(422).setBody("invalid bundle"))
+    fun `mismatched receipt or non JSON success is failed`() =
+        runBlocking {
+            val bundle = createBundle()
+            server.enqueue(jsonResponse(201, "00000000-0000-0000-0000-000000000000", "created"))
+            server.enqueue(MockResponse().setResponseCode(201).setBody("ok"))
 
-        assertTrue(uploader().upload(createBundle()) is UploadResult.Failed)
-    }
+            assertTrue(uploader().upload(bundle) is UploadResult.Failed)
+            assertTrue(uploader().upload(bundle) is UploadResult.Failed)
+        }
 
-    private fun uploader(): SessionUploader = SessionUploader(
-        OkHttpClient(),
-        SessionUploadRequestFactory(server.url("/").toString().removeSuffix("/"))
-    )
+    @Test
+    fun `HTTP rejection is failed`() =
+        runBlocking {
+            server.enqueue(MockResponse().setResponseCode(422).setBody("invalid bundle"))
 
-    private fun jsonResponse(status: Int, sessionId: String, result: String): MockResponse =
+            assertTrue(uploader().upload(createBundle()) is UploadResult.Failed)
+        }
+
+    private fun uploader(): SessionUploader =
+        SessionUploader(
+            OkHttpClient(),
+            SessionUploadRequestFactory(server.url("/").toString().removeSuffix("/")),
+        )
+
+    private fun jsonResponse(
+        status: Int,
+        sessionId: String,
+        result: String,
+    ): MockResponse =
         MockResponse()
             .setResponseCode(status)
             .addHeader("Content-Type", "application/json")
@@ -106,14 +116,19 @@ class SessionUploaderTest {
             File(directory, SessionBundle.ULTRAWIDE_FRAME_TIMESTAMPS_FILE)
                 .writeText("frame_number,timestamp_ns,timestamp_source\n")
         }
-        val files = directory.listFiles().orEmpty().joinToString(",") { file ->
-            """{"path":"${file.name}","sizeBytes":${file.length()},"sha256":"${sha256(file)}"}"""
-        }
-        bundle.metadata.writeText("""{"session_id":"$sessionId","camera_streams":{"main":true,"ultrawide":$includesUltraWide},"files":[$files]}""")
+        val files =
+            directory.listFiles().orEmpty().joinToString(",") { file ->
+                """{"path":"${file.name}","sizeBytes":${file.length()},"sha256":"${sha256(file)}"}"""
+            }
+        bundle.metadata.writeText(
+            """{"session_id":"$sessionId","camera_streams":{"main":true,"ultrawide":$includesUltraWide},"files":[$files]}""",
+        )
         return bundle
     }
 
-    private fun sha256(file: File): String = MessageDigest.getInstance("SHA-256")
-        .digest(file.readBytes())
-        .joinToString("") { "%02x".format(it) }
+    private fun sha256(file: File): String =
+        MessageDigest
+            .getInstance("SHA-256")
+            .digest(file.readBytes())
+            .joinToString("") { "%02x".format(it) }
 }

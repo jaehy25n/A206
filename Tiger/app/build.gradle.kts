@@ -5,17 +5,21 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.ktlint)
 }
 
-val localProperties = Properties().apply {
-    val localPropertiesFile = rootProject.file("local.properties")
-    if (localPropertiesFile.isFile) {
-        localPropertiesFile.inputStream().use(::load)
+val localProperties =
+    Properties().apply {
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.isFile) {
+            localPropertiesFile.inputStream().use(::load)
+        }
     }
-}
-val uploadBaseUrl = providers.gradleProperty("tigerUploadBaseUrl")
-    .orElse(localProperties.getProperty("tigerUploadBaseUrl").orEmpty())
-    .get()
+val uploadBaseUrl =
+    providers
+        .gradleProperty("tigerUploadBaseUrl")
+        .orElse(localProperties.getProperty("tigerUploadBaseUrl").orEmpty())
+        .get()
 
 android {
     namespace = "com.ssafy.s15p21a206.tiger"

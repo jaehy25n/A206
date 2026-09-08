@@ -17,7 +17,8 @@
 
 - Android 앱 모듈은 `:app` 하나이며, Kotlin·Jetpack Compose·Material 3를 사용한다.
 - 의존성 및 플러그인 버전은 `gradle/libs.versions.toml`에서 관리한다.
-- Kotlin 공식 스타일을 따른다: 4칸 들여쓰기, null 안전성 활용, 작고 단일 책임인 함수.
+- Kotlin 스타일은 `.editorconfig`의 `ktlint_official`을 기준으로 한다. 커밋 전 `.\\gradlew.bat ktlintCheck`를 통과해야 하며, `.githooks/pre-commit`도 같은 검사를 실행한다. 위반은 `.\\gradlew.bat ktlintFormat`으로 수정한 뒤 재검사한다.
+- 새 clone 또는 worktree에서는 한 번 `.\\gradlew.bat installGitHooks`를 실행해 저장소의 pre-commit hook을 활성화한다.
 - Composable과 클래스는 `PascalCase`, 함수·프로퍼티·파라미터는 `camelCase`를 사용한다.
 - 부모가 소유하는 Compose 상태는 hoisting하고, Composable은 렌더링과 사용자 이벤트 처리로 한정한다.
 - 사용자에게 보이는 문자열은 `res/values/strings.xml`에 두며, Composable에 하드코딩하지 않는다.
