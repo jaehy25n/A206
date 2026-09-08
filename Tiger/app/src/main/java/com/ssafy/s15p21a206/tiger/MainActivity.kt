@@ -59,8 +59,8 @@ import okhttp3.OkHttpClient
 import java.util.UUID
 
 class MainActivity : ComponentActivity() {
-    override fun onCreate(state: Bundle?) {
-        super.onCreate(state)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
         setContent { TigerTheme { CaptureScreen() } }
     }
 }

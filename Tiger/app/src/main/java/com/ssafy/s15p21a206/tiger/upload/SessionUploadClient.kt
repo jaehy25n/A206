@@ -119,7 +119,7 @@ class SessionUploader(
                 object : Callback {
                     override fun onFailure(
                         call: Call,
-                        error: java.io.IOException,
+                        e: java.io.IOException,
                     ) {
                         continuation.resumeIfActive(UploadResult.Failed("Network upload failed"))
                     }
