@@ -11,6 +11,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -104,24 +105,30 @@ class SessionUploader(
                         if (cause != null) call.cancel()
                     }
                 try {
-                    call.execute().use { response ->
-                        if (response.code !in setOf(200, 201) || response.isRedirect) {
-                            return@use UploadResult.Failed("Upload was rejected (${response.code})")
-                        }
-                        val contentType = response.body.contentType()
-                        if (contentType?.type != "application" || contentType.subtype != "json") {
-                            return@use UploadResult.Failed("Upload receipt is not JSON")
-                        }
-                        val receipt = json.decodeFromString<RemoteReceipt>(response.body.string())
-                        if (receipt.sessionId == bundle.sessionId && receipt.result in setOf("created", "duplicate")) {
-                            UploadResult.Uploaded
-                        } else {
-                            UploadResult.Failed("Upload receipt does not match the session")
-                        }
-                    }
+                    uploadCall(call, bundle)
                 } finally {
                     cancellation?.dispose()
                 }
             }.getOrElse { UploadResult.Failed("Network upload failed") }
+        }
+
+    private fun uploadCall(
+        call: Call,
+        bundle: SessionBundle,
+    ): UploadResult =
+        call.execute().use { response ->
+            if (response.code !in setOf(200, 201) || response.isRedirect) {
+                return@use UploadResult.Failed("Upload was rejected (${response.code})")
+            }
+            val contentType = response.body.contentType()
+            if (contentType?.type != "application" || contentType.subtype != "json") {
+                return@use UploadResult.Failed("Upload receipt is not JSON")
+            }
+            val receipt = json.decodeFromString<RemoteReceipt>(response.body.string())
+            if (receipt.sessionId == bundle.sessionId && receipt.result in setOf("created", "duplicate")) {
+                UploadResult.Uploaded
+            } else {
+                UploadResult.Failed("Upload receipt does not match the session")
+            }
         }
 }
