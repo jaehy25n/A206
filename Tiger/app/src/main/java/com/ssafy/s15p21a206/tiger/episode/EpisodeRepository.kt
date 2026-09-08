@@ -12,13 +12,14 @@ class SessionRepository(
     private val sessionDao: CaptureSessionDao,
     private val markerDao: EpisodeMarkerDao,
     private val bundleStore: SessionBundleStore
-) {
+) : com.ssafy.s15p21a206.tiger.upload.UploadSessionStore {
     fun observeCompleted(): Flow<List<CaptureSession>> = sessionDao.observeCompleted().map { sessions -> sessions.map(CaptureSessionEntity::toCaptureSession) }
     fun observeMarkers(sessionId: String): Flow<List<EpisodeMarker>> = markerDao.observeForSession(sessionId).map { markers -> markers.map(EpisodeMarkerEntity::toEpisodeMarker) }
     suspend fun save(session: CaptureSession) = sessionDao.upsert(session.toEntity())
     suspend fun save(marker: EpisodeMarker) = markerDao.upsert(marker.toEntity())
-    suspend fun updateUploadState(sessionId: String, state: UploadState) = sessionDao.updateUploadState(sessionId, state.name)
-    suspend fun completedSource(sessionId: String): CaptureSession? = sessionDao.completedSession(sessionId)?.toCaptureSession()
+    override suspend fun updateUploadState(sessionId: String, state: UploadState) = sessionDao.updateUploadState(sessionId, state.name)
+    override suspend fun completedSource(sessionId: String): CaptureSession? = sessionDao.completedSession(sessionId)?.toCaptureSession()
+    suspend fun failInterruptedUploads() = sessionDao.failInterruptedUploads()
     suspend fun exportFor(sessionId: String): SessionExport? = sessionDao.session(sessionId)?.toSessionExport()
     suspend fun updateExport(export: SessionExport) = sessionDao.updateExport(export.sessionId, export.state.name, export.treeUri, export.failureReason)
 
