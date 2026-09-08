@@ -2,7 +2,7 @@
 
 ## 저장과 완료 조건
 
-모든 raw 파일은 앱 전용 외부 저장소의 `Android/data/com.ssafy.s15p21a206.tiger/files/capture/staging/<session_id>/`에 기록한다. `DATA COLLECTION END` 뒤 모든 writer를 finalize하고 필수 파일 존재·0보다 큰 크기·CSV header를 검사한다. 모든 raw file의 lowercase SHA-256을 metadata manifest에 남긴다. 검증 후 `metadata.json`을 마지막 commit marker로 작성하고 `capture/completed/<session_id>/`에 Session directory를 공개한다.
+모든 raw 파일은 일반 파일 관리자가 직접 수정·삭제할 수 없는 앱 전용 내부 저장 영역의 `capture/staging/<session_id>/`에 기록한다. `DATA COLLECTION END` 뒤 모든 writer를 finalize하고 필수 파일 존재·0보다 큰 크기·CSV header를 검사한다. 모든 raw file의 lowercase SHA-256을 metadata manifest에 남긴다. 검증 후 `metadata.json`을 마지막 commit marker로 작성하고 `capture/completed/<session_id>/`에 Session directory를 공개한다.
 
 `metadata.json`은 commit marker다. 파일 누락, writer 오류, 저장 공간 부족, process death 또는 회복 불가능한 Camera/IMU 오류가 발생한 Session은 `INTERRUPTED`로 남고 completed 목록 및 upload 대상에서 제외한다.
 
@@ -57,7 +57,7 @@ Camera frame timestamp는 `SENSOR_TIMESTAMP`, IMU timestamp는 sensor event의 �
 
 `camera_streams.main`은 항상 `true`다. `camera_streams.ultrawide`는 실제 optional 파일 존재 여부와 반드시 같아야 한다. 기기에서 제공되는 focal length, sensor size, intrinsic calibration, distortion 정보는 metadata에 반드시 기록한다. 지원되지 않는 값은 임의로 생성하지 않는다.
 
-Episode는 독립 raw directory나 file manifest를 소유하지 않는다. 각 Episode row의 outcome은 `COMPLETED`, `CANCELLED`, `INVALID_TRACKING` 중 하나다.
+Episode는 독립 raw directory나 file manifest를 소유하지 않는다. 각 Episode row의 outcome은 `COMPLETED` 또는 `INVALID_TRACKING` 중 하나다. `CANCELLED` outcome은 사용하지 않는다.
 
 ## SAF export 계약
 
