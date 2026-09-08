@@ -64,6 +64,9 @@ interface CaptureSessionDao {
         uploadState: String,
     )
 
+    @Query("UPDATE sessions SET uploadState = 'FAILED' WHERE uploadState = 'UPLOADING'")
+    suspend fun failInterruptedUploads()
+
     @Query(
         "UPDATE sessions SET exportState = :state, exportTreeUri = :treeUri, exportFailureReason = :failureReason WHERE sessionId = :sessionId",
     )

@@ -24,7 +24,7 @@ description: "Capture Session Recorder MVP and SAF export task ledger"
 - [X] T010 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/SessionFinalizer.kt`에 finalize·checksum·metadata-last·completed publish를 구현·테스트했다.
 - [X] T011 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/SessionFinalizer.kt`에 Session metadata와 CSV serialization을 구현·테스트했다.
 - [X] T012 `app/src/main/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadClient.kt`에 bundle pre-upload validator와 multipart request를 구현·테스트했다.
-- [X] T013 `app/src/main/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadClient.kt`에 upload receipt/error와 same-session retry를 구현·테스트했다.
+- [ ] T013 (대체됨: T038–T043) `app/src/main/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadClient.kt`의 upload receipt/error와 same-session retry는 요청 생성기만 존재하므로 완료로 표시할 수 없다.
 - [X] T014 `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`에 Capture Session·Episode control UI를 구현·테스트했다.
 - [X] T015 `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/UltraWideProbe.kt`에 Ultra-wide probe/main-only fallback을 구현했다.
 - [X] T016 `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/UltraWideProbe.kt`에 UW metadata/file/upload consistency를 구현·테스트했다.
@@ -88,8 +88,22 @@ description: "Capture Session Recorder MVP and SAF export task ledger"
 
 **Purpose**: 자동 품질 gate와 Galaxy S10에서만 가능한 SAF 동작을 완료한다.
 
-- [ ] T036 `specs/001-episode-recorder/quickstart.md`에 맞춰 `./gradlew.bat testDebugUnitTest`, `./gradlew.bat lintDebug`, `./gradlew.bat assembleDebug`를 실행하고 결과를 기록한다.
+- [X] T036 `specs/001-episode-recorder/quickstart.md`에 맞춰 `./gradlew.bat testDebugUnitTest`, `./gradlew.bat lintDebug`, `./gradlew.bat assembleDebug`를 실행하고 2026-09-08 성공 결과를 기록했다.
 - [ ] T037 `specs/001-episode-recorder/quickstart.md`의 Galaxy S10 시나리오로, 연결된 실제 기기에서 `./gradlew.bat connectedDebugAndroidTest`를 실행하고 Documents-start picker, Documents 밖 tree URI, persisted grant restart, grant loss, capability failure, cancel, provider I/O/공간 부족, attempt publish/retry, exported SHA-256을 수동 검증·기록한다.
+
+---
+
+## Phase 5: 실제 Session HTTP 업로드
+
+**Purpose**: finalized completed bundle을 앱에서 HTTP multipart로 전송하고, 서버 receipt 검증 뒤 영속 upload state와 수동 재전송 UI를 일관되게 처리한다.
+
+- [X] T038 [P] `app/src/test/java/com/ssafy/s15p21a206/tiger/upload/SessionUploaderTest.kt`에 MockWebServer로 201 created·200 duplicate, 잘못된 receipt/content type/HTTP 오류, metadata 기반 ultra-wide part 구성을 먼저 검증했다 (`testDebugUnitTest` 성공).
+- [X] T039 [P] `app/src/test/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadServiceTest.kt`에 `LOCAL_ONLY/FAILED → UPLOADING → UPLOADED/FAILED`, completed source 제한, 같은 session ID 재시도와 원본 보존을 먼저 검증했다 (`testDebugUnitTest` 성공).
+- [X] T040 `app/src/main/AndroidManifest.xml`, `app/build.gradle.kts`에 INTERNET permission, HTTP cleartext 허용 및 로컬 build-time endpoint 설정을 추가했다. endpoint 값은 저장소에 기록하지 않는다.
+- [X] T041 `app/src/main/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadClient.kt`에 source validation, metadata 기반 multipart, UUID idempotency key, `Dispatchers.IO`, redirect 거부와 receipt 검증을 구현하고 T038을 통과시켰다.
+- [X] T042 `app/src/main/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadService.kt` 및 repository 경계에 DB upload state 전이·앱 재시작 뒤 stale `UPLOADING` 복구·same-session 수동 재전송을 구현하고 T039를 통과시켰다.
+- [X] T043 `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`, `app/src/main/res/values/strings.xml`, `specs/001-episode-recorder/quickstart.md`에 completed Session별 업로드/재전송 UI와 실제 서버 수동 검증 절차를 연결했다 (`lintDebug`, `assembleDebug` 성공).
+- [ ] T044 연결된 실제 기기와 ingestion server에서 completed Session upload, 201 created/200 duplicate, 네트워크 실패 뒤 수동 재전송을 검증·기록한다.
 
 ---
 
@@ -98,6 +112,7 @@ description: "Capture Session Recorder MVP and SAF export task ledger"
 ```text
 T021–T024 → T025–T029
 T019 → T030 → T031 → T032 → T033 → T034–T035 → T036–T037
+T038 + T039 → T040 → T041 → T042 → T043
 T020 must pass before T032/T034.
 T029 + T031 + T032 → T033
 ```

@@ -12,7 +12,7 @@ class SessionRepository(
     private val sessionDao: CaptureSessionDao,
     private val markerDao: EpisodeMarkerDao,
     private val bundleStore: SessionBundleStore,
-) {
+) : com.ssafy.s15p21a206.tiger.upload.UploadSessionStore {
     fun observeCompleted(): Flow<List<CaptureSession>> =
         sessionDao.observeCompleted().map { sessions ->
             sessions.map(CaptureSessionEntity::toCaptureSession)
@@ -25,12 +25,14 @@ class SessionRepository(
 
     suspend fun save(marker: EpisodeMarker) = markerDao.upsert(marker.toEntity())
 
-    suspend fun updateUploadState(
+    override suspend fun updateUploadState(
         sessionId: String,
         state: UploadState,
     ) = sessionDao.updateUploadState(sessionId, state.name)
 
-    suspend fun completedSource(sessionId: String): CaptureSession? = sessionDao.completedSession(sessionId)?.toCaptureSession()
+    override suspend fun completedSource(sessionId: String): CaptureSession? = sessionDao.completedSession(sessionId)?.toCaptureSession()
+
+    suspend fun failInterruptedUploads() = sessionDao.failInterruptedUploads()
 
     suspend fun exportFor(sessionId: String): SessionExport? = sessionDao.session(sessionId)?.toSessionExport()
 

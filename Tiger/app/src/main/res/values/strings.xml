@@ -16,6 +16,9 @@
     <string name="upload_in_progress">업로드 중</string>
     <string name="upload_completed">업로드 완료</string>
     <string name="upload_failed">업로드 실패</string>
+    <string name="upload_session">업로드</string>
+    <string name="upload_retry">업로드 재시도</string>
+    <string name="upload_endpoint_missing">업로드 서버 주소가 설정되지 않았습니다.</string>
     <string name="episode_delete">에피소드 삭제</string>
     <string name="episode_delete_confirmation">이 에피소드와 포함된 파일을 삭제할까요?</string>
     <string name="capture_log_delete_all">CaptureLog 전체 삭제</string>

@@ -18,6 +18,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -49,7 +50,11 @@ import com.ssafy.s15p21a206.tiger.episode.SessionBundleStore
 import com.ssafy.s15p21a206.tiger.episode.SessionRepository
 import com.ssafy.s15p21a206.tiger.episode.UploadState
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerTheme
+import com.ssafy.s15p21a206.tiger.upload.SessionUploadRequestFactory
+import com.ssafy.s15p21a206.tiger.upload.SessionUploadService
+import com.ssafy.s15p21a206.tiger.upload.SessionUploader
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
 import java.util.UUID
 
 class MainActivity : ComponentActivity() {
@@ -81,6 +86,22 @@ fun CaptureScreen() {
                 SessionBundleStore(context.applicationContext),
             )
         }
+    val uploadService =
+        remember {
+            BuildConfig.UPLOAD_BASE_URL.takeIf(String::isNotBlank)?.let { baseUrl ->
+                SessionUploadService(
+                    repository,
+                    SessionUploader(
+                        OkHttpClient
+                            .Builder()
+                            .followRedirects(false)
+                            .followSslRedirects(false)
+                            .build(),
+                        SessionUploadRequestFactory(baseUrl),
+                    ),
+                )
+            }
+        }
     val completedSessions by repository.observeCompleted().collectAsState(emptyList())
     val scope = rememberCoroutineScope()
     val gateway = remember { SafDocumentTreeGateway(context.applicationContext) }
@@ -108,6 +129,11 @@ fun CaptureScreen() {
     val arCoreUnavailable = stringResource(R.string.arcore_unavailable)
     val arCoreInstallMessage = stringResource(R.string.arcore_install_requested)
     val arCoreSessionStartFailed = stringResource(R.string.arcore_session_start_failed)
+    val uploadEndpointMissing = stringResource(R.string.upload_endpoint_missing)
+    LaunchedEffect(repository) {
+        repository.recoverInterruptedStaging()
+        repository.failInterruptedUploads()
+    }
     val treePicker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
             if (uri == null) {
@@ -282,6 +308,14 @@ fun CaptureScreen() {
         }) { Text("EPISODE CANCEL") }
         Text(message)
         completedSessions.forEach { session ->
+            UploadControls(session.uploadState, onUpload = {
+                val service = uploadService
+                if (service == null) {
+                    message = uploadEndpointMissing
+                } else {
+                    scope.launch { service.upload(session.sessionId) }
+                }
+            })
             ExportControls(exportState, exportMessage, onSelectTree = {
                 pendingSessionId = session.sessionId
                 treePicker.launch(null)
@@ -331,6 +365,27 @@ internal fun ExportControls(
                     },
                 ),
             )
+        }
+    }
+}
+
+@Suppress("FunctionName")
+@Composable
+internal fun UploadControls(
+    state: UploadState,
+    onUpload: () -> Unit,
+) {
+    val label =
+        when (state) {
+            UploadState.LOCAL_ONLY -> stringResource(R.string.upload_local_only)
+            UploadState.UPLOADING -> stringResource(R.string.upload_in_progress)
+            UploadState.UPLOADED -> stringResource(R.string.upload_completed)
+            UploadState.FAILED -> stringResource(R.string.upload_failed)
+        }
+    Text(label)
+    if (state == UploadState.LOCAL_ONLY || state == UploadState.FAILED) {
+        Button(onClick = onUpload) {
+            Text(stringResource(if (state == UploadState.FAILED) R.string.upload_retry else R.string.upload_session))
         }
     }
 }

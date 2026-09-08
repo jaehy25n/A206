@@ -59,6 +59,8 @@ class SessionExportRepositoryTest {
                 sessions.getValue(sessionId).copy(uploadState = uploadState)
         }
 
+        override suspend fun failInterruptedUploads() = Unit
+
         override suspend fun updateExport(
             sessionId: String,
             state: String,

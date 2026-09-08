@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -5,6 +7,19 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.ktlint)
 }
+
+val localProperties =
+    Properties().apply {
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.isFile) {
+            localPropertiesFile.inputStream().use(::load)
+        }
+    }
+val uploadBaseUrl =
+    providers
+        .gradleProperty("tigerUploadBaseUrl")
+        .orElse(localProperties.getProperty("tigerUploadBaseUrl").orEmpty())
+        .get()
 
 android {
     namespace = "com.ssafy.s15p21a206.tiger"
@@ -35,6 +50,11 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
+    }
+
+    defaultConfig {
+        buildConfigField("String", "UPLOAD_BASE_URL", "\"${uploadBaseUrl.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
     }
 }
 
