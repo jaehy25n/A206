@@ -5,37 +5,66 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
+import android.graphics.SurfaceTexture
 import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
+import android.view.Surface
+import android.view.TextureView
+import android.widget.MediaController
+import android.widget.VideoView
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.room.Room
 import com.google.ar.core.ArCoreApk
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException
 import com.ssafy.s15p21a206.tiger.capture.AndroidCaptureRuntime
+import com.ssafy.s15p21a206.tiger.capture.CameraPreviewController
 import com.ssafy.s15p21a206.tiger.data.local.MIGRATION_2_3
 import com.ssafy.s15p21a206.tiger.data.local.MIGRATION_3_4
 import com.ssafy.s15p21a206.tiger.data.local.TigerDatabase
@@ -46,16 +75,21 @@ import com.ssafy.s15p21a206.tiger.episode.ExportState
 import com.ssafy.s15p21a206.tiger.episode.FinalizeResult
 import com.ssafy.s15p21a206.tiger.episode.RecordingState
 import com.ssafy.s15p21a206.tiger.episode.SafDocumentTreeGateway
+import com.ssafy.s15p21a206.tiger.episode.SessionBundle
 import com.ssafy.s15p21a206.tiger.episode.SessionBundleExporter
 import com.ssafy.s15p21a206.tiger.episode.SessionBundleStore
 import com.ssafy.s15p21a206.tiger.episode.SessionRepository
 import com.ssafy.s15p21a206.tiger.episode.UploadState
+import com.ssafy.s15p21a206.tiger.ui.session.SessionListScreen
+import com.ssafy.s15p21a206.tiger.ui.session.TaskSessionListScreen
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerTheme
 import com.ssafy.s15p21a206.tiger.upload.SessionUploadRequestFactory
 import com.ssafy.s15p21a206.tiger.upload.SessionUploadService
 import com.ssafy.s15p21a206.tiger.upload.SessionUploader
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
+import java.io.File
 import java.util.UUID
 
 class MainActivity : ComponentActivity() {
@@ -63,6 +97,28 @@ class MainActivity : ComponentActivity() {
         super.onCreate(state)
         setContent { TigerTheme { CaptureScreen() } }
     }
+}
+
+private sealed interface AppDestination {
+    data object SessionList : AppDestination
+
+    data object CaptureWorkspace : AppDestination
+
+    data class TaskSessions(
+        val taskName: String,
+    ) : AppDestination
+
+    data class SessionDetail(
+        val sessionId: String,
+    ) : AppDestination
+
+    data class SessionVideo(
+        val sessionId: String,
+    ) : AppDestination
+
+    data class UploadStatus(
+        val sessionId: String,
+    ) : AppDestination
 }
 
 @Suppress("FunctionName")
@@ -104,6 +160,7 @@ fun CaptureScreen() {
             }
         }
     val completedSessions by repository.observeCompleted().collectAsState(emptyList())
+    val completedSummaries by repository.observeCompletedSummaries().collectAsState(emptyList())
     val scope = rememberCoroutineScope()
     val gateway = remember { SafDocumentTreeGateway(context.applicationContext) }
     val exporter = remember { SessionBundleExporter(gateway) }
@@ -113,14 +170,23 @@ fun CaptureScreen() {
     var task by remember { mutableStateOf("") }
     var objectName by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("") }
+    val previewController =
+        remember {
+            CameraPreviewController(context.applicationContext) { failure ->
+                message = failure
+            }
+        }
     var exportState by remember { mutableStateOf(ExportState.NOT_EXPORTED) }
     var exportMessage by remember { mutableStateOf<String?>(null) }
     var pendingSessionId by remember { mutableStateOf<String?>(null) }
     var activeBundle by remember { mutableStateOf<com.ssafy.s15p21a206.tiger.episode.SessionBundle?>(null) }
     var recordingStartNs by remember { mutableLongStateOf(0L) }
     var activeEpisode by remember { mutableStateOf<EpisodeMarker?>(null) }
-    var nextDisplayNumber by remember { mutableIntStateOf(1) }
     var arCoreInstallRequested by remember { mutableStateOf(false) }
+    var destination by remember { mutableStateOf<AppDestination>(AppDestination.SessionList) }
+    var uploadJob by remember { mutableStateOf<Job?>(null) }
+    var showStopConfirmation by remember { mutableStateOf(false) }
+    var showCaptureMetadataDialog by remember { mutableStateOf(false) }
     val pickerCancelled = stringResource(R.string.export_picker_cancelled)
     val exportGrantFailed = stringResource(R.string.export_grant_failed)
     val exportFailedUnexpected = stringResource(R.string.export_failed_unexpected)
@@ -129,11 +195,13 @@ fun CaptureScreen() {
     val captureFinalizeFailed = stringResource(R.string.capture_finalize_failed)
     val arCoreUnavailable = stringResource(R.string.arcore_unavailable)
     val arCoreInstallMessage = stringResource(R.string.arcore_install_requested)
+    val closeCaptureDescription = stringResource(R.string.capture_close_content_description)
     val arCoreSessionStartFailed = stringResource(R.string.arcore_session_start_failed)
     val uploadEndpointMissing = stringResource(R.string.upload_endpoint_missing)
     LaunchedEffect(repository) {
         repository.recoverInterruptedStaging()
         repository.failInterruptedUploads()
+        repository.normalizeDisplayNumbers()
     }
     val treePicker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
@@ -191,12 +259,23 @@ fun CaptureScreen() {
                     message = arCoreInstallMessage
                     return@rememberLauncherForActivityResult
                 }
-                runCatching { captureRuntime.start(nextDisplayNumber) }
-                    .onSuccess { bundle ->
-                        activeBundle = bundle
-                        recordingStartNs = SystemClock.elapsedRealtimeNanos()
-                        collecting = true
-                        scope.launch {
+                scope.launch {
+                    val displayNumber = repository.nextDisplayNumber()
+                    runCatching { captureRuntime.start(displayNumber) }
+                        .onSuccess { bundle ->
+                            activeBundle = bundle
+                            recordingStartNs = SystemClock.elapsedRealtimeNanos()
+                            activeEpisode =
+                                EpisodeMarker(
+                                    UUID.randomUUID().toString(),
+                                    bundle.sessionId,
+                                    recordingStartNs,
+                                    task = task,
+                                    objectName = objectName,
+                                    outcome = EpisodeState.ACTIVE,
+                                )
+                            collecting = true
+                            active = true
                             repository.save(
                                 CaptureSession(
                                     bundle.sessionId,
@@ -208,19 +287,21 @@ fun CaptureScreen() {
                                     recordingStartEpochMs = System.currentTimeMillis(),
                                 ),
                             )
+                        }.onFailure { error ->
+                            message = "$arCoreSessionStartFailed: ${error.message.orEmpty()}"
+                            if (error is UnavailableArcoreNotInstalledException) {
+                                context.openArCoreStore()
+                            }
                         }
-                        nextDisplayNumber++
-                    }.onFailure { error ->
-                        message = "$arCoreSessionStartFailed: ${error.message.orEmpty()}"
-                        if (error is UnavailableArcoreNotInstalledException) {
-                            context.openArCoreStore()
-                        }
-                    }
+                }
             } else {
                 message = recordingCameraUnavailable
             }
         }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        if (destination is AppDestination.UploadStatus) {
+            uploadJob?.cancel()
+        }
         val interruptedBundle = activeBundle ?: return@LifecycleEventEffect
         captureRuntime.interrupt()
         scope.launch {
@@ -242,78 +323,508 @@ fun CaptureScreen() {
         active = false
         collecting = false
     }
-    Column(Modifier.fillMaxSize()) {
-        Text("ARCore · Camera · IMU: ${if (collecting) "READY" else "IDLE"}")
-        OutlinedTextField(task, { task = it }, label = { Text("Task") })
-        OutlinedTextField(objectName, { objectName = it }, label = { Text("Object") })
-        Button(onClick = {
-            if (!collecting) {
-                cameraPermission.launch(Manifest.permission.CAMERA)
-            } else if (active) {
-                message = activeEpisodeEndRequired
-            } else {
-                scope.launch {
-                    when (val result = runCatching { captureRuntime.stop() }.getOrElse { FinalizeResult.Failed(it.message.orEmpty()) }) {
-                        is FinalizeResult.Completed ->
-                            activeBundle?.let { bundle ->
-                                repository.save(
-                                    CaptureSession(
-                                        bundle.sessionId,
-                                        bundle.displayNumber,
-                                        RecordingState.COMPLETED,
-                                        UploadState.LOCAL_ONLY,
-                                        recordingStartNs,
-                                        SystemClock.elapsedRealtimeNanos(),
-                                        result.directory.absolutePath,
-                                        System.currentTimeMillis(),
-                                    ),
-                                )
-                            }
-                        is FinalizeResult.Failed -> message = "$captureFinalizeFailed: ${result.reason}"
-                    }
-                    activeBundle = null
-                    collecting = false
-                }
-            }
-        }) { Text(if (collecting) "DATA COLLECTION END" else "DATA COLLECTION START") }
-        Button(enabled = collecting && !active && task.isNotBlank() && objectName.isNotBlank(), onClick = {
-            activeEpisode =
-                activeBundle?.let { bundle ->
-                    EpisodeMarker(
-                        UUID.randomUUID().toString(),
-                        bundle.sessionId,
-                        SystemClock.elapsedRealtimeNanos(),
-                        task = task,
-                        objectName = objectName,
-                        outcome = EpisodeState.ACTIVE,
-                    )
-                }
-            active = activeEpisode != null
-        }) { Text("EPISODE START") }
-        Button(enabled = active, onClick = {
-            activeEpisode?.copy(endTimestampNs = SystemClock.elapsedRealtimeNanos(), outcome = EpisodeState.COMPLETED)?.let { marker ->
-                scope.launch {
+
+    fun startUpload(sessionId: String) {
+        val service = uploadService
+        if (service == null) {
+            message = uploadEndpointMissing
+            return
+        }
+        destination = AppDestination.UploadStatus(sessionId)
+        uploadJob = scope.launch { service.upload(sessionId) }
+    }
+    BackHandler(enabled = destination is AppDestination.CaptureWorkspace) {
+        if (showCaptureMetadataDialog) {
+            showCaptureMetadataDialog = false
+            destination = AppDestination.SessionList
+        } else if (collecting) {
+            showStopConfirmation = true
+        } else {
+            destination = AppDestination.SessionList
+        }
+    }
+    when (val currentDestination = destination) {
+        AppDestination.SessionList -> {
+            SessionListScreen(
+                sessions = completedSummaries,
+                onStartCapture = {
+                    task = ""
+                    objectName = ""
+                    message = ""
+                    showCaptureMetadataDialog = true
+                    destination = AppDestination.CaptureWorkspace
+                },
+                onOpenTask = { taskName -> destination = AppDestination.TaskSessions(taskName) },
+            )
+            return
+        }
+        is AppDestination.TaskSessions -> {
+            TaskSessionListScreen(
+                taskName = currentDestination.taskName,
+                sessions = completedSummaries.filter { it.taskName.trim() == currentDestination.taskName },
+                onBack = { destination = AppDestination.SessionList },
+                onOpenSession = { sessionId -> destination = AppDestination.SessionDetail(sessionId) },
+            )
+            return
+        }
+        is AppDestination.SessionDetail -> {
+            val summary = completedSummaries.firstOrNull { it.sessionId == currentDestination.sessionId }
+            SessionDetailScreen(
+                summary = summary,
+                onBack = { destination = AppDestination.TaskSessions(summary?.taskName.orEmpty()) },
+                onUpload = { startUpload(currentDestination.sessionId) },
+                exportState = exportState,
+                exportMessage = exportMessage,
+                onExport = {
+                    pendingSessionId = currentDestination.sessionId
+                    treePicker.launch(null)
+                },
+                onOpenFullscreenVideo = { destination = AppDestination.SessionVideo(currentDestination.sessionId) },
+            )
+            return
+        }
+        is AppDestination.SessionVideo -> {
+            val summary = completedSummaries.firstOrNull { it.sessionId == currentDestination.sessionId }
+            FullScreenVideoScreen(
+                bundlePath = summary?.bundlePath,
+                onBack = { destination = AppDestination.SessionDetail(currentDestination.sessionId) },
+            )
+            return
+        }
+        is AppDestination.UploadStatus -> {
+            val state = completedSessions.firstOrNull { it.sessionId == currentDestination.sessionId }?.uploadState
+            UploadStatusScreen(
+                uploadState = state,
+                onBack = {
+                    uploadJob?.cancel()
+                    destination = AppDestination.SessionDetail(currentDestination.sessionId)
+                },
+            )
+            return
+        }
+        AppDestination.CaptureWorkspace -> Unit
+    }
+
+    DisposableEffect(previewController) {
+        onDispose(previewController::release)
+    }
+
+    fun finalizeCapture() {
+        scope.launch {
+            activeEpisode
+                ?.copy(endTimestampNs = SystemClock.elapsedRealtimeNanos(), outcome = EpisodeState.COMPLETED)
+                ?.let { marker ->
                     repository.save(marker)
                     captureRuntime.appendEpisode(marker)
                 }
-            }
             activeEpisode = null
             active = false
-        }) { Text("EPISODE END") }
-        Text(message)
-        completedSessions.forEach { session ->
-            UploadControls(session.uploadState, onUpload = {
-                val service = uploadService
-                if (service == null) {
-                    message = uploadEndpointMissing
-                } else {
-                    scope.launch { service.upload(session.sessionId) }
+            when (
+                val result =
+                    runCatching { captureRuntime.stop() }
+                        .getOrElse { FinalizeResult.Failed(it.message.orEmpty()) }
+            ) {
+                is FinalizeResult.Completed -> {
+                    activeBundle?.let { bundle ->
+                        repository.save(
+                            CaptureSession(
+                                bundle.sessionId,
+                                bundle.displayNumber,
+                                RecordingState.COMPLETED,
+                                UploadState.LOCAL_ONLY,
+                                recordingStartNs,
+                                SystemClock.elapsedRealtimeNanos(),
+                                result.directory.absolutePath,
+                                System.currentTimeMillis(),
+                            ),
+                        )
+                        startUpload(bundle.sessionId)
+                    }
                 }
-            })
-            ExportControls(exportState, exportMessage, onSelectTree = {
-                pendingSessionId = session.sessionId
-                treePicker.launch(null)
-            })
+                is FinalizeResult.Failed -> message = "$captureFinalizeFailed: ${result.reason}"
+            }
+            activeBundle = null
+            collecting = false
+        }
+    }
+
+    Box(Modifier.fillMaxSize()) {
+        AndroidView(
+            factory = { viewContext ->
+                TextureView(viewContext).apply {
+                    surfaceTextureListener =
+                        object : TextureView.SurfaceTextureListener {
+                            override fun onSurfaceTextureAvailable(
+                                surfaceTexture: SurfaceTexture,
+                                width: Int,
+                                height: Int,
+                            ) {
+                                surfaceTexture.setDefaultBufferSize(1920, 1080)
+                                previewController.prepare(Surface(surfaceTexture))
+                            }
+
+                            override fun onSurfaceTextureSizeChanged(
+                                surfaceTexture: SurfaceTexture,
+                                width: Int,
+                                height: Int,
+                            ) = Unit
+
+                            override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean {
+                                previewController.release()
+                                return true
+                            }
+
+                            override fun onSurfaceTextureUpdated(surfaceTexture: SurfaceTexture) = Unit
+                        }
+                }
+            },
+            modifier = Modifier.fillMaxSize(),
+        )
+        IconButton(
+            onClick = {
+                if (collecting) {
+                    showStopConfirmation = true
+                } else {
+                    destination = AppDestination.SessionList
+                }
+            },
+            modifier =
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 20.dp, end = 20.dp)
+                    .size(48.dp)
+                    .semantics { contentDescription = closeCaptureDescription },
+        ) {
+            Text(
+                text = stringResource(R.string.control_close),
+                color = Color.White,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        if (message.isNotBlank()) {
+            Text(
+                text = message,
+                color = Color.White,
+                modifier = Modifier.align(Alignment.Center),
+            )
+        }
+        if (!showCaptureMetadataDialog) {
+            Row(
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(bottom = 36.dp),
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                when {
+                    !collecting ->
+                        captureControlButton(
+                            iconRes = R.drawable.ic_capture_play,
+                            contentDescriptionRes = R.string.capture_control_start,
+                            onClick = {
+                                previewController.release()
+                                cameraPermission.launch(Manifest.permission.CAMERA)
+                            },
+                        )
+                    active -> {
+                        captureControlButton(
+                            iconRes = R.drawable.ic_capture_pause,
+                            contentDescriptionRes = R.string.capture_control_pause,
+                            onClick = {
+                                activeEpisode
+                                    ?.copy(
+                                        endTimestampNs = SystemClock.elapsedRealtimeNanos(),
+                                        outcome = EpisodeState.COMPLETED,
+                                    )?.let { marker ->
+                                        scope.launch {
+                                            repository.save(marker)
+                                            captureRuntime.appendEpisode(marker)
+                                        }
+                                    }
+                                activeEpisode = null
+                                active = false
+                            },
+                        )
+                        captureControlButton(
+                            iconRes = R.drawable.ic_capture_stop,
+                            contentDescriptionRes = R.string.capture_control_stop,
+                            onClick = { showStopConfirmation = true },
+                        )
+                    }
+                    else -> {
+                        captureControlButton(
+                            iconRes = R.drawable.ic_capture_play,
+                            contentDescriptionRes = R.string.capture_control_resume,
+                            onClick = {
+                                activeEpisode =
+                                    activeBundle?.let { bundle ->
+                                        EpisodeMarker(
+                                            UUID.randomUUID().toString(),
+                                            bundle.sessionId,
+                                            SystemClock.elapsedRealtimeNanos(),
+                                            task = task,
+                                            objectName = objectName,
+                                            outcome = EpisodeState.ACTIVE,
+                                        )
+                                    }
+                                active = activeEpisode != null
+                            },
+                        )
+                        captureControlButton(
+                            iconRes = R.drawable.ic_capture_stop,
+                            contentDescriptionRes = R.string.capture_control_stop,
+                            onClick = { showStopConfirmation = true },
+                        )
+                    }
+                }
+            }
+        }
+    }
+    if (showCaptureMetadataDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showCaptureMetadataDialog = false
+                destination = AppDestination.SessionList
+            },
+            title = { Text(stringResource(R.string.capture_metadata_title)) },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = task,
+                        onValueChange = { task = it },
+                        label = { Text(stringResource(R.string.capture_metadata_task)) },
+                    )
+                    OutlinedTextField(
+                        value = objectName,
+                        onValueChange = { objectName = it },
+                        label = { Text(stringResource(R.string.capture_metadata_object)) },
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    enabled = task.isNotBlank() && objectName.isNotBlank(),
+                    onClick = { showCaptureMetadataDialog = false },
+                ) { Text(stringResource(R.string.capture_metadata_confirm)) }
+            },
+            dismissButton = {
+                Button(
+                    onClick = {
+                        showCaptureMetadataDialog = false
+                        destination = AppDestination.SessionList
+                    },
+                ) { Text(stringResource(R.string.action_cancel)) }
+            },
+        )
+    }
+    if (showStopConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showStopConfirmation = false },
+            title = { Text(stringResource(R.string.capture_stop_title)) },
+            text = { Text(stringResource(R.string.capture_stop_message)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showStopConfirmation = false
+                        finalizeCapture()
+                    },
+                ) { Text(stringResource(R.string.capture_stop_confirm)) }
+            },
+            dismissButton = {
+                Button(onClick = { showStopConfirmation = false }) { Text(stringResource(R.string.action_cancel)) }
+            },
+        )
+    }
+}
+
+@Suppress("FunctionName")
+@Composable
+private fun SessionDetailScreen(
+    summary: com.ssafy.s15p21a206.tiger.episode.SessionSummary?,
+    onBack: () -> Unit,
+    onUpload: () -> Unit,
+    exportState: ExportState,
+    exportMessage: String?,
+    onExport: () -> Unit,
+    onOpenFullscreenVideo: () -> Unit,
+) {
+    Column(Modifier.fillMaxSize()) {
+        NavigationHeader(
+            title = stringResource(R.string.session_detail_title),
+            onBack = onBack,
+        )
+        if (summary == null) {
+            Text(stringResource(R.string.session_detail_unavailable))
+        } else {
+            SessionVideoPreview(summary.bundlePath, onOpenFullscreenVideo)
+            Text(
+                stringResource(
+                    R.string.session_list_capture_time,
+                    java.text.DateFormat
+                        .getDateTimeInstance()
+                        .format(java.util.Date(summary.recordingStartEpochMs)),
+                ),
+            )
+            Text(stringResource(R.string.session_list_short_id, summary.sessionId.take(8)))
+            Text(stringResource(R.string.session_list_episode_count, summary.completedEpisodeCount))
+            val durationNs =
+                (summary.recordingEndMonotonicTimestampNs ?: summary.recordingStartMonotonicTimestampNs) -
+                    summary.recordingStartMonotonicTimestampNs
+            Text(stringResource(R.string.session_detail_duration, durationNs / 1_000_000_000))
+            Text(stringResource(if (summary.uploadState == UploadState.FAILED) R.string.upload_failed else R.string.upload_local_only))
+            if (summary.uploadState == UploadState.LOCAL_ONLY || summary.uploadState == UploadState.FAILED) {
+                Button(onClick = onUpload) {
+                    Text(stringResource(if (summary.uploadState == UploadState.FAILED) R.string.upload_retry else R.string.upload_session))
+                }
+            }
+            ExportControls(exportState, exportMessage, onExport)
+        }
+    }
+}
+
+@Composable
+@Suppress("FunctionName")
+private fun SessionVideoPreview(
+    bundlePath: String,
+    onOpenFullscreenVideo: () -> Unit,
+) {
+    val videoFile = remember(bundlePath) { File(bundlePath, SessionBundle.MAIN_VIDEO_FILE) }
+    val videoDescription = stringResource(R.string.session_detail_video_content_description)
+    if (!videoFile.isFile || videoFile.length() == 0L) {
+        Text(stringResource(R.string.session_detail_video_unavailable))
+        return
+    }
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f),
+    ) {
+        VideoPlayer(videoFile, Modifier.fillMaxSize().semantics { contentDescription = videoDescription })
+        IconButton(
+            onClick = onOpenFullscreenVideo,
+            modifier = Modifier.align(Alignment.TopEnd),
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_fullscreen),
+                contentDescription = stringResource(R.string.session_detail_open_fullscreen),
+            )
+        }
+    }
+}
+
+@Composable
+@Suppress("FunctionName")
+private fun FullScreenVideoScreen(
+    bundlePath: String?,
+    onBack: () -> Unit,
+) {
+    val videoFile = bundlePath?.let { File(it, SessionBundle.MAIN_VIDEO_FILE) }
+    Box(Modifier.fillMaxSize().background(Color.Black)) {
+        if (videoFile?.isFile == true && videoFile.length() > 0L) {
+            VideoPlayer(videoFile, Modifier.fillMaxSize())
+        } else {
+            Text(
+                text = stringResource(R.string.session_detail_video_unavailable),
+                color = Color.White,
+                modifier = Modifier.align(Alignment.Center),
+            )
+        }
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier.align(Alignment.TopStart),
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_navigation_back),
+                contentDescription = stringResource(R.string.navigation_back),
+                tint = Color.White,
+            )
+        }
+    }
+}
+
+@Composable
+@Suppress("FunctionName")
+private fun VideoPlayer(
+    videoFile: File,
+    modifier: Modifier,
+) {
+    AndroidView(
+        factory = { viewContext ->
+            VideoView(viewContext).apply {
+                setMediaController(MediaController(viewContext).also { it.setAnchorView(this) })
+                setVideoURI(Uri.fromFile(videoFile))
+                setOnPreparedListener { seekTo(1) }
+            }
+        },
+        modifier = modifier,
+    )
+}
+
+@Composable
+@Suppress("FunctionName")
+private fun NavigationHeader(
+    title: String,
+    onBack: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onBack) {
+            Icon(
+                painter = painterResource(R.drawable.ic_navigation_back),
+                contentDescription = stringResource(R.string.navigation_back),
+            )
+        }
+        Text(title)
+    }
+}
+
+@Composable
+private fun captureControlButton(
+    iconRes: Int,
+    contentDescriptionRes: Int,
+    onClick: () -> Unit,
+) {
+    IconButton(
+        onClick = onClick,
+        modifier =
+            Modifier
+                .size(56.dp)
+                .background(Color.Black.copy(alpha = 0.45f), CircleShape),
+    ) {
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = stringResource(contentDescriptionRes),
+            tint = Color.White,
+            modifier = Modifier.size(28.dp),
+        )
+    }
+}
+
+@Suppress("FunctionName")
+@Composable
+private fun UploadStatusScreen(
+    uploadState: UploadState?,
+    onBack: () -> Unit,
+) {
+    Column(Modifier.fillMaxSize()) {
+        NavigationHeader(stringResource(R.string.upload_status_title), onBack)
+        Text(
+            stringResource(
+                when (uploadState) {
+                    UploadState.UPLOADING -> R.string.upload_in_progress
+                    UploadState.UPLOADED -> R.string.upload_completed
+                    UploadState.FAILED -> R.string.upload_failed
+                    UploadState.LOCAL_ONLY, null -> R.string.upload_local_only
+                },
+            ),
+        )
+        if (uploadState == UploadState.UPLOADING) {
+            Text(stringResource(R.string.upload_leave_warning))
         }
     }
 }

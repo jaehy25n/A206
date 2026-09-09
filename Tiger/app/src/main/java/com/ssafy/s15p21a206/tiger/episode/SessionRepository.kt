@@ -4,6 +4,7 @@ import com.ssafy.s15p21a206.tiger.data.local.CaptureSessionDao
 import com.ssafy.s15p21a206.tiger.data.local.CaptureSessionEntity
 import com.ssafy.s15p21a206.tiger.data.local.EpisodeMarkerDao
 import com.ssafy.s15p21a206.tiger.data.local.EpisodeMarkerEntity
+import com.ssafy.s15p21a206.tiger.data.local.SessionSummaryEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.io.File
@@ -16,6 +17,13 @@ class SessionRepository(
     fun observeCompleted(): Flow<List<CaptureSession>> =
         sessionDao.observeCompleted().map { sessions ->
             sessions.filter { bundleStore.isManagedCompletedDirectory(it.bundlePath) }.map(CaptureSessionEntity::toCaptureSession)
+        }
+
+    fun observeCompletedSummaries(): Flow<List<SessionSummary>> =
+        sessionDao.observeCompletedSummaries().map { summaries ->
+            summaries
+                .filter { bundleStore.isManagedCompletedDirectory(it.bundlePath) }
+                .map(SessionSummaryEntity::toSessionSummary)
         }
 
     fun observeMarkers(sessionId: String): Flow<List<EpisodeMarker>> =
@@ -53,6 +61,17 @@ class SessionRepository(
             sessionDao.upsert(session.copy(recordingState = RecordingState.INTERRUPTED.name))
         }
     }
+
+    suspend fun normalizeDisplayNumbers() {
+        sessionDao.sessionsInCaptureOrder().forEachIndexed { index, session ->
+            val displayNumber = index + 1
+            if (session.displayNumber != displayNumber) {
+                sessionDao.updateDisplayNumber(session.sessionId, displayNumber)
+            }
+        }
+    }
+
+    suspend fun nextDisplayNumber(): Int = sessionDao.nextDisplayNumber()
 }
 
 private fun CaptureSessionEntity.toCaptureSession() =
@@ -65,6 +84,19 @@ private fun CaptureSessionEntity.toCaptureSession() =
         recordingEndNs,
         bundlePath,
         recordingStartEpochMs,
+    )
+
+private fun SessionSummaryEntity.toSessionSummary() =
+    SessionSummary(
+        sessionId,
+        displayNumber,
+        UploadState.valueOf(uploadState),
+        recordingStartEpochMs,
+        recordingStartNs,
+        recordingEndNs,
+        bundlePath,
+        completedEpisodeCount,
+        taskName,
     )
 
 private fun CaptureSession.toEntity() =

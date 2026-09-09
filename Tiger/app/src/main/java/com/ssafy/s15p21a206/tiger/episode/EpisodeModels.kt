@@ -101,6 +101,18 @@ data class CaptureSession(
     @SerialName("recording_start_epoch_ms") val recordingStartEpochMs: Long = 0L,
 )
 
+data class SessionSummary(
+    val sessionId: String,
+    val displayNumber: Int,
+    val uploadState: UploadState,
+    val recordingStartEpochMs: Long,
+    val recordingStartMonotonicTimestampNs: Long,
+    val recordingEndMonotonicTimestampNs: Long?,
+    val bundlePath: String,
+    val completedEpisodeCount: Int,
+    val taskName: String = "",
+)
+
 @Serializable
 data class EpisodeMarker(
     @SerialName("episode_id") val episodeId: String,
