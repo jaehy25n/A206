@@ -56,7 +56,7 @@
 - [ ] T012 [P] [US1] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/SessionListScreenTest.kt`에 빈 상태, Session 요약, Episode 개수, 전송 상태, 새 수집 및 Detail 선택의 Compose semantics 테스트를 작성한다.
 - [ ] T013 [US1] `app/src/main/java/com/ssafy/s15p21a206/tiger/data/local/TigerDatabase.kt`와 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/SessionRepository.kt`에 완료 Episode 개수를 포함하는 managed Session summary 조회를 구현한다.
 - [ ] T014 [US1] `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`에 hoisted sealed 화면 목적지와 선택된 Session id를 추가하고, Session 목록 화면을 앱의 시작 화면으로 연결한다.
-- [ ] T015 [US1] `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/session/SessionListScreen.kt`와 `app/src/main/res/values/strings.xml`에 빈 목록, Session 번호·수집 시각·Episode 개수·전송 상태, 새 수집 및 Detail 행동을 구현한다.
+- [ ] T015 [US1] `app/src/main/java/com/ssafy/s15p21a206/tiger/data/local/TigerDatabase.kt`, `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/SessionRepository.kt`, `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/session/SessionListScreen.kt`, `app/src/main/res/values/strings.xml`에 Task 이름 홈, Task별 Session 목록, 수집 시각·짧은 식별자·Episode 개수·전송 상태, 새 수집 및 Detail 행동을 구현한다.
 - [ ] T016 [US1] `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/SessionSummaryRepositoryTest.kt`와 `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/SessionListScreenTest.kt`를 통과시키고, 목록 항목이 수집 작업 공간이 아니라 Detail 목적지로 이동함을 확인한다.
 
 **검증 지점**: 목록만으로 새 수집을 시작하거나 완료 Session의 Detail로 이동할 수 있다.
@@ -72,7 +72,7 @@
 - [ ] T017 [P] [US2] `app/src/test/java/com/ssafy/s15p21a206/tiger/capture/CapturePreviewControllerTest.kt`에 권한·AR·camera preflight 성공/실패, preview-only 준비, 첫 재생 전 Session 미생성의 실패 테스트를 작성한다.
 - [ ] T018 [P] [US2] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/CaptureWorkspaceScreenTest.kt`에 task/object gating, 재생·일시 정지·정지 아이콘 semantics, Episode 완료 경계, 정지 확인의 Compose 테스트를 작성한다.
 - [ ] T019 [US2] `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/CapturePreviewController.kt`와 `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/AndroidCaptureRuntime.kt`에 녹화 시작과 분리된 preview 준비·해제·오류 복구 수명주기를 구현한다.
-- [ ] T020 [US2] `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/capture/CaptureWorkspaceScreen.kt`, `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`, `app/src/main/res/values/strings.xml`에 전체 화면 프리뷰, 공통 task/object 입력, 표준 아이콘 제어, 접근성 라벨·툴팁, 수집 종료 확인을 구현한다.
+- [ ] T020 [US2] `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/capture/CaptureWorkspaceScreen.kt`, `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`, `app/src/main/res/values/strings.xml`에 전체 화면 프리뷰, 프리뷰가 보이는 즉시 나타나는 공통 task/object 입력 모달, 프리뷰 하단 중앙의 표준 재생·일시 정지·정지 오버레이, 배경 없는 흰색 우측 상단 X 닫기, 접근성 라벨·툴팁, 수집 종료 확인을 구현한다.
 - [ ] T021 [US2] `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`, `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/CaptureSessionCoordinator.kt`, `app/src/main/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadService.kt`를 연결해 정지가 열린 Episode를 완료하고 Session finalize 성공 뒤 자동 업로드와 업로드 상태 목적지를 시작하게 한다.
 - [ ] T022 [US2] `app/src/test/java/com/ssafy/s15p21a206/tiger/capture/CapturePreviewControllerTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/CaptureWorkspaceScreenTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/capture/CaptureSessionCoordinatorTest.kt`를 통과시키고 실제 기기에서 프리뷰가 녹화 전 표시되는지 별도 기록한다.
 
@@ -87,7 +87,7 @@
 **독립 검증**: 준비·Episode 진행·Episode 없음/Session 수집·확정 상태에서 활성 아이콘이 다르고, 정지·뒤로 가기·닫기에는 확인을 제공하는지 확인한다.
 
 - [ ] T023 [P] [US3] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/CaptureControlStateTest.kt`에 네 수집 상태의 아이콘 활성화, 확정 중 중복 입력 차단, 정지·뒤로 가기·닫기 확인 테스트를 작성한다.
-- [ ] T024 [US3] `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/capture/CaptureWorkspaceScreen.kt`와 `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`에 상태별 제어 활성화, 준비 실패·확정 중 일회성 안내, BackHandler·닫기 확인을 구현한다.
+- [ ] T024 [US3] `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/capture/CaptureWorkspaceScreen.kt`와 `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`에 상태별 제어 활성화, 준비 실패·확정 중 일회성 안내, BackHandler·전체 화면 sheet X 닫기 확인을 구현한다.
 - [ ] T025 [US3] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/CaptureControlStateTest.kt`를 통과시키고 TalkBack에서 아이콘의 접근성 이름과 툴팁을 실제 기기에서 확인한다.
 
 **검증 지점**: 사용자는 상시 상태 문구 없이 가능한 다음 조작을 알 수 있고, 수집 종료 전 확인 기회를 받는다.
@@ -102,7 +102,7 @@
 
 - [ ] T026 [P] [US4] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/SessionDetailScreenTest.kt`에 Detail 수집 시각·길이·완료 Episode 개수·데이터 상태와 전송/재전송 행동 테스트를 작성한다.
 - [ ] T027 [P] [US4] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/UploadStatusScreenTest.kt`에 비결정적 진행 표시, 화면 이탈 경고 문구, 완료/실패 상태, 뒤로 가기 취소 확인, lifecycle background 취소 테스트를 작성한다.
-- [ ] T028 [US4] `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/session/SessionDetailScreen.kt`와 `app/src/main/res/values/strings.xml`에 Session 식별 정보·수집 시각·길이·완료 Episode 개수·데이터 상태, 상태별 전송·재전송 행동을 구현한다.
+- [ ] T028 [US4] `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`, `app/src/main/res/drawable/`, `app/src/main/res/values/strings.xml`에 Session 식별 정보·수집 시각·길이·완료 Episode 개수·데이터 상태·로컬 원본 동영상 재생·전체 화면 확장, 상태별 전송·재전송 행동과 좌측 상단 뒤로가기 아이콘을 구현한다.
 - [ ] T029 [US4] `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/upload/UploadStatusScreen.kt`와 `app/src/main/res/values/strings.xml`에 비결정적 로딩, 화면 이탈 경고, 성공·실패 표시와 취소 확인 dialog를 구현한다.
 - [ ] T030 [US4] `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`와 `app/src/main/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadService.kt`에 Detail·정지의 공통 전송 시작, Upload Status 화면 소유 Job, back/close 확인 취소, `ON_STOP` 즉시 취소 및 `FAILED` persist를 연결한다.
 - [ ] T031 [US4] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/SessionDetailScreenTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/UploadStatusScreenTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadServiceTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/upload/SessionUploaderTest.kt`를 통과시키고 MockWebServer에서 `201`, `200 duplicate`, 네트워크 실패, 취소를 확인한다.
@@ -119,6 +119,9 @@
 - [ ] T033 [P] `specs/001-episode-recorder/spec.md`, `specs/001-episode-recorder/data-model.md`, `specs/001-episode-recorder/contracts/episode-bundle.md`, `specs/002-capture-control-ux/spec.md`, `specs/002-capture-control-ux/data-model.md`, `specs/002-capture-control-ux/contracts/capture-control-ui.md`를 구현 결과와 대조해 storage·Episode·업로드 계약 불일치를 갱신한다.
 - [ ] T034 `specs/002-capture-control-ux/quickstart.md`에 따라 `.\gradlew.bat testDebugUnitTest`, `.\gradlew.bat lintDebug`, `.\gradlew.bat assembleDebug`, `.\gradlew.bat ktlintCheck`를 실행하고 명령·결과를 각 완료 task의 증거로 기록한다.
 - [ ] T035 `specs/002-capture-control-ux/quickstart.md`에 따라 실제 기기와 ingestion server에서 프리뷰, 수집 제어, 자동 업로드, 취소, 백그라운드 중단, 재전송, legacy 제외를 검증하고 결과를 `specs/002-capture-control-ux/quickstart.md`에 기록한다.
+- [ ] T037 [P] `gradle/libs.versions.toml`의 ARCore와 생성 APK를 Android 15+ 16KB 페이지 환경에서 실행해 카메라·AR 세션 생성과 수집 흐름을 검증한다. `lintDebug`의 `Aligned16KB` 경고와 `zipalign -c -P 16 -v 4` 결과를 함께 기록한다.
+  - 자동 검증(2026-09-09): `com.google.ar:core:1.56.0`으로 `ktlintCheck testDebugUnitTest assembleDebug lintDebug` 성공, 강제 재실행한 Lint report에서 `Aligned16KB` 0건, `zipalign -c -P 16 -v 4 app/build/outputs/apk/debug/app-debug.apk` 성공.
+  - 남은 실제 검증: 16KB 페이지(`adb shell getconf PAGE_SIZE`가 `16384`) 기기 또는 에뮬레이터에서 AR 세션·카메라·수집을 실행한다.
 - [ ] T036 `specs/002-capture-control-ux/tasks.md`의 각 완료 task에 구현 파일·production 호출 경로·자동 검증·실제 기기 검증 근거를 기록한 뒤 `$speckit-converge`를 실행한다.
 
 ---

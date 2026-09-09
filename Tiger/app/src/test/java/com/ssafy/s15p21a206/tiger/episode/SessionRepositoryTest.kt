@@ -4,6 +4,7 @@ import com.ssafy.s15p21a206.tiger.data.local.CaptureSessionDao
 import com.ssafy.s15p21a206.tiger.data.local.CaptureSessionEntity
 import com.ssafy.s15p21a206.tiger.data.local.EpisodeMarkerDao
 import com.ssafy.s15p21a206.tiger.data.local.EpisodeMarkerEntity
+import com.ssafy.s15p21a206.tiger.data.local.SessionSummaryEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -29,6 +30,55 @@ class SessionRepositoryTest {
         }
     }
 
+    @Test
+    fun `managed summary keeps only completed episode count`() {
+        runBlocking {
+            val root = Files.createTempDirectory("session-store").toFile()
+            val store = SessionBundleStore(root)
+            val managed = store.completedDirectory("managed").apply { mkdirs() }
+            val legacy = root.resolve("legacy")
+            val summaries =
+                listOf(
+                    SessionSummaryEntity("managed", 2, "FAILED", 100, 1, 2, managed.path, 3, "Door opening"),
+                    SessionSummaryEntity("legacy", 1, "LOCAL_ONLY", 100, 1, 2, legacy.path, 9),
+                )
+            val repository = SessionRepository(FakeSessionDao(emptyList(), summaries), FakeMarkerDao(), store)
+
+            val summary = repository.observeCompletedSummaries().first().single()
+
+            assertEquals("managed", summary.sessionId)
+            assertEquals(3, summary.completedEpisodeCount)
+            assertEquals("Door opening", summary.taskName)
+            assertEquals(UploadState.FAILED, summary.uploadState)
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `normalizing display numbers makes existing sessions sequential`() {
+        runBlocking {
+            val root = Files.createTempDirectory("session-store").toFile()
+            val store = SessionBundleStore(root)
+            val oldest = store.completedDirectory("oldest").apply { mkdirs() }
+            val newest = store.completedDirectory("newest").apply { mkdirs() }
+            val dao =
+                FakeSessionDao(
+                    listOf(
+                        session("newest", newest.path).copy(recordingStartEpochMs = 20),
+                        session("oldest", oldest.path).copy(recordingStartEpochMs = 10),
+                    ),
+                )
+            val repository = SessionRepository(dao, FakeMarkerDao(), store)
+
+            repository.normalizeDisplayNumbers()
+
+            assertEquals(1, dao.session("oldest")?.displayNumber)
+            assertEquals(2, dao.session("newest")?.displayNumber)
+            assertEquals(3, repository.nextDisplayNumber())
+            root.deleteRecursively()
+        }
+    }
+
     private fun session(
         id: String,
         path: String,
@@ -36,11 +86,14 @@ class SessionRepositoryTest {
 
     private class FakeSessionDao(
         sessions: List<CaptureSessionEntity>,
+        private val summaries: List<SessionSummaryEntity> = emptyList(),
     ) : CaptureSessionDao {
         private val values = sessions.associateBy(CaptureSessionEntity::sessionId).toMutableMap()
 
         override fun observeCompleted(): Flow<List<CaptureSessionEntity>> =
             flowOf(values.values.filter { it.recordingState == "COMPLETED" })
+
+        override fun observeCompletedSummaries(): Flow<List<SessionSummaryEntity>> = flowOf(summaries)
 
         override suspend fun upsert(session: CaptureSessionEntity) {
             values[session.sessionId] = session
@@ -69,6 +122,24 @@ class SessionRepositoryTest {
         override suspend fun session(sessionId: String): CaptureSessionEntity? = values[sessionId]
 
         override suspend fun activeSessions(): List<CaptureSessionEntity> = emptyList()
+
+        override suspend fun sessionsInCaptureOrder(): List<CaptureSessionEntity> =
+            values.values.sortedWith(
+                compareBy(
+                    CaptureSessionEntity::recordingStartEpochMs,
+                    CaptureSessionEntity::recordingStartNs,
+                    CaptureSessionEntity::sessionId,
+                ),
+            )
+
+        override suspend fun updateDisplayNumber(
+            sessionId: String,
+            displayNumber: Int,
+        ) {
+            values[sessionId] = requireNotNull(values[sessionId]).copy(displayNumber = displayNumber)
+        }
+
+        override suspend fun nextDisplayNumber(): Int = (values.values.maxOfOrNull(CaptureSessionEntity::displayNumber) ?: 0) + 1
     }
 
     private class FakeMarkerDao : EpisodeMarkerDao {

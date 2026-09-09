@@ -27,6 +27,18 @@ data class CaptureSessionEntity(
     val recordingStartEpochMs: Long = 0L,
 )
 
+data class SessionSummaryEntity(
+    val sessionId: String,
+    val displayNumber: Int,
+    val uploadState: String,
+    val recordingStartEpochMs: Long,
+    val recordingStartNs: Long,
+    val recordingEndNs: Long?,
+    val bundlePath: String,
+    val completedEpisodeCount: Int,
+    val taskName: String = "",
+)
+
 @Entity(tableName = "episode_markers")
 data class EpisodeMarkerEntity(
     @PrimaryKey val episodeId: String,
@@ -55,6 +67,22 @@ data class CaptureLogEntity(
 interface CaptureSessionDao {
     @Query("SELECT * FROM sessions WHERE recordingState = 'COMPLETED' ORDER BY recordingStartNs DESC")
     fun observeCompleted(): Flow<List<CaptureSessionEntity>>
+
+    @Query(
+        """
+        SELECT sessions.sessionId, sessions.displayNumber, sessions.uploadState,
+               sessions.recordingStartEpochMs, sessions.recordingStartNs, sessions.recordingEndNs,
+               sessions.bundlePath,
+               COUNT(CASE WHEN episode_markers.outcome = 'COMPLETED' THEN 1 END) AS completedEpisodeCount,
+               COALESCE(MIN(NULLIF(episode_markers.task, '')), '') AS taskName
+        FROM sessions
+        LEFT JOIN episode_markers ON episode_markers.sessionId = sessions.sessionId
+        WHERE sessions.recordingState = 'COMPLETED'
+        GROUP BY sessions.sessionId
+        ORDER BY sessions.recordingStartNs DESC
+        """,
+    )
+    fun observeCompletedSummaries(): Flow<List<SessionSummaryEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(session: CaptureSessionEntity)
@@ -86,6 +114,18 @@ interface CaptureSessionDao {
 
     @Query("SELECT * FROM sessions WHERE recordingState IN ('INITIALIZING', 'READY', 'FINALIZING')")
     suspend fun activeSessions(): List<CaptureSessionEntity>
+
+    @Query("SELECT * FROM sessions ORDER BY recordingStartEpochMs ASC, recordingStartNs ASC, sessionId ASC")
+    suspend fun sessionsInCaptureOrder(): List<CaptureSessionEntity>
+
+    @Query("UPDATE sessions SET displayNumber = :displayNumber WHERE sessionId = :sessionId")
+    suspend fun updateDisplayNumber(
+        sessionId: String,
+        displayNumber: Int,
+    )
+
+    @Query("SELECT COALESCE(MAX(displayNumber), 0) + 1 FROM sessions")
+    suspend fun nextDisplayNumber(): Int
 }
 
 @Dao

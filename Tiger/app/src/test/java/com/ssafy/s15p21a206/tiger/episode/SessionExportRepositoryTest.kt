@@ -5,6 +5,7 @@ import com.ssafy.s15p21a206.tiger.data.local.CaptureSessionEntity
 import com.ssafy.s15p21a206.tiger.data.local.EXPORT_MIGRATION_SQL
 import com.ssafy.s15p21a206.tiger.data.local.EpisodeMarkerDao
 import com.ssafy.s15p21a206.tiger.data.local.EpisodeMarkerEntity
+import com.ssafy.s15p21a206.tiger.data.local.SessionSummaryEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
@@ -49,6 +50,8 @@ class SessionExportRepositoryTest {
         override fun observeCompleted(): Flow<List<CaptureSessionEntity>> =
             flowOf(sessions.values.filter { it.recordingState == "COMPLETED" })
 
+        override fun observeCompletedSummaries(): Flow<List<SessionSummaryEntity>> = flowOf(emptyList())
+
         override suspend fun upsert(session: CaptureSessionEntity) {
             sessions[session.sessionId] = session
         }
@@ -82,6 +85,17 @@ class SessionExportRepositoryTest {
         override suspend fun session(sessionId: String): CaptureSessionEntity? = sessions[sessionId]
 
         override suspend fun activeSessions(): List<CaptureSessionEntity> = emptyList()
+
+        override suspend fun sessionsInCaptureOrder(): List<CaptureSessionEntity> = sessions.values.toList()
+
+        override suspend fun updateDisplayNumber(
+            sessionId: String,
+            displayNumber: Int,
+        ) {
+            sessions[sessionId] = sessions.getValue(sessionId).copy(displayNumber = displayNumber)
+        }
+
+        override suspend fun nextDisplayNumber(): Int = (sessions.values.maxOfOrNull(CaptureSessionEntity::displayNumber) ?: 0) + 1
     }
 
     private class FakeMarkerDao : EpisodeMarkerDao {
