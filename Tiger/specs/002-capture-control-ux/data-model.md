@@ -7,13 +7,14 @@
 | 필드 | 규칙 |
 | --- | --- |
 | `sessionId` | 불변 UUID 및 bundle 식별자 |
-| `displayNumber` | 사용자에게 보이는 Session 번호 |
+| `displayNumber` | 기존 bundle·metadata 호환성을 위해 보존하는 내부 순번. 목록의 주 식별자로 표시하지 않는다. |
 | `recordingState` | bundle이 관리되는 내부 completed root에 있을 때만 `COMPLETED` Session을 목록·상세·업로드 대상으로 한다. |
 | `uploadState` | `LOCAL_ONLY`, `UPLOADING`, `UPLOADED`, `FAILED` |
 | `recordingStartEpochMs` | Session Detail의 날짜·시각을 위한 로컬 벽시계 수집 시작 시각. migration은 안전한 legacy 기본값을 제공하며 legacy 행은 경로 기준으로 제외한다. |
 | `recordingStart` / `recordingEnd` | 수집 길이 계산에 사용하는 monotonic 값 |
 | `bundlePath` | 내부 completed root 하위 canonical 경로. legacy 외부 경로는 이전·삭제 없이 제외한다. |
 | `completedEpisodeCount` | outcome이 `COMPLETED`인 하위 Episode marker 개수 |
+| `taskName` | 완료 Episode marker의 공통 `task` 값. Task 홈에서 Session을 묶는 키이며, 값이 없으면 `이름 없는 Task` 그룹으로 표시한다. |
 
 ## EpisodeMarker
 
