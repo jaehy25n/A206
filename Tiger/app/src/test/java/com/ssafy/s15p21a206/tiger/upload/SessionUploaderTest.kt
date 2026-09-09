@@ -1,7 +1,11 @@
 package com.ssafy.s15p21a206.tiger.upload
 
 import com.ssafy.s15p21a206.tiger.episode.SessionBundle
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.yield
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -13,6 +17,7 @@ import org.junit.Test
 import java.io.File
 import java.nio.file.Files
 import java.security.MessageDigest
+import java.util.concurrent.TimeUnit
 
 class SessionUploaderTest {
     private lateinit var server: MockWebServer
@@ -82,6 +87,22 @@ class SessionUploaderTest {
             server.enqueue(MockResponse().setResponseCode(422).setBody("invalid bundle"))
 
             assertTrue(uploader().upload(createBundle()) is UploadResult.Failed)
+        }
+
+    @Test
+    fun `cancelling upload cancels the in flight HTTP request`() =
+        runBlocking {
+            withTimeout(5_000) {
+                val bundle = createBundle()
+                server.enqueue(MockResponse().setBody("delayed").setBodyDelay(10, TimeUnit.SECONDS))
+
+                val upload = async { uploader().upload(bundle) }
+                yield()
+                assertTrue(server.takeRequest(5, TimeUnit.SECONDS) != null)
+                upload.cancelAndJoin()
+
+                assertTrue(upload.isCancelled)
+            }
         }
 
     private fun uploader(): SessionUploader =

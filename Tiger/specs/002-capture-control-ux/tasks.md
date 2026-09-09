@@ -11,9 +11,12 @@
 - [X] T001 `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`와 `app/src/main/res/values/strings.xml`의 현재 수집·업로드·export 진입점을 확인하고, 화면 분리에 필요한 기존 사용자 문구 및 production 호출 경로를 작업 기록에 정리한다.
   - 구현/검토: `CaptureScreen`이 기존 수집 시작·Episode·종료와 `UploadControls`·`ExportControls`를 단일 화면에서 연결한다. 사용자 노출 문구는 다음 UI MR에서 `strings.xml`로 이동한다.
   - 자동 검증: `./gradlew.bat ktlintCheck testDebugUnitTest` 성공 (2026-09-08).
-- [ ] T002 [P] `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/SessionBundleStoreTest.kt`와 `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/SessionRepositoryTest.kt`에 내부 root, legacy 외부 bundle 제외, 직접 업로드 차단의 실패 테스트 fixture를 추가한다.
-- [ ] T003 [P] `app/src/test/java/com/ssafy/s15p21a206/tiger/data/local/TigerDatabaseMigrationTest.kt`에 수집 벽시계 시작 시각 migration의 실패 테스트를 추가한다.
-- [ ] T004 [P] `app/src/test/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadServiceTest.kt`와 `app/src/test/java/com/ssafy/s15p21a206/tiger/upload/SessionUploaderTest.kt`에 사용자 취소·백그라운드 취소가 HTTP 요청과 `FAILED` 상태까지 전달되는 실패 테스트를 추가한다.
+- [X] T002 [P] `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/SessionBundleStoreTest.kt`와 `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/SessionRepositoryTest.kt`에 내부 root, legacy 외부 bundle 제외, 직접 업로드 차단의 실패 테스트 fixture를 추가한다.
+  - 자동 검증: `SessionBundleStoreTest.only direct child of internal completed root is managed`, `SessionRepositoryTest.legacy external completed bundle is excluded from listing and upload`.
+- [X] T003 [P] `app/src/test/java/com/ssafy/s15p21a206/tiger/data/local/TigerDatabaseMigrationTest.kt`에 수집 벽시계 시작 시각 migration의 실패 테스트를 추가한다.
+  - 자동 검증: `TigerDatabaseMigrationTest.version four migration adds a non null wall clock start timestamp`가 version과 non-null default migration SQL을 검증한다.
+- [X] T004 [P] `app/src/test/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadServiceTest.kt`와 `app/src/test/java/com/ssafy/s15p21a206/tiger/upload/SessionUploaderTest.kt`에 사용자 취소·백그라운드 취소가 HTTP 요청과 `FAILED` 상태까지 전달되는 실패 테스트를 추가한다.
+  - 자동 검증: `SessionUploadServiceTest.cancelled upload persists failed`, `SessionUploaderTest.cancelling upload cancels the in flight HTTP request`.
 
 ---
 
@@ -29,12 +32,15 @@
 - [X] T006 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/SessionRepository.kt`에서 목록·상세·업로드 source가 T005의 관리 경로 검증을 공통으로 사용하게 하여 legacy 외부 bundle을 복사·삭제하지 않고 제외하고, 검증 위치를 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/SessionRepository.kt`에 유지한다.
   - 구현: `observeCompleted`, `completedSource`, `exportFor`가 단일 store 경계 검증을 사용한다. production 호출은 `CaptureScreen`의 목록·업로드·export 경로다.
   - 자동 검증: `SessionRepositoryTest.legacy external completed bundle is excluded from listing and upload`; `./gradlew.bat ktlintCheck testDebugUnitTest` 성공 (2026-09-08).
-- [ ] T007 `app/src/main/java/com/ssafy/s15p21a206/tiger/data/local/TigerDatabase.kt`와 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/EpisodeModels.kt`에 로컬 벽시계 수집 시작 시각을 추가하고 Room version·migration·entity/model 변환을 갱신한다.
+- [X] T007 `app/src/main/java/com/ssafy/s15p21a206/tiger/data/local/TigerDatabase.kt`와 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/EpisodeModels.kt`에 로컬 벽시계 수집 시작 시각을 추가하고 Room version·migration·entity/model 변환을 갱신한다.
+  - 구현: `recordingStartEpochMs`, Room v4 migration, entity/model 변환과 `CaptureScreen` 신규 Session 저장 경로.
 - [X] T008 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/EpisodeModels.kt`, `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/CaptureSessionCoordinator.kt`, `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/SessionRepository.kt`에서 `CANCELLED` Episode 상태·전이·취소 API를 제거하고 완료·추적 실패 경계만 유지한다.
   - 구현: `EpisodeState`와 `CaptureSessionCoordinator.endEpisode`에서 취소 상태/인자를 제거했고, 기존 `CaptureScreen` 취소 버튼 생산 경로도 제거했다.
   - 자동 검증: `CaptureSessionModelsTest.episode outcome is terminal after active`; `./gradlew.bat ktlintCheck testDebugUnitTest` 성공 (2026-09-08).
-- [ ] T009 `app/src/main/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadClient.kt`와 `app/src/main/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadService.kt`에 취소 가능한 OkHttp 요청과 취소 시 `FAILED`를 보존하는 upload operation 경계를 구현한다.
-- [ ] T010 `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/SessionBundleStoreTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/SessionRepositoryTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/data/local/TigerDatabaseMigrationTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/CaptureSessionModelsTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/capture/CaptureSessionCoordinatorTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadServiceTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/upload/SessionUploaderTest.kt`를 실행해 T002~T004의 테스트와 기존 계약 테스트를 통과시킨다.
+- [X] T009 `app/src/main/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadClient.kt`와 `app/src/main/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadService.kt`에 취소 가능한 OkHttp 요청과 취소 시 `FAILED`를 보존하는 upload operation 경계를 구현한다.
+  - 구현: cancellable OkHttp callback과 cancellation handler가 active call을 취소하고, service가 `CancellationException`에서 `FAILED`를 persist한다.
+- [X] T010 `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/SessionBundleStoreTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/SessionRepositoryTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/data/local/TigerDatabaseMigrationTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/CaptureSessionModelsTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/capture/CaptureSessionCoordinatorTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadServiceTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/upload/SessionUploaderTest.kt`를 실행해 T002~T004의 테스트와 기존 계약 테스트를 통과시킨다.
+  - 자동 검증: `./gradlew.bat ktlintCheck testDebugUnitTest --no-daemon` 성공 (2026-09-08).
 
 **검증 지점**: 내부 bundle만 관리·업로드 가능하고, legacy 외부 bundle은 보존된 채 제외되며, 새 Session은 표시 가능한 수집 시각과 취소 가능한 업로드 상태를 가진다.
 
