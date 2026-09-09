@@ -53,8 +53,10 @@
 
 - 허용 타입: `feat`, `fix`, `test`, `refactor`, `docs`, `build`, `chore`.
 - 커밋 하나에는 한 가지 목적의 변경만 포함한다. 생성 파일, `.idea/`, build output, secret, keystore, `.env` 파일은 커밋하지 않는다.
+- 구현을 시작하기 전에 Jira 프로젝트·보드에서 대응 이슈가 이미 있는지 확인한다. 대응 이슈가 없으면 작업 범위와 완료 조건을 담은 새 Jira 이슈를 등록한 뒤 구현을 시작한다.
 - Pull/Merge Request의 source·target 브랜치는 사용자 지시를 우선하며, 불명확하면 원격 기본 개발 브랜치와 병합 관계를 확인한 뒤 진행한다.
 - Pull/Merge Request 제목은 `<type>(<scope>): <한국어 구체 요약>` 형식을 사용한다.
+- Pull/Merge Request를 만들 때 작성자를 Assignee로 지정하고, 설명에 `Related Jira: <JIRA-KEY>` 형식으로 대응 Jira 이슈 키를 기록한다. 여러 이슈와 관련되면 모든 키를 쉼표로 구분해 기록한다.
 - push 전에는 포함할 커밋·문서·생성 파일·로컬 검사 산출물을 확인한다. 기능 계약을 바꾼 작업의 관련 명세 문서는 임의로 제외하지 않는다.
 - 브랜치 삭제 전에는 원격 기준 브랜치에 병합됐거나 보존할 필요가 없음을 확인한다.
 
