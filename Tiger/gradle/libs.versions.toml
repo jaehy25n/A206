@@ -14,7 +14,7 @@ coroutines = "1.10.2"
 lifecycle = "2.11.0"
 serialization = "1.9.0"
 ksp = "2.3.6"
-arcore = "1.33.0"
+arcore = "1.56.0"
 ktlint = "14.2.0"
 
 [libraries]
