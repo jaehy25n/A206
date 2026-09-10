@@ -52,12 +52,24 @@
 
 **독립 검증**: 내부 완료 Session, 전송 완료/실패 Session, legacy 외부 Session fixture로 목록을 열어 요약과 빈 상태를 확인하고, 항목 선택과 새 수집 선택의 화면 목적지를 확인한다.
 
-- [ ] T011 [P] [US1] `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/SessionSummaryRepositoryTest.kt`에 완료 Episode만 집계하는 Session 목록 projection과 legacy 제외 테스트를 작성한다.
-- [ ] T012 [P] [US1] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/SessionListScreenTest.kt`에 빈 상태, Session 요약, Episode 개수, 전송 상태, 새 수집 및 Detail 선택의 Compose semantics 테스트를 작성한다.
-- [ ] T013 [US1] `app/src/main/java/com/ssafy/s15p21a206/tiger/data/local/TigerDatabase.kt`와 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/SessionRepository.kt`에 완료 Episode 개수를 포함하는 managed Session summary 조회를 구현한다.
-- [ ] T014 [US1] `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`에 hoisted sealed 화면 목적지와 선택된 Session id를 추가하고, Session 목록 화면을 앱의 시작 화면으로 연결한다.
-- [ ] T015 [US1] `app/src/main/java/com/ssafy/s15p21a206/tiger/data/local/TigerDatabase.kt`, `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/SessionRepository.kt`, `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/session/SessionListScreen.kt`, `app/src/main/res/values/strings.xml`에 Task 이름 홈, Task별 Session 목록, 수집 시각·짧은 식별자·Episode 개수·전송 상태, 새 수집 및 Detail 행동을 구현한다.
-- [ ] T016 [US1] `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/SessionSummaryRepositoryTest.kt`와 `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/SessionListScreenTest.kt`를 통과시키고, 목록 항목이 수집 작업 공간이 아니라 Detail 목적지로 이동함을 확인한다.
+- [X] T011 [P] [US1] `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/SessionSummaryRepositoryTest.kt`에 완료 Episode만 집계하는 Session 목록 projection과 legacy 제외 테스트를 작성한다.
+  - 구현: `SessionSummaryRepositoryTest.managed summaries retain completed episode count and exclude legacy bundles`가 managed bundle의 완료 Episode 집계와 legacy 외부 경로 제외를 검증한다.
+  - 자동 검증: `./gradlew.bat testDebugUnitTest --tests "com.ssafy.s15p21a206.tiger.episode.SessionSummaryRepositoryTest" --no-daemon` 성공 (2026-09-10).
+- [X] T012 [P] [US1] `app/src/androidTest/java/com/ssafy/s15p21a206/tiger/ui/session/SessionListScreenTest.kt`에 빈 상태, Session 요약, Episode 개수, 전송 상태, 새 수집 및 Detail 선택의 Compose semantics 테스트를 작성한다.
+  - 구현: 빈 목록의 새 수집 행동, Task 선택, Session 요약 표시와 Detail 선택을 검증하는 instrumentation test를 추가했다.
+  - 자동 검증: `SessionListScreenTest.emptyListShowsStartCaptureAction`, `taskSelectionOpensItsSessionList`, `sessionSummaryShowsDetailsAndOpensDetail`; `./gradlew.bat connectedDebugAndroidTest --no-daemon` 성공 (2026-09-10, `SM-G973N`, Android 12).
+- [X] T013 [US1] `app/src/main/java/com/ssafy/s15p21a206/tiger/data/local/TigerDatabase.kt`와 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/SessionRepository.kt`에 완료 Episode 개수를 포함하는 managed Session summary 조회를 구현한다.
+  - 구현: `CaptureSessionDao.observeCompletedSummaries`가 `COMPLETED` marker만 집계하고, `SessionRepository.observeCompletedSummaries`가 managed completed root만 노출한다. production 호출은 `CaptureScreen`의 `completedSummaries` 수집이다.
+  - 자동 검증: `SessionSummaryRepositoryTest.managed summaries retain completed episode count and exclude legacy bundles`; `./gradlew.bat testDebugUnitTest --tests "com.ssafy.s15p21a206.tiger.episode.SessionSummaryRepositoryTest" --no-daemon` 성공 (2026-09-10).
+- [X] T014 [US1] `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`에 hoisted sealed 화면 목적지와 선택된 Session id를 추가하고, Session 목록 화면을 앱의 시작 화면으로 연결한다.
+  - 구현: `AppDestination`과 hoisted `destination`이 `SessionList`를 시작 화면으로 두고 `TaskSessions`·`SessionDetail(sessionId)`를 전환한다. production 호출은 `CaptureScreen`의 destination `when` 분기다.
+  - 실제 검증: 2026-09-09 `SM-G973N`에서 Task 홈과 Task 선택 후 Session Detail 진입을 확인했다 (`quickstart.md`).
+- [X] T015 [US1] `app/src/main/java/com/ssafy/s15p21a206/tiger/data/local/TigerDatabase.kt`, `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/SessionRepository.kt`, `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/session/SessionListScreen.kt`, `app/src/main/res/values/strings.xml`에 Task 이름 홈, Task별 Session 목록, 수집 시각·짧은 식별자·Episode 개수·전송 상태, 새 수집 및 Detail 행동을 구현한다.
+  - 구현: `SessionListScreen`과 `TaskSessionListScreen`이 Task 그룹, 새 수집, 수집 시각·짧은 ID·완료 Episode 수·전송 상태 및 Detail 콜백을 제공한다. production 호출은 `CaptureScreen`의 `SessionList`·`TaskSessions` 목적지다.
+  - 실제 검증: 2026-09-09 `SM-G973N`에서 Task 홈과 Session 요약·Detail 동작을 확인했다 (`quickstart.md`).
+- [X] T016 [US1] `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/SessionSummaryRepositoryTest.kt`와 `app/src/androidTest/java/com/ssafy/s15p21a206/tiger/ui/session/SessionListScreenTest.kt`를 통과시키고, 목록 항목이 수집 작업 공간이 아니라 Detail 목적지로 이동함을 확인한다.
+  - 자동 검증: `SessionSummaryRepositoryTest.managed summaries retain completed episode count and exclude legacy bundles`와 `SessionListScreenTest` 3개가 통과했다. `./gradlew.bat testDebugUnitTest --no-daemon`, `./gradlew.bat connectedDebugAndroidTest --no-daemon` 성공 (2026-09-10, `SM-G973N`, Android 12).
+  - 실제 검증: 목록 Task 선택과 Session 요약 카드 선택이 수집 작업 공간이 아닌 Detail 목적지 콜백을 호출함을 `SessionListScreenTest`에서 확인했다.
 
 **검증 지점**: 목록만으로 새 수집을 시작하거나 완료 Session의 Detail로 이동할 수 있다.
 
