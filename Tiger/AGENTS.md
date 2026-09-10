@@ -42,6 +42,8 @@
 - 명시적으로 요청받지 않으면 commit, push, reset, 브랜치 삭제를 하지 않는다.
 - 브랜치 이름은 소문자 kebab-case의 `<type>/<scope>` 형식을 사용한다. 사용자·도구·모델 이름 접두사는 사용하지 않는다.
 - 브랜치 type은 목적에 맞게 `feature`, `fix`, `docs`, `chore`, `refactor`, `test` 중 하나를 사용한다.
+- 사용자 지시로 다른 기준점을 명시하지 않는 한, 새 작업 브랜치는 반드시 `git fetch origin develop` 후 최신 `origin/develop`에서 생성한다. 현재 체크아웃 브랜치를 기준점으로 추정해 분기하지 않는다.
+- Merge Request 생성 전에는 `git fetch origin develop`으로 대상을 갱신하고, `git merge-base origin/develop HEAD`와 비교 로그를 확인한다. `develop`에 동일 작업이 이미 병합됐거나 기준점이 뒤처졌다면 rebase·중복 제거를 먼저 수행한다.
 - 커밋 요청 시 Conventional Commits를 사용한다.
 
   ```text
