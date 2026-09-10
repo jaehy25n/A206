@@ -77,4 +77,7 @@
     <string name="capture_control_resume">작업 구간 시작</string>
     <string name="capture_control_pause">작업 구간 일시 정지</string>
     <string name="capture_control_stop">수집 종료</string>
+    <string name="capture_finalizing">수집을 완료하고 있습니다</string>
+    <string name="capture_preview_failed">프리뷰를 준비할 수 없습니다. 카메라 권한을 허용한 뒤 수집 화면을 다시 열어 주세요.</string>
+    <string name="capture_operation_failed">수집 조작을 완료할 수 없습니다. 다시 시도해 주세요.</string>
 </resources>

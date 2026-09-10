@@ -44,3 +44,18 @@
 - 로컬 증거: `app/build/capture-preview-before-recording.png`. 이 파일은 build 산출물이므로 커밋하지 않는다.
 
 - 2026-09-10 사용자 추가 확인(T022): `SM-G973N`(Android 12)에서 `.\gradlew.bat connectedDebugAndroidTest --no-daemon`가 성공했다. 녹화 전 전체 화면 프리뷰·Task/Object 입력 모달·하단 중앙 수집 시작 아이콘·우측 상단 닫기 접근성 이름도 확인했다. 이 근거로 T022를 완료 처리하며 이전 connected 검사 재실행 필요 기록을 대체한다. TalkBack 음성·툴팁 검증은 Phase 5 T025에서 별도 판정한다.
+
+## Phase 5 검증 절차
+
+1. 녹화 전 Task/Object 입력을 완료한다. 프리뷰의 첫 프레임이 준비되기 전에는 시작이 비활성이고, 준비 실패 안내는 한 번 표시되는지 확인한다. 권한 거부 시에는 권한 허용 후 화면 재진입 안내를 확인한다.
+2. 준비·Episode 진행·Episode 없음·확정 중에 각각 시작 / 일시 정지·종료 / 작업 구간 시작·종료 / 비활성 제어·진행 표시를 확인한다. 시작·일시 정지 저장·확정 처리 중 빠르게 반복 입력해 중복 Session·Episode·종료가 생기지 않는지 확인한다.
+3. 수집 중 정지·시스템 뒤로 가기·우측 상단 X로 종료 확인을 연다. 취소하면 수집이 계속되고 확인하면 확정으로 이어져야 한다. 녹화 전 뒤로 가기·X는 Session을 만들지 않고 목록으로 돌아가야 한다.
+4. TalkBack에서 `수집 시작`, `작업 구간 일시 정지`, `작업 구간 시작`, `수집 종료`, `수집 작업 공간 닫기`의 이름·버튼 역할·비활성 상태를 확인한다. 각 아이콘을 길게 눌렀을 때 같은 이름의 툴팁을 확인한다. 음성 안내 확인자와 결과를 T025에 기록한다.
+5. 확정 중 백그라운드로 전환하면 완료 bundle은 보존하되 새 전송을 지속하지 않고 Detail에서 재전송 가능한지 확인한다. 이 실제 수집·전송 경계는 T035의 후속 기기/서버 검증에 포함한다.
+
+### 실행 기록 (2026-09-10)
+
+- 구현: `CaptureScreen`의 `controlPolicy`를 제어 아이콘·종료 확인·BackHandler·X와 실제 콜백에서 함께 사용한다. 시작/일시 정지 저장은 `controlBusy`, 확정은 `finalizing`으로 동기적으로 잠그며 완료·실패 시 해제한다. 첫 preview frame과 메타데이터를 시작 조건으로 사용한다. 툴팁·Snackbar·확정 진행 표시를 리소스 문자열로 제공한다.
+- 자동 검사: `.\gradlew.bat ktlintCheck testDebugUnitTest lintDebug assembleDebug connectedDebugAndroidTest --no-daemon` 성공. 단위 검사 52개, `SM-G973N`(Android 12)의 connected 검사 14개가 실패·건너뜀 없이 통과했다. Lint 오류 0건, 경고 62건. 신규 `CaptureControlStateTest` 4개 및 `CaptureControlStateScreenTest` 5개를 포함한다.
+- 로컬 산출물: `app/build/test-results/testDebugUnitTest/`, `app/build/outputs/androidTest-results/connected/debug/`, `app/build/reports/lint-results-debug.html` (모두 커밋 제외).
+- 미검증: TalkBack 실제 음성·모든 아이콘의 실제 사용자 툴팁 확인(T025). Compose semantics·길게 누르기 자동 검사 성공은 TalkBack 실사용 결과를 대신하지 않는다. 실제 카메라·센서 수집과 확정 중 백그라운드 전환·서버 재전송은 T035에서 별도로 검증한다.
