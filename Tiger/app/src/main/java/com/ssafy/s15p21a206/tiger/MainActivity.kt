@@ -19,17 +19,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -65,6 +62,10 @@ import com.google.ar.core.ArCoreApk
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException
 import com.ssafy.s15p21a206.tiger.capture.AndroidCaptureRuntime
 import com.ssafy.s15p21a206.tiger.capture.CameraPreviewController
+import com.ssafy.s15p21a206.tiger.capture.CapturePreviewController
+import com.ssafy.s15p21a206.tiger.capture.CapturePreviewPreflight
+import com.ssafy.s15p21a206.tiger.capture.CapturePreviewState
+import com.ssafy.s15p21a206.tiger.capture.PreviewRuntime
 import com.ssafy.s15p21a206.tiger.data.local.MIGRATION_2_3
 import com.ssafy.s15p21a206.tiger.data.local.MIGRATION_3_4
 import com.ssafy.s15p21a206.tiger.data.local.TigerDatabase
@@ -80,6 +81,8 @@ import com.ssafy.s15p21a206.tiger.episode.SessionBundleExporter
 import com.ssafy.s15p21a206.tiger.episode.SessionBundleStore
 import com.ssafy.s15p21a206.tiger.episode.SessionRepository
 import com.ssafy.s15p21a206.tiger.episode.UploadState
+import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceControlState
+import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceControls
 import com.ssafy.s15p21a206.tiger.ui.session.SessionListScreen
 import com.ssafy.s15p21a206.tiger.ui.session.TaskSessionListScreen
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerTheme
@@ -170,11 +173,36 @@ fun CaptureScreen() {
     var task by remember { mutableStateOf("") }
     var objectName by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("") }
+    var previewSurface by remember { mutableStateOf<Surface?>(null) }
     val previewController =
         remember {
             CameraPreviewController(context.applicationContext) { failure ->
                 message = failure
             }
+        }
+    val capturePreviewController =
+        remember {
+            CapturePreviewController(
+                preflight =
+                    CapturePreviewPreflight {
+                        when {
+                            androidx.core.content.ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.CAMERA,
+                            ) != android.content.pm.PackageManager.PERMISSION_GRANTED -> "Camera permission is required for preview"
+                            previewSurface == null -> "Camera preview surface is unavailable"
+                            else -> null
+                        }
+                    },
+                preview =
+                    object : PreviewRuntime {
+                        override fun startPreview() {
+                            previewController.prepare(requireNotNull(previewSurface))
+                        }
+
+                        override fun releasePreview() = previewController.release()
+                    },
+            )
         }
     var exportState by remember { mutableStateOf(ExportState.NOT_EXPORTED) }
     var exportMessage by remember { mutableStateOf<String?>(null) }
@@ -405,8 +433,8 @@ fun CaptureScreen() {
         AppDestination.CaptureWorkspace -> Unit
     }
 
-    DisposableEffect(previewController) {
-        onDispose(previewController::release)
+    DisposableEffect(capturePreviewController) {
+        onDispose(capturePreviewController::release)
     }
 
     fun finalizeCapture() {
@@ -460,7 +488,11 @@ fun CaptureScreen() {
                                 height: Int,
                             ) {
                                 surfaceTexture.setDefaultBufferSize(1920, 1080)
-                                previewController.prepare(Surface(surfaceTexture))
+                                previewSurface = Surface(surfaceTexture)
+                                when (val state = capturePreviewController.prepare()) {
+                                    is CapturePreviewState.Failed -> message = state.reason
+                                    else -> Unit
+                                }
                             }
 
                             override fun onSurfaceTextureSizeChanged(
@@ -470,7 +502,9 @@ fun CaptureScreen() {
                             ) = Unit
 
                             override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean {
-                                previewController.release()
+                                capturePreviewController.release()
+                                previewSurface?.release()
+                                previewSurface = null
                                 return true
                             }
 
@@ -510,76 +544,47 @@ fun CaptureScreen() {
             )
         }
         if (!showCaptureMetadataDialog) {
-            Row(
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .navigationBarsPadding()
-                        .padding(bottom = 36.dp),
-                horizontalArrangement = Arrangement.spacedBy(20.dp),
-            ) {
-                when {
-                    !collecting ->
-                        captureControlButton(
-                            iconRes = R.drawable.ic_capture_play,
-                            contentDescriptionRes = R.string.capture_control_start,
-                            onClick = {
-                                previewController.release()
-                                cameraPermission.launch(Manifest.permission.CAMERA)
-                            },
-                        )
-                    active -> {
-                        captureControlButton(
-                            iconRes = R.drawable.ic_capture_pause,
-                            contentDescriptionRes = R.string.capture_control_pause,
-                            onClick = {
-                                activeEpisode
-                                    ?.copy(
-                                        endTimestampNs = SystemClock.elapsedRealtimeNanos(),
-                                        outcome = EpisodeState.COMPLETED,
-                                    )?.let { marker ->
-                                        scope.launch {
-                                            repository.save(marker)
-                                            captureRuntime.appendEpisode(marker)
-                                        }
-                                    }
-                                activeEpisode = null
-                                active = false
-                            },
-                        )
-                        captureControlButton(
-                            iconRes = R.drawable.ic_capture_stop,
-                            contentDescriptionRes = R.string.capture_control_stop,
-                            onClick = { showStopConfirmation = true },
-                        )
+            CaptureWorkspaceControls(
+                state =
+                    when {
+                        !collecting -> CaptureWorkspaceControlState.Ready
+                        active -> CaptureWorkspaceControlState.EpisodeActive
+                        else -> CaptureWorkspaceControlState.SessionActive
+                    },
+                onPlay = {
+                    if (!collecting) {
+                        capturePreviewController.release()
+                        cameraPermission.launch(Manifest.permission.CAMERA)
+                    } else {
+                        activeEpisode =
+                            activeBundle?.let { bundle ->
+                                EpisodeMarker(
+                                    UUID.randomUUID().toString(),
+                                    bundle.sessionId,
+                                    SystemClock.elapsedRealtimeNanos(),
+                                    task = task,
+                                    objectName = objectName,
+                                    outcome = EpisodeState.ACTIVE,
+                                )
+                            }
+                        active = activeEpisode != null
                     }
-                    else -> {
-                        captureControlButton(
-                            iconRes = R.drawable.ic_capture_play,
-                            contentDescriptionRes = R.string.capture_control_resume,
-                            onClick = {
-                                activeEpisode =
-                                    activeBundle?.let { bundle ->
-                                        EpisodeMarker(
-                                            UUID.randomUUID().toString(),
-                                            bundle.sessionId,
-                                            SystemClock.elapsedRealtimeNanos(),
-                                            task = task,
-                                            objectName = objectName,
-                                            outcome = EpisodeState.ACTIVE,
-                                        )
-                                    }
-                                active = activeEpisode != null
-                            },
-                        )
-                        captureControlButton(
-                            iconRes = R.drawable.ic_capture_stop,
-                            contentDescriptionRes = R.string.capture_control_stop,
-                            onClick = { showStopConfirmation = true },
-                        )
-                    }
-                }
-            }
+                },
+                onPause = {
+                    activeEpisode
+                        ?.copy(endTimestampNs = SystemClock.elapsedRealtimeNanos(), outcome = EpisodeState.COMPLETED)
+                        ?.let { marker ->
+                            scope.launch {
+                                repository.save(marker)
+                                captureRuntime.appendEpisode(marker)
+                            }
+                        }
+                    activeEpisode = null
+                    active = false
+                },
+                onStop = { showStopConfirmation = true },
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
         }
     }
     if (showCaptureMetadataDialog) {
@@ -780,28 +785,6 @@ private fun NavigationHeader(
             )
         }
         Text(title)
-    }
-}
-
-@Composable
-private fun captureControlButton(
-    iconRes: Int,
-    contentDescriptionRes: Int,
-    onClick: () -> Unit,
-) {
-    IconButton(
-        onClick = onClick,
-        modifier =
-            Modifier
-                .size(56.dp)
-                .background(Color.Black.copy(alpha = 0.45f), CircleShape),
-    ) {
-        Icon(
-            painter = painterResource(iconRes),
-            contentDescription = stringResource(contentDescriptionRes),
-            tint = Color.White,
-            modifier = Modifier.size(28.dp),
-        )
     }
 }
 

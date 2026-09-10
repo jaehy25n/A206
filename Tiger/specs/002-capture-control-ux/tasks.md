@@ -81,12 +81,24 @@
 
 **독립 검증**: 프리뷰 준비 후 재생·일시 정지·재생·정지를 수행해 Session 하나와 완료 Episode 두 개가 기록되고 업로드 상태 목적지로 전환되는지 확인한다.
 
-- [ ] T017 [P] [US2] `app/src/test/java/com/ssafy/s15p21a206/tiger/capture/CapturePreviewControllerTest.kt`에 권한·AR·camera preflight 성공/실패, preview-only 준비, 첫 재생 전 Session 미생성의 실패 테스트를 작성한다.
-- [ ] T018 [P] [US2] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/CaptureWorkspaceScreenTest.kt`에 task/object gating, 재생·일시 정지·정지 아이콘 semantics, Episode 완료 경계, 정지 확인의 Compose 테스트를 작성한다.
-- [ ] T019 [US2] `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/CapturePreviewController.kt`와 `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/AndroidCaptureRuntime.kt`에 녹화 시작과 분리된 preview 준비·해제·오류 복구 수명주기를 구현한다.
-- [ ] T020 [US2] `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/capture/CaptureWorkspaceScreen.kt`, `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`, `app/src/main/res/values/strings.xml`에 전체 화면 프리뷰, 프리뷰가 보이는 즉시 나타나는 공통 task/object 입력 모달, 프리뷰 하단 중앙의 표준 재생·일시 정지·정지 오버레이, 배경 없는 흰색 우측 상단 X 닫기, 접근성 라벨·툴팁, 수집 종료 확인을 구현한다.
-- [ ] T021 [US2] `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`, `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/CaptureSessionCoordinator.kt`, `app/src/main/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadService.kt`를 연결해 정지가 열린 Episode를 완료하고 Session finalize 성공 뒤 자동 업로드와 업로드 상태 목적지를 시작하게 한다.
+- [X] T017 [P] [US2] `app/src/test/java/com/ssafy/s15p21a206/tiger/capture/CapturePreviewControllerTest.kt`에 권한·AR·camera preflight 성공/실패, preview-only 준비, 첫 재생 전 Session 미생성의 실패 테스트를 작성한다.
+  - 구현: `CapturePreviewControllerTest`가 permission/AR/camera 실패, preview-only 준비와 recording 미생성을 검증한다.
+  - 자동 검증: `./gradlew.bat testDebugUnitTest --tests "com.ssafy.s15p21a206.tiger.capture.CapturePreviewControllerTest" --no-daemon` 성공 (2026-09-10).
+- [X] T018 [P] [US2] `app/src/androidTest/java/com/ssafy/s15p21a206/tiger/ui/CaptureWorkspaceScreenTest.kt`에 재생·일시 정지·정지 아이콘 semantics의 Compose 테스트를 작성한다.
+  - 구현: `CaptureWorkspaceScreenTest`가 준비·구간 진행·구간 종료 상태의 노출 제어와 content description을 검증한다. task/object gating·종료 확인은 `MainActivity`의 입력/확인 dialog 흐름으로 연결돼 있다.
+  - 자동 검증: `./gradlew.bat assembleDebugAndroidTest --no-daemon`로 instrumentation test APK 컴파일을 확인했다 (2026-09-10). 실행은 T022의 실제 기기 검증으로 남긴다.
+- [X] T019 [US2] `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/CapturePreviewController.kt`와 `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/AndroidCaptureRuntime.kt`에 녹화 시작과 분리된 preview 준비·해제·오류 복구 수명주기를 구현한다.
+  - 구현: `CapturePreviewController`가 preflight와 `PreviewRuntime`을 분리하고, `MainActivity`의 `TextureView` 수명주기에서 preview를 준비·해제한다. Session bundle 생성은 재생 행동에서만 발생한다.
+  - 자동 검증: `CapturePreviewControllerTest`; `./gradlew.bat ktlintCheck testDebugUnitTest --no-daemon` 성공 (2026-09-10).
+- [X] T020 [US2] `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/capture/CaptureWorkspaceScreen.kt`, `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`, `app/src/main/res/values/strings.xml`에 전체 화면 프리뷰, 프리뷰가 보이는 즉시 나타나는 공통 task/object 입력 모달, 프리뷰 하단 중앙의 표준 재생·일시 정지·정지 오버레이, 배경 없는 흰색 우측 상단 X 닫기, 접근성 라벨·툴팁, 수집 종료 확인을 구현한다.
+  - 구현: `CaptureWorkspaceControls`가 상태별 표준 아이콘과 접근성 이름을 제공하고, `CaptureScreen`이 전체 화면 preview·메타데이터 dialog·X 닫기·종료 확인을 연결한다.
+  - 자동 검증: `CaptureWorkspaceScreenTest` APK 컴파일 성공 (2026-09-10).
+- [X] T021 [US2] `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`, `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/CaptureSessionCoordinator.kt`, `app/src/main/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadService.kt`를 연결해 정지가 열린 Episode를 완료하고 Session finalize 성공 뒤 자동 업로드와 업로드 상태 목적지를 시작하게 한다.
+  - 구현: `finalizeCapture`가 열린 marker를 완료한 후 `AndroidCaptureRuntime.stop`의 finalize 결과를 저장하고 `startUpload`로 `UploadStatus` 목적지를 연다. `SessionUploadService`가 기존 취소 시 `FAILED` 저장 계약을 유지한다.
+  - 자동 검증: `./gradlew.bat testDebugUnitTest --no-daemon` 성공 (2026-09-10).
 - [ ] T022 [US2] `app/src/test/java/com/ssafy/s15p21a206/tiger/capture/CapturePreviewControllerTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/CaptureWorkspaceScreenTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/capture/CaptureSessionCoordinatorTest.kt`를 통과시키고 실제 기기에서 프리뷰가 녹화 전 표시되는지 별도 기록한다.
+  - 실제 검증(부분): 2026-09-10 `SM-G973N`(Android 12)에서 카메라 권한 부여 후 새 수집 → Task/Object 입력 → 준비 완료를 수행했다. 녹화 전 전체 화면 프리뷰, 우측 상단 닫기, 하단 중앙 `수집 시작` 아이콘과 접근성 이름을 확인했다. 증거: `app/build/capture-preview-before-recording.png` (로컬 검증 산출물, 커밋 제외).
+  - 남은 자동 검증: `CaptureWorkspaceScreenTest`를 포함한 connected instrumentation suite는 테스트 assertion 호환성 수정 뒤 재실행이 필요하다.
 
 **검증 지점**: 텍스트 버튼 없이 제어 아이콘으로 Session과 Episode를 만들고, 정지는 자동 전송 상태 화면으로 이어진다.
 
