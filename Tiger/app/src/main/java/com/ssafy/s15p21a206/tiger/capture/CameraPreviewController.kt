@@ -24,8 +24,9 @@ class CameraPreviewController(
 
     fun prepare(surface: Surface) {
         if (cameraDevice != null || session != null) return
-        check(ContextCompat.checkSelfPermission(appContext, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            "Camera permission is required for preview"
+        if (ContextCompat.checkSelfPermission(appContext, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            onFailure("Camera permission is required for preview")
+            return
         }
         val cameraId =
             cameraManager.cameraIdList.firstOrNull { id ->
