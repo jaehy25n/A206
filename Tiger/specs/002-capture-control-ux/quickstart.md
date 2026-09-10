@@ -42,3 +42,5 @@
 
 - 2026-09-10, `SM-G973N`(Android 12): debug APK 설치와 카메라 권한 부여 후 새 수집을 열었다. Task/Object 입력을 완료했을 때, 녹화가 시작되기 전 전체 화면 카메라 프리뷰와 하단 중앙 `수집 시작` 아이콘, 우측 상단 닫기 접근성 이름이 표시됐다.
 - 로컬 증거: `app/build/capture-preview-before-recording.png`. 이 파일은 build 산출물이므로 커밋하지 않는다.
+
+- 2026-09-10 사용자 추가 확인(T022): `SM-G973N`(Android 12)에서 `.\gradlew.bat connectedDebugAndroidTest --no-daemon`가 성공했다. 녹화 전 전체 화면 프리뷰·Task/Object 입력 모달·하단 중앙 수집 시작 아이콘·우측 상단 닫기 접근성 이름도 확인했다. 이 근거로 T022를 완료 처리하며 이전 connected 검사 재실행 필요 기록을 대체한다. TalkBack 음성·툴팁 검증은 Phase 5 T025에서 별도 판정한다.

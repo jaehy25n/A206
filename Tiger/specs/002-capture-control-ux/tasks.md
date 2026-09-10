@@ -96,9 +96,10 @@
 - [X] T021 [US2] `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`, `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/CaptureSessionCoordinator.kt`, `app/src/main/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadService.kt`를 연결해 정지가 열린 Episode를 완료하고 Session finalize 성공 뒤 자동 업로드와 업로드 상태 목적지를 시작하게 한다.
   - 구현: `finalizeCapture`가 열린 marker를 완료한 후 `AndroidCaptureRuntime.stop`의 finalize 결과를 저장하고 `startUpload`로 `UploadStatus` 목적지를 연다. `SessionUploadService`가 기존 취소 시 `FAILED` 저장 계약을 유지한다.
   - 자동 검증: `./gradlew.bat testDebugUnitTest --no-daemon` 성공 (2026-09-10).
-- [ ] T022 [US2] `app/src/test/java/com/ssafy/s15p21a206/tiger/capture/CapturePreviewControllerTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/CaptureWorkspaceScreenTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/capture/CaptureSessionCoordinatorTest.kt`를 통과시키고 실제 기기에서 프리뷰가 녹화 전 표시되는지 별도 기록한다.
-  - 실제 검증(부분): 2026-09-10 `SM-G973N`(Android 12)에서 카메라 권한 부여 후 새 수집 → Task/Object 입력 → 준비 완료를 수행했다. 녹화 전 전체 화면 프리뷰, 우측 상단 닫기, 하단 중앙 `수집 시작` 아이콘과 접근성 이름을 확인했다. 증거: `app/build/capture-preview-before-recording.png` (로컬 검증 산출물, 커밋 제외).
-  - 남은 자동 검증: `CaptureWorkspaceScreenTest`를 포함한 connected instrumentation suite는 테스트 assertion 호환성 수정 뒤 재실행이 필요하다.
+- [X] T022 [US2] `app/src/test/java/com/ssafy/s15p21a206/tiger/capture/CapturePreviewControllerTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/CaptureWorkspaceScreenTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/capture/CaptureSessionCoordinatorTest.kt`를 통과시키고 실제 기기에서 프리뷰가 녹화 전 표시되는지 별도 기록한다.
+  - 구현/병합 대조: 최신 `origin/develop`의 `28cc090`(MR !24, merged)와 `fd029a8`, `ac7b33d`를 확인했다. `CaptureScreen` → `CapturePreviewController.prepare`/`TextureView` → `CaptureWorkspaceControls`, 첫 재생 → `AndroidCaptureRuntime.start`, 종료 확인 → `finalizeCapture` → `startUpload` 경로와 기존 테스트를 대조했으며 Phase 4는 재구현하지 않았다. Related Jira: S15P21A206-16.
+  - 자동 검증: 기존 `CapturePreviewControllerTest`·`CaptureSessionCoordinatorTest` 단위 검사 성공 기록(2026-09-10)을 유지한다. 사용자 확인(2026-09-10): `SM-G973N`(Android 12)에서 `.\gradlew.bat connectedDebugAndroidTest --no-daemon` 성공. `CaptureWorkspaceScreenTest`의 실제 경로는 `app/src/androidTest/java/com/ssafy/s15p21a206/tiger/ui/CaptureWorkspaceScreenTest.kt`이며 이전의 재실행 필요 기록을 해소했다.
+  - 실제 검증: 같은 사용자 확인에서 녹화 전 전체 화면 프리뷰·Task/Object 입력 모달·하단 중앙 수집 시작 아이콘·우측 상단 닫기 접근성 이름이 실기기에서 확인됐다. `quickstart.md` Phase 4 기록과 일치하며 이 결과를 T025의 TalkBack 검증으로 확대하지 않는다. 기존 로컬 증거 `app/build/capture-preview-before-recording.png`는 커밋 제외.
 
 **검증 지점**: 텍스트 버튼 없이 제어 아이콘으로 Session과 Episode를 만들고, 정지는 자동 전송 상태 화면으로 이어진다.
 
