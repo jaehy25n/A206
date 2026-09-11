@@ -59,3 +59,8 @@
 - 자동 검사: `.\gradlew.bat ktlintCheck testDebugUnitTest lintDebug assembleDebug connectedDebugAndroidTest --no-daemon` 성공. 단위 검사 52개, `SM-G973N`(Android 12)의 connected 검사 14개가 실패·건너뜀 없이 통과했다. Lint 오류 0건, 경고 62건. 신규 `CaptureControlStateTest` 4개 및 `CaptureControlStateScreenTest` 5개를 포함한다.
 - 로컬 산출물: `app/build/test-results/testDebugUnitTest/`, `app/build/outputs/androidTest-results/connected/debug/`, `app/build/reports/lint-results-debug.html` (모두 커밋 제외).
 - 범위 변경(2026-09-11): 사용자 지시에 따라 개발용 앱에서 TalkBack 실사용 검증을 제외했다. T025는 기존 자동 검사 성공 근거로 완료 처리했다. TalkBack을 검증했다고 보고하는 것은 아니다. 실제 카메라·센서 수집과 확정 중 백그라운드 전환·서버 재전송은 T035에서 별도로 검증한다.
+
+## Phase 7 부분 실제 기기 검증
+
+- 2026-09-11, `SM-G973N`(Android 12, page size 4096): `./gradlew.bat connectedDebugAndroidTest --no-daemon --offline`가 14개 테스트를 실패·건너뜀 없이 통과했다. 목록·수집 제어·종료 확인·export UI의 Compose semantics와 migration 경로를 확인했다.
+- 이 기기는 4KB page이므로 16KB 페이지 기기 검증(T037)을 대신하지 않는다. 실제 camera/AR 프리뷰, ingestion server 자동 업로드·취소·백그라운드 중단·재전송, legacy 외부 bundle 제외의 수동 확인도 T035에 남아 있다.
