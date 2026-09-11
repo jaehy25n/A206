@@ -15,6 +15,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,7 +41,7 @@ internal fun UploadStatusScreen(
     onBack: () -> Unit,
     onCancelUpload: () -> Unit,
 ) {
-    var showCancellationConfirmation by mutableStateOf(false)
+    var showCancellationConfirmation by remember { mutableStateOf(false) }
     val uploadInProgress = stringResource(R.string.upload_in_progress)
     val requestExit = {
         if (uploadExitAction(uploadState) == UploadExitAction.ConfirmCancellation) showCancellationConfirmation = true else onBack()
