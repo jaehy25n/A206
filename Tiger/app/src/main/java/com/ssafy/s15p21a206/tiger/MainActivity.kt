@@ -86,9 +86,12 @@ import com.ssafy.s15p21a206.tiger.ui.capture.CaptureStopConfirmation
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceControlState
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceControls
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceExitControls
+import com.ssafy.s15p21a206.tiger.ui.session.SessionDetailPresentation
 import com.ssafy.s15p21a206.tiger.ui.session.SessionListScreen
 import com.ssafy.s15p21a206.tiger.ui.session.TaskSessionListScreen
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerTheme
+import com.ssafy.s15p21a206.tiger.ui.upload.UploadStatusScreen
+import com.ssafy.s15p21a206.tiger.ui.upload.cancelUploadOnStop
 import com.ssafy.s15p21a206.tiger.upload.SessionUploadRequestFactory
 import com.ssafy.s15p21a206.tiger.upload.SessionUploadService
 import com.ssafy.s15p21a206.tiger.upload.SessionUploader
@@ -403,7 +406,7 @@ fun CaptureScreen() {
         }
     }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
-        if (destination is AppDestination.UploadStatus) {
+        if (cancelUploadOnStop(destination is AppDestination.UploadStatus)) {
             uploadJob?.cancel()
         }
         if (finalizing) return@LifecycleEventEffect
@@ -494,6 +497,9 @@ fun CaptureScreen() {
             UploadStatusScreen(
                 uploadState = state,
                 onBack = {
+                    destination = AppDestination.SessionDetail(currentDestination.sessionId)
+                },
+                onCancelUpload = {
                     uploadJob?.cancel()
                     destination = AppDestination.SessionDetail(currentDestination.sessionId)
                 },
@@ -731,6 +737,7 @@ private fun SessionDetailScreen(
         if (summary == null) {
             Text(stringResource(R.string.session_detail_unavailable))
         } else {
+            val presentation = SessionDetailPresentation.from(summary)
             SessionVideoPreview(summary.bundlePath, onOpenFullscreenVideo)
             Text(
                 stringResource(
@@ -742,14 +749,30 @@ private fun SessionDetailScreen(
             )
             Text(stringResource(R.string.session_list_short_id, summary.sessionId.take(8)))
             Text(stringResource(R.string.session_list_episode_count, summary.completedEpisodeCount))
-            val durationNs =
-                (summary.recordingEndMonotonicTimestampNs ?: summary.recordingStartMonotonicTimestampNs) -
-                    summary.recordingStartMonotonicTimestampNs
-            Text(stringResource(R.string.session_detail_duration, durationNs / 1_000_000_000))
-            Text(stringResource(if (summary.uploadState == UploadState.FAILED) R.string.upload_failed else R.string.upload_local_only))
-            if (summary.uploadState == UploadState.LOCAL_ONLY || summary.uploadState == UploadState.FAILED) {
+            Text(stringResource(R.string.session_detail_duration, presentation.durationSeconds))
+            Text(
+                stringResource(
+                    when (summary.uploadState) {
+                        UploadState.LOCAL_ONLY -> R.string.upload_local_only
+                        UploadState.UPLOADING -> R.string.upload_in_progress
+                        UploadState.UPLOADED -> R.string.upload_completed
+                        UploadState.FAILED -> R.string.upload_failed
+                    },
+                ),
+            )
+            if (presentation.uploadAction != null) {
                 Button(onClick = onUpload) {
-                    Text(stringResource(if (summary.uploadState == UploadState.FAILED) R.string.upload_retry else R.string.upload_session))
+                    Text(
+                        stringResource(
+                            if (presentation.uploadAction ==
+                                SessionDetailPresentation.UploadAction.Retry
+                            ) {
+                                R.string.upload_retry
+                            } else {
+                                R.string.upload_session
+                            },
+                        ),
+                    )
                 }
             }
             ExportControls(exportState, exportMessage, onExport)
@@ -853,30 +876,6 @@ private fun NavigationHeader(
             )
         }
         Text(title)
-    }
-}
-
-@Suppress("FunctionName")
-@Composable
-private fun UploadStatusScreen(
-    uploadState: UploadState?,
-    onBack: () -> Unit,
-) {
-    Column(Modifier.fillMaxSize()) {
-        NavigationHeader(stringResource(R.string.upload_status_title), onBack)
-        Text(
-            stringResource(
-                when (uploadState) {
-                    UploadState.UPLOADING -> R.string.upload_in_progress
-                    UploadState.UPLOADED -> R.string.upload_completed
-                    UploadState.FAILED -> R.string.upload_failed
-                    UploadState.LOCAL_ONLY, null -> R.string.upload_local_only
-                },
-            ),
-        )
-        if (uploadState == UploadState.UPLOADING) {
-            Text(stringResource(R.string.upload_leave_warning))
-        }
     }
 }
 
