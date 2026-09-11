@@ -141,12 +141,20 @@
 
 **독립 검증**: 로컬 보관·실패 Session Detail에서 전송·재전송을 시작하고, 업로드 상태 화면에서 로딩·종료·이탈 확인·백그라운드 중단 뒤 retry를 확인한다.
 
-- [ ] T026 [P] [US4] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/SessionDetailScreenTest.kt`에 Detail 수집 시각·길이·완료 Episode 개수·데이터 상태와 전송/재전송 행동 테스트를 작성한다.
-- [ ] T027 [P] [US4] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/UploadStatusScreenTest.kt`에 비결정적 진행 표시, 화면 이탈 경고 문구, 완료/실패 상태, 뒤로 가기 취소 확인, lifecycle background 취소 테스트를 작성한다.
-- [ ] T028 [US4] `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`, `app/src/main/res/drawable/`, `app/src/main/res/values/strings.xml`에 Session 식별 정보·수집 시각·길이·완료 Episode 개수·데이터 상태·로컬 원본 동영상 재생·전체 화면 확장, 상태별 전송·재전송 행동과 좌측 상단 뒤로가기 아이콘을 구현한다.
-- [ ] T029 [US4] `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/upload/UploadStatusScreen.kt`와 `app/src/main/res/values/strings.xml`에 비결정적 로딩, 화면 이탈 경고, 성공·실패 표시와 취소 확인 dialog를 구현한다.
-- [ ] T030 [US4] `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`와 `app/src/main/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadService.kt`에 Detail·정지의 공통 전송 시작, Upload Status 화면 소유 Job, back/close 확인 취소, `ON_STOP` 즉시 취소 및 `FAILED` persist를 연결한다.
-- [ ] T031 [US4] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/SessionDetailScreenTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/UploadStatusScreenTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadServiceTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/upload/SessionUploaderTest.kt`를 통과시키고 MockWebServer에서 `201`, `200 duplicate`, 네트워크 실패, 취소를 확인한다.
+- [X] T026 [P] [US4] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/SessionDetailScreenTest.kt`에 Detail 수집 시각·길이·완료 Episode 개수·데이터 상태와 전송/재전송 행동 테스트를 작성한다.
+  - 구현/production: `SessionDetailPresentation`이 `SessionDetailScreen`의 길이와 전송/재전송 행동을 결정하며, 화면은 기존 수집 시각·ID·완료 Episode 개수·데이터 상태·동영상/전체 화면 경로를 유지한다.
+  - 자동 검증: `SessionDetailScreenTest`의 `detail presentation retains duration episode data source and upload action`, `failed session exposes retry while completed upload exposes no action`.
+- [X] T027 [P] [US4] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/UploadStatusScreenTest.kt`에 비결정적 진행 표시, 화면 이탈 경고 문구, 완료/실패 상태, 뒤로 가기 취소 확인, lifecycle background 취소 테스트를 작성한다.
+  - 구현/production: `UploadStatusScreen`은 `UPLOADING`에서 indeterminate indicator·이탈 경고·확인 dialog를 표시하고 `uploadExitAction`으로 terminal 상태와 구분한다. `CaptureScreen`의 `ON_STOP`은 해당 화면의 Job을 즉시 취소한다.
+  - 자동 검증: `UploadStatusScreenTest`의 uploading 이탈 확인·terminal 직접 복귀·lifecycle stop 취소 정책과 `SessionUploadServiceTest.cancelled upload persists failed`.
+- [X] T028 [US4] `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`, `app/src/main/res/drawable/`, `app/src/main/res/values/strings.xml`에 Session 식별 정보·수집 시각·길이·완료 Episode 개수·데이터 상태·로컬 원본 동영상 재생·전체 화면 확장, 상태별 전송·재전송 행동과 좌측 상단 뒤로가기 아이콘을 구현한다.
+  - 구현/production: `CaptureScreen`의 `SessionDetail`/`SessionVideo` 목적지 → `SessionDetailScreen`/`FullScreenVideoScreen`과 `SessionDetailPresentation` 경로.
+- [X] T029 [US4] `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/upload/UploadStatusScreen.kt`와 `app/src/main/res/values/strings.xml`에 비결정적 로딩, 화면 이탈 경고, 성공·실패 표시와 취소 확인 dialog를 구현한다.
+  - 구현/production: `UploadStatusScreen`의 `CircularProgressIndicator`, 상태 문구와 취소 dialog가 `CaptureScreen`의 `UploadStatus` 목적지에서 호출된다.
+- [X] T030 [US4] `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`와 `app/src/main/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadService.kt`에 Detail·정지의 공통 전송 시작, Upload Status 화면 소유 Job, back/close 확인 취소, `ON_STOP` 즉시 취소 및 `FAILED` persist를 연결한다.
+  - 구현/production: Detail과 capture finalize가 공통 `startUpload`를 호출하며, 확인된 이탈과 `ON_STOP`은 `uploadJob.cancel()` → `SessionUploadService`의 cancellation handler → `FAILED` 저장으로 연결된다.
+- [X] T031 [US4] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/SessionDetailScreenTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/UploadStatusScreenTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadServiceTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/upload/SessionUploaderTest.kt`를 통과시키고 MockWebServer에서 `201`, `200 duplicate`, 네트워크 실패, 취소를 확인한다.
+  - 자동 검증: `./gradlew.bat ktlintCheck testDebugUnitTest --tests "com.ssafy.s15p21a206.tiger.ui.SessionDetailScreenTest" --tests "com.ssafy.s15p21a206.tiger.ui.UploadStatusScreenTest" --tests "com.ssafy.s15p21a206.tiger.upload.SessionUploadServiceTest" --tests "com.ssafy.s15p21a206.tiger.upload.SessionUploaderTest" --rerun-tasks --no-daemon --offline` 성공 (2026-09-11). `SessionUploaderTest`가 MockWebServer의 `201`, `200 duplicate`, 네트워크 실패·취소를 검증한다.
 
 **검증 지점**: Detail은 전송을 시작하고, 업로드 상태 화면은 polling 없이 진행을 보여 주며 이탈·백그라운드 중단 후 재전송을 보장한다.
 
