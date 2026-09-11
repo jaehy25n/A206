@@ -96,9 +96,10 @@
 - [X] T021 [US2] `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`, `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/CaptureSessionCoordinator.kt`, `app/src/main/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadService.kt`를 연결해 정지가 열린 Episode를 완료하고 Session finalize 성공 뒤 자동 업로드와 업로드 상태 목적지를 시작하게 한다.
   - 구현: `finalizeCapture`가 열린 marker를 완료한 후 `AndroidCaptureRuntime.stop`의 finalize 결과를 저장하고 `startUpload`로 `UploadStatus` 목적지를 연다. `SessionUploadService`가 기존 취소 시 `FAILED` 저장 계약을 유지한다.
   - 자동 검증: `./gradlew.bat testDebugUnitTest --no-daemon` 성공 (2026-09-10).
-- [ ] T022 [US2] `app/src/test/java/com/ssafy/s15p21a206/tiger/capture/CapturePreviewControllerTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/CaptureWorkspaceScreenTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/capture/CaptureSessionCoordinatorTest.kt`를 통과시키고 실제 기기에서 프리뷰가 녹화 전 표시되는지 별도 기록한다.
-  - 실제 검증(부분): 2026-09-10 `SM-G973N`(Android 12)에서 카메라 권한 부여 후 새 수집 → Task/Object 입력 → 준비 완료를 수행했다. 녹화 전 전체 화면 프리뷰, 우측 상단 닫기, 하단 중앙 `수집 시작` 아이콘과 접근성 이름을 확인했다. 증거: `app/build/capture-preview-before-recording.png` (로컬 검증 산출물, 커밋 제외).
-  - 남은 자동 검증: `CaptureWorkspaceScreenTest`를 포함한 connected instrumentation suite는 테스트 assertion 호환성 수정 뒤 재실행이 필요하다.
+- [X] T022 [US2] `app/src/test/java/com/ssafy/s15p21a206/tiger/capture/CapturePreviewControllerTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/CaptureWorkspaceScreenTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/capture/CaptureSessionCoordinatorTest.kt`를 통과시키고 실제 기기에서 프리뷰가 녹화 전 표시되는지 별도 기록한다.
+  - 구현/병합 대조: 최신 `origin/develop`의 `28cc090`(MR !24, merged)와 `fd029a8`, `ac7b33d`를 확인했다. `CaptureScreen` → `CapturePreviewController.prepare`/`TextureView` → `CaptureWorkspaceControls`, 첫 재생 → `AndroidCaptureRuntime.start`, 종료 확인 → `finalizeCapture` → `startUpload` 경로와 기존 테스트를 대조했으며 Phase 4는 재구현하지 않았다. Related Jira: S15P21A206-16.
+  - 자동 검증: 기존 `CapturePreviewControllerTest`·`CaptureSessionCoordinatorTest` 단위 검사 성공 기록(2026-09-10)을 유지한다. 사용자 확인(2026-09-10): `SM-G973N`(Android 12)에서 `.\gradlew.bat connectedDebugAndroidTest --no-daemon` 성공. `CaptureWorkspaceScreenTest`의 실제 경로는 `app/src/androidTest/java/com/ssafy/s15p21a206/tiger/ui/CaptureWorkspaceScreenTest.kt`이며 이전의 재실행 필요 기록을 해소했다.
+  - 실제 검증: 같은 사용자 확인에서 녹화 전 전체 화면 프리뷰·Task/Object 입력 모달·하단 중앙 수집 시작 아이콘·우측 상단 닫기 접근성 이름이 실기기에서 확인됐다. `quickstart.md` Phase 4 기록과 일치하며 이 결과를 T025의 TalkBack 검증으로 확대하지 않는다. 기존 로컬 증거 `app/build/capture-preview-before-recording.png`는 커밋 제외.
 
 **검증 지점**: 텍스트 버튼 없이 제어 아이콘으로 Session과 Episode를 만들고, 정지는 자동 전송 상태 화면으로 이어진다.
 
@@ -110,9 +111,23 @@
 
 **독립 검증**: 준비·Episode 진행·Episode 없음/Session 수집·확정 상태에서 활성 아이콘이 다르고, 정지·뒤로 가기·닫기에는 확인을 제공하는지 확인한다.
 
-- [ ] T023 [P] [US3] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/CaptureControlStateTest.kt`에 네 수집 상태의 아이콘 활성화, 확정 중 중복 입력 차단, 정지·뒤로 가기·닫기 확인 테스트를 작성한다.
-- [ ] T024 [US3] `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/capture/CaptureWorkspaceScreen.kt`와 `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`에 상태별 제어 활성화, 준비 실패·확정 중 일회성 안내, BackHandler·전체 화면 sheet X 닫기 확인을 구현한다.
+- [X] T023 [P] [US3] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/CaptureControlStateTest.kt`에 네 수집 상태의 아이콘 활성화, 확정 중 중복 입력 차단, 정지·뒤로 가기·닫기 확인 테스트를 작성한다.
+  - 구현: `src/test/.../ui/CaptureControlStateTest.kt`의 네 상태·준비 실패·작업 잠금·종료 확인 정책 4개 테스트와 `src/androidTest/.../ui/CaptureControlStateScreenTest.kt`의 비활성 제어/진행 표시·프리뷰 차단·툴팁·확인/취소·시스템 Back/X 5개 테스트. UI는 기존 프로젝트 구성에 따라 `androidTest`에 배치했다.
+  - 자동 검증: 구현 전 `testDebugUnitTest --tests '*CaptureControlStateTest' --no-daemon`에서 새 정책/확정 상태 미구현으로 실패함을 확인한 뒤 구현했다. 구현 후 `.\gradlew.bat ktlintCheck testDebugUnitTest lintDebug assembleDebug connectedDebugAndroidTest --no-daemon` 성공(2026-09-10). 단위 52개·connected 14개 모두 통과하며 신규 9개 테스트를 포함한다.
+  - 실제 검증: connected suite는 `SM-G973N`(Android 12)에서 실행했다. 실제 TalkBack 음성 검증은 T025에 남긴다. Related Jira: S15P21A206-17.
+- [X] T024 [US3] `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/capture/CaptureWorkspaceScreen.kt`와 `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`에 상태별 제어 활성화, 준비 실패·확정 중 일회성 안내, BackHandler·전체 화면 sheet X 닫기 확인을 구현한다.
+  - 구현/production: `MainActivity.kt`의 `CaptureScreen.controlPolicy` → `CaptureWorkspaceControls`/`CaptureWorkspaceExitControls`와 재생·일시 정지·정지·`requestCaptureExit`/`finalizeCapture`가 같은 정책을 사용한다. `CaptureControlPolicy.kt`는 준비·Episode 진행·Session 유지·확정의 네 상태를 정의한다. 시작/저장 잠금과 확정 잠금은 비동기 실행 전에 설정하고 완료·실패 시 해제해 중복 입력을 차단한다.
+  - 안내/접근성: 첫 preview frame·유효한 메타데이터가 준비되기 전 재생 차단, 프리뷰 실패 Snackbar, 확정 진행 표시, `CaptureTooltip`의 리소스 라벨과 길게 누르기, `CaptureStopConfirmation`의 공통 확인/취소를 연결했다. 확정 처리는 IO에서 수행하고 동시에 interrupt하지 않으며 백그라운드에서 끝나면 전송을 지속하지 않고 재전송 가능한 Detail로 보존한다. `contracts/capture-control-ui.md`와 `plan.md`에 제어 정책을 반영했다.
+  - 자동 검증: T023의 전체 명령 성공. `CaptureControlStateTest`의 상태/잠금/확인 정책과 `CaptureControlStateScreenTest`의 `finalizing_disables_controls_and_exposes_progress`, `system_back_and_close_share_exit_callback_and_finalizing_blocks_both`, `stop_confirmation_explains_upload_and_separates_cancel_from_confirm` 통과.
+  - 외부 검증: SM-G973N에서 UI instrumentation 성공. 실제 TalkBack은 T025, 실제 카메라·센서/확정 중 백그라운드·서버 전송은 T035에 별도 기록하며 자동 검증으로 대체하지 않는다.
 - [ ] T025 [US3] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/CaptureControlStateTest.kt`를 통과시키고 TalkBack에서 아이콘의 접근성 이름과 툴팁을 실제 기기에서 확인한다.
+  - 자동 검증 완료: T023의 `CaptureControlStateTest` 4개와 SM-G973N의 `CaptureControlStateScreenTest` 5개가 성공했다. 아이콘 semantics, 비활성 입력 차단, `long_press_shows_accessible_control_tooltip`을 검증했다.
+  - 남은 실제 검증: TalkBack에서 시작·일시 정지·작업 구간 시작·종료·닫기의 실제 음성/이름 및 각 툴팁을 사용자가 확인한 결과가 아직 없다. T022의 프리뷰/접근성 이름 확인과 이번 Compose 자동 테스트를 TalkBack 검증으로 간주하지 않고 `[ ]`를 유지한다. 절차는 `quickstart.md` Phase 5에 기록했다.
+
+### 요청 범위 수렴 대조 (2026-09-10)
+
+- `$speckit-converge`: 사용자 지정 범위 T022·Phase 5에 한정해 US3 인수 시나리오 4개, FR-008/FR-008a/FR-009, 준비/확정 중 중복 입력 엣지 케이스, 단일 모듈·부모 상태 소유·리소스 문자열·기존 데이터/전송 계약을 코드와 대조했다. Constitution은 미작성 템플릿이므로 강제 원칙 검사는 생략했다. 확장 hook 설정은 없다.
+- 구현 연결·자동 검증 범위에서 추가 미구현은 발견하지 않았다. 외부 검증 T025가 남아 있으므로 Phase 5 전체 또는 기능 전체의 `converged`/완료를 선언하지 않는다. 기존 T025·T035에 추적되는 외부 검증을 중복 task로 추가하거나 Phase 6·7을 이번 범위로 확대하지 않았다.
 
 **검증 지점**: 사용자는 상시 상태 문구 없이 가능한 다음 조작을 알 수 있고, 수집 종료 전 확인 기회를 받는다.
 

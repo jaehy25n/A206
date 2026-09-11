@@ -14,7 +14,6 @@ import android.view.TextureView
 import android.widget.MediaController
 import android.widget.VideoView
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,12 +25,13 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -51,12 +51,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.room.Room
 import com.google.ar.core.ArCoreApk
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException
@@ -81,16 +80,23 @@ import com.ssafy.s15p21a206.tiger.episode.SessionBundleExporter
 import com.ssafy.s15p21a206.tiger.episode.SessionBundleStore
 import com.ssafy.s15p21a206.tiger.episode.SessionRepository
 import com.ssafy.s15p21a206.tiger.episode.UploadState
+import com.ssafy.s15p21a206.tiger.ui.capture.CaptureControlPolicy
+import com.ssafy.s15p21a206.tiger.ui.capture.CaptureExitAction
+import com.ssafy.s15p21a206.tiger.ui.capture.CaptureStopConfirmation
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceControlState
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceControls
+import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceExitControls
 import com.ssafy.s15p21a206.tiger.ui.session.SessionListScreen
 import com.ssafy.s15p21a206.tiger.ui.session.TaskSessionListScreen
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerTheme
 import com.ssafy.s15p21a206.tiger.upload.SessionUploadRequestFactory
 import com.ssafy.s15p21a206.tiger.upload.SessionUploadService
 import com.ssafy.s15p21a206.tiger.upload.SessionUploader
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import java.io.File
 import java.util.UUID
@@ -128,6 +134,7 @@ private sealed interface AppDestination {
 @Composable
 fun CaptureScreen() {
     val context = LocalContext.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     val database =
         remember {
             Room
@@ -168,6 +175,13 @@ fun CaptureScreen() {
     val gateway = remember { SafDocumentTreeGateway(context.applicationContext) }
     val exporter = remember { SessionBundleExporter(gateway) }
     val captureRuntime = remember { AndroidCaptureRuntime(context.applicationContext, SessionBundleStore(context.applicationContext)) }
+    var controlBusy by remember { mutableStateOf(false) }
+    var finalizing by remember { mutableStateOf(false) }
+    var previewReady by remember { mutableStateOf(false) }
+    var previewFailed by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val previewFailureMessage = stringResource(R.string.capture_preview_failed)
+    val operationFailureMessage = stringResource(R.string.capture_operation_failed)
     var collecting by remember { mutableStateOf(false) }
     var active by remember { mutableStateOf(false) }
     var task by remember { mutableStateOf("") }
@@ -176,8 +190,10 @@ fun CaptureScreen() {
     var previewSurface by remember { mutableStateOf<Surface?>(null) }
     val previewController =
         remember {
-            CameraPreviewController(context.applicationContext) { failure ->
-                message = failure
+            CameraPreviewController(context.applicationContext) { _ ->
+                previewReady = false
+                previewFailed = true
+                message = previewFailureMessage
             }
         }
     val capturePreviewController =
@@ -215,6 +231,30 @@ fun CaptureScreen() {
     var uploadJob by remember { mutableStateOf<Job?>(null) }
     var showStopConfirmation by remember { mutableStateOf(false) }
     var showCaptureMetadataDialog by remember { mutableStateOf(false) }
+
+    fun controlPolicy() =
+        CaptureControlPolicy(
+            state =
+                when {
+                    finalizing -> CaptureWorkspaceControlState.Finalizing
+                    !collecting -> CaptureWorkspaceControlState.Ready
+                    active -> CaptureWorkspaceControlState.EpisodeActive
+                    else -> CaptureWorkspaceControlState.SessionActive
+                },
+            ready = previewReady && !previewFailed && task.isNotBlank() && objectName.isNotBlank() && !showCaptureMetadataDialog,
+            busy = controlBusy,
+        )
+
+    fun requestCaptureExit() {
+        when (controlPolicy().exitAction) {
+            CaptureExitAction.Ignore -> Unit
+            CaptureExitAction.Confirm -> showStopConfirmation = true
+            CaptureExitAction.Leave -> {
+                showCaptureMetadataDialog = false
+                destination = AppDestination.SessionList
+            }
+        }
+    }
     val pickerCancelled = stringResource(R.string.export_picker_cancelled)
     val exportGrantFailed = stringResource(R.string.export_grant_failed)
     val exportFailedUnexpected = stringResource(R.string.export_failed_unexpected)
@@ -223,7 +263,6 @@ fun CaptureScreen() {
     val captureFinalizeFailed = stringResource(R.string.capture_finalize_failed)
     val arCoreUnavailable = stringResource(R.string.arcore_unavailable)
     val arCoreInstallMessage = stringResource(R.string.arcore_install_requested)
-    val closeCaptureDescription = stringResource(R.string.capture_close_content_description)
     val arCoreSessionStartFailed = stringResource(R.string.arcore_session_start_failed)
     val uploadEndpointMissing = stringResource(R.string.upload_endpoint_missing)
     LaunchedEffect(repository) {
@@ -280,56 +319,94 @@ fun CaptureScreen() {
                         ArCoreApk.getInstance().requestInstall(activity, !arCoreInstallRequested)
                     }.getOrElse {
                         message = arCoreUnavailable
+                        controlBusy = false
                         return@rememberLauncherForActivityResult
                     }
                 if (installStatus == ArCoreApk.InstallStatus.INSTALL_REQUESTED) {
                     arCoreInstallRequested = true
                     message = arCoreInstallMessage
+                    controlBusy = false
                     return@rememberLauncherForActivityResult
                 }
                 scope.launch {
-                    val displayNumber = repository.nextDisplayNumber()
-                    runCatching { captureRuntime.start(displayNumber) }
-                        .onSuccess { bundle ->
-                            activeBundle = bundle
-                            recordingStartNs = SystemClock.elapsedRealtimeNanos()
-                            activeEpisode =
-                                EpisodeMarker(
-                                    UUID.randomUUID().toString(),
-                                    bundle.sessionId,
-                                    recordingStartNs,
-                                    task = task,
-                                    objectName = objectName,
-                                    outcome = EpisodeState.ACTIVE,
+                    try {
+                        val displayNumber = repository.nextDisplayNumber()
+                        runCatching { captureRuntime.start(displayNumber) }
+                            .onSuccess { bundle ->
+                                activeBundle = bundle
+                                recordingStartNs = SystemClock.elapsedRealtimeNanos()
+                                activeEpisode =
+                                    EpisodeMarker(
+                                        UUID.randomUUID().toString(),
+                                        bundle.sessionId,
+                                        recordingStartNs,
+                                        task = task,
+                                        objectName = objectName,
+                                        outcome = EpisodeState.ACTIVE,
+                                    )
+                                collecting = true
+                                active = true
+                                repository.save(
+                                    CaptureSession(
+                                        bundle.sessionId,
+                                        bundle.displayNumber,
+                                        RecordingState.INITIALIZING,
+                                        UploadState.LOCAL_ONLY,
+                                        recordingStartNs,
+                                        bundlePath = bundle.directory.absolutePath,
+                                        recordingStartEpochMs = System.currentTimeMillis(),
+                                    ),
                                 )
-                            collecting = true
-                            active = true
-                            repository.save(
-                                CaptureSession(
-                                    bundle.sessionId,
-                                    bundle.displayNumber,
-                                    RecordingState.INITIALIZING,
-                                    UploadState.LOCAL_ONLY,
-                                    recordingStartNs,
-                                    bundlePath = bundle.directory.absolutePath,
-                                    recordingStartEpochMs = System.currentTimeMillis(),
-                                ),
-                            )
-                        }.onFailure { error ->
-                            message = "$arCoreSessionStartFailed: ${error.message.orEmpty()}"
-                            if (error is UnavailableArcoreNotInstalledException) {
-                                context.openArCoreStore()
+                            }.onFailure { error ->
+                                message = "$arCoreSessionStartFailed: ${error.message.orEmpty()}"
+                                if (error is UnavailableArcoreNotInstalledException) {
+                                    context.openArCoreStore()
+                                }
                             }
-                        }
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) {
+                        message = operationFailureMessage
+                    } finally {
+                        controlBusy = false
+                    }
                 }
             } else {
                 message = recordingCameraUnavailable
+                controlBusy = false
             }
         }
+    val previewPermission =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted && previewSurface != null) {
+                previewFailed = false
+                capturePreviewController.release()
+                if (capturePreviewController.prepare() is CapturePreviewState.Failed) {
+                    previewFailed = true
+                    message = previewFailureMessage
+                }
+            } else if (!granted) {
+                previewFailed = true
+                message = previewFailureMessage
+            }
+        }
+    LaunchedEffect(destination) {
+        if (destination == AppDestination.CaptureWorkspace) {
+            previewPermission.launch(Manifest.permission.CAMERA)
+        }
+    }
+    LaunchedEffect(message, destination) {
+        if (destination == AppDestination.CaptureWorkspace && message.isNotBlank()) {
+            val notice = message
+            message = ""
+            scope.launch { snackbarHostState.showSnackbar(notice) }
+        }
+    }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
         if (destination is AppDestination.UploadStatus) {
             uploadJob?.cancel()
         }
+        if (finalizing) return@LifecycleEventEffect
         val interruptedBundle = activeBundle ?: return@LifecycleEventEffect
         captureRuntime.interrupt()
         scope.launch {
@@ -361,21 +438,14 @@ fun CaptureScreen() {
         destination = AppDestination.UploadStatus(sessionId)
         uploadJob = scope.launch { service.upload(sessionId) }
     }
-    BackHandler(enabled = destination is AppDestination.CaptureWorkspace) {
-        if (showCaptureMetadataDialog) {
-            showCaptureMetadataDialog = false
-            destination = AppDestination.SessionList
-        } else if (collecting) {
-            showStopConfirmation = true
-        } else {
-            destination = AppDestination.SessionList
-        }
-    }
     when (val currentDestination = destination) {
         AppDestination.SessionList -> {
             SessionListScreen(
                 sessions = completedSummaries,
                 onStartCapture = {
+                    previewReady = false
+                    previewFailed = false
+                    showStopConfirmation = false
                     task = ""
                     objectName = ""
                     message = ""
@@ -438,41 +508,56 @@ fun CaptureScreen() {
     }
 
     fun finalizeCapture() {
+        if (!controlPolicy().canStop) return
+        finalizing = true
         scope.launch {
-            activeEpisode
-                ?.copy(endTimestampNs = SystemClock.elapsedRealtimeNanos(), outcome = EpisodeState.COMPLETED)
-                ?.let { marker ->
-                    repository.save(marker)
-                    captureRuntime.appendEpisode(marker)
-                }
-            activeEpisode = null
-            active = false
-            when (
-                val result =
-                    runCatching { captureRuntime.stop() }
-                        .getOrElse { FinalizeResult.Failed(it.message.orEmpty()) }
-            ) {
-                is FinalizeResult.Completed -> {
-                    activeBundle?.let { bundle ->
-                        repository.save(
-                            CaptureSession(
-                                bundle.sessionId,
-                                bundle.displayNumber,
-                                RecordingState.COMPLETED,
-                                UploadState.LOCAL_ONLY,
-                                recordingStartNs,
-                                SystemClock.elapsedRealtimeNanos(),
-                                result.directory.absolutePath,
-                                System.currentTimeMillis(),
-                            ),
-                        )
-                        startUpload(bundle.sessionId)
+            try {
+                activeEpisode
+                    ?.copy(endTimestampNs = SystemClock.elapsedRealtimeNanos(), outcome = EpisodeState.COMPLETED)
+                    ?.let { marker ->
+                        repository.save(marker)
+                        captureRuntime.appendEpisode(marker)
                     }
+                activeEpisode = null
+                active = false
+                when (
+                    val result =
+                        runCatching { withContext(Dispatchers.IO) { captureRuntime.stop() } }
+                            .getOrElse { FinalizeResult.Failed(it.message.orEmpty()) }
+                ) {
+                    is FinalizeResult.Completed -> {
+                        activeBundle?.let { bundle ->
+                            val completedSession =
+                                CaptureSession(
+                                    bundle.sessionId,
+                                    bundle.displayNumber,
+                                    RecordingState.COMPLETED,
+                                    UploadState.LOCAL_ONLY,
+                                    recordingStartNs,
+                                    SystemClock.elapsedRealtimeNanos(),
+                                    result.directory.absolutePath,
+                                    System.currentTimeMillis(),
+                                )
+                            repository.save(completedSession)
+                            if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+                                startUpload(bundle.sessionId)
+                            } else {
+                                repository.save(completedSession.copy(uploadState = UploadState.FAILED))
+                                destination = AppDestination.SessionDetail(bundle.sessionId)
+                            }
+                        }
+                    }
+                    is FinalizeResult.Failed -> message = "$captureFinalizeFailed: ${result.reason}"
                 }
-                is FinalizeResult.Failed -> message = "$captureFinalizeFailed: ${result.reason}"
+                activeBundle = null
+                collecting = false
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                message = captureFinalizeFailed
+            } finally {
+                finalizing = false
             }
-            activeBundle = null
-            collecting = false
         }
     }
 
@@ -490,7 +575,10 @@ fun CaptureScreen() {
                                 surfaceTexture.setDefaultBufferSize(1920, 1080)
                                 previewSurface = Surface(surfaceTexture)
                                 when (val state = capturePreviewController.prepare()) {
-                                    is CapturePreviewState.Failed -> message = state.reason
+                                    is CapturePreviewState.Failed -> {
+                                        previewFailed = true
+                                        message = previewFailureMessage
+                                    }
                                     else -> Unit
                                 }
                             }
@@ -505,54 +593,34 @@ fun CaptureScreen() {
                                 capturePreviewController.release()
                                 previewSurface?.release()
                                 previewSurface = null
+                                previewReady = false
                                 return true
                             }
 
-                            override fun onSurfaceTextureUpdated(surfaceTexture: SurfaceTexture) = Unit
+                            override fun onSurfaceTextureUpdated(surfaceTexture: SurfaceTexture) {
+                                if (!previewFailed) previewReady = true
+                            }
                         }
                 }
             },
             modifier = Modifier.fillMaxSize(),
         )
-        IconButton(
-            onClick = {
-                if (collecting) {
-                    showStopConfirmation = true
-                } else {
-                    destination = AppDestination.SessionList
-                }
-            },
-            modifier =
-                Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 20.dp, end = 20.dp)
-                    .size(48.dp)
-                    .semantics { contentDescription = closeCaptureDescription },
-        ) {
-            Text(
-                text = stringResource(R.string.control_close),
-                color = Color.White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-        if (message.isNotBlank()) {
-            Text(
-                text = message,
-                color = Color.White,
-                modifier = Modifier.align(Alignment.Center),
-            )
-        }
+        CaptureWorkspaceExitControls(
+            policy = controlPolicy(),
+            onExit = ::requestCaptureExit,
+            modifier = Modifier.align(Alignment.TopEnd).padding(top = 20.dp, end = 20.dp),
+        )
+        SnackbarHost(snackbarHostState, Modifier.align(Alignment.TopCenter).padding(top = 80.dp))
         if (!showCaptureMetadataDialog) {
             CaptureWorkspaceControls(
-                state =
-                    when {
-                        !collecting -> CaptureWorkspaceControlState.Ready
-                        active -> CaptureWorkspaceControlState.EpisodeActive
-                        else -> CaptureWorkspaceControlState.SessionActive
-                    },
-                onPlay = {
+                state = controlPolicy().state,
+                ready = controlPolicy().ready,
+                busy = controlBusy,
+                onPlay = play@{
+                    if (!controlPolicy().canPlay) return@play
                     if (!collecting) {
+                        controlBusy = true
+                        previewReady = false
                         capturePreviewController.release()
                         cameraPermission.launch(Manifest.permission.CAMERA)
                     } else {
@@ -570,19 +638,28 @@ fun CaptureScreen() {
                         active = activeEpisode != null
                     }
                 },
-                onPause = {
-                    activeEpisode
-                        ?.copy(endTimestampNs = SystemClock.elapsedRealtimeNanos(), outcome = EpisodeState.COMPLETED)
-                        ?.let { marker ->
-                            scope.launch {
-                                repository.save(marker)
-                                captureRuntime.appendEpisode(marker)
-                            }
+                onPause = pause@{
+                    if (!controlPolicy().canPause) return@pause
+                    val marker =
+                        activeEpisode?.copy(endTimestampNs = SystemClock.elapsedRealtimeNanos(), outcome = EpisodeState.COMPLETED)
+                            ?: return@pause
+                    controlBusy = true
+                    scope.launch {
+                        try {
+                            repository.save(marker)
+                            captureRuntime.appendEpisode(marker)
+                            activeEpisode = null
+                            active = false
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (_: Exception) {
+                            message = operationFailureMessage
+                        } finally {
+                            controlBusy = false
                         }
-                    activeEpisode = null
-                    active = false
+                    }
                 },
-                onStop = { showStopConfirmation = true },
+                onStop = { if (controlPolicy().canStop) requestCaptureExit() },
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
         }
@@ -625,21 +702,12 @@ fun CaptureScreen() {
         )
     }
     if (showStopConfirmation) {
-        AlertDialog(
-            onDismissRequest = { showStopConfirmation = false },
-            title = { Text(stringResource(R.string.capture_stop_title)) },
-            text = { Text(stringResource(R.string.capture_stop_message)) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showStopConfirmation = false
-                        finalizeCapture()
-                    },
-                ) { Text(stringResource(R.string.capture_stop_confirm)) }
+        CaptureStopConfirmation(
+            onConfirm = {
+                showStopConfirmation = false
+                finalizeCapture()
             },
-            dismissButton = {
-                Button(onClick = { showStopConfirmation = false }) { Text(stringResource(R.string.action_cancel)) }
-            },
+            onDismiss = { showStopConfirmation = false },
         )
     }
 }
