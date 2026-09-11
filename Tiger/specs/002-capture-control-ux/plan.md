@@ -73,7 +73,7 @@ app/
 
 ### Phase 5 구현 단위
 
-`CaptureControlPolicy`의 네 상태·준비 여부·작업 잠금을 단위 테스트하고, `CaptureScreen`의 production 콜백과 제어 UI가 같은 정책을 사용한다. 종료 확인·BackHandler·툴팁은 `CaptureWorkspaceScreen.kt`에서 렌더링하고 부모가 확인 상태와 비동기 작업을 소유한다. Compose 검증은 기존 환경에 맞게 `src/androidTest/.../ui/CaptureControlStateScreenTest.kt`에 두고, 실제 TalkBack 음성·툴팁 검증은 T025에 별도 기록한다.
+`CaptureControlPolicy`의 네 상태·준비 여부·작업 잠금을 단위 테스트하고, `CaptureScreen`의 production 콜백과 제어 UI가 같은 정책을 사용한다. 종료 확인·BackHandler·툴팁은 `CaptureWorkspaceScreen.kt`에서 렌더링하고 부모가 확인 상태와 비동기 작업을 소유한다. Compose 검증은 기존 환경에 맞게 `src/androidTest/.../ui/CaptureControlStateScreenTest.kt`에 두고, T025는 제어 상태와 UI semantics·툴팁 자동 검사로 완료 판정한다. 개발용 앱이라는 사용자 결정(2026-09-11)에 따라 TalkBack 실사용 검증은 필수 범위에서 제외한다.
 
 [research.md](research.md)의 모든 결정이 해결됐으며 추가 확인 항목은 없다.
 

@@ -114,20 +114,22 @@
 - [X] T023 [P] [US3] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/CaptureControlStateTest.kt`에 네 수집 상태의 아이콘 활성화, 확정 중 중복 입력 차단, 정지·뒤로 가기·닫기 확인 테스트를 작성한다.
   - 구현: `src/test/.../ui/CaptureControlStateTest.kt`의 네 상태·준비 실패·작업 잠금·종료 확인 정책 4개 테스트와 `src/androidTest/.../ui/CaptureControlStateScreenTest.kt`의 비활성 제어/진행 표시·프리뷰 차단·툴팁·확인/취소·시스템 Back/X 5개 테스트. UI는 기존 프로젝트 구성에 따라 `androidTest`에 배치했다.
   - 자동 검증: 구현 전 `testDebugUnitTest --tests '*CaptureControlStateTest' --no-daemon`에서 새 정책/확정 상태 미구현으로 실패함을 확인한 뒤 구현했다. 구현 후 `.\gradlew.bat ktlintCheck testDebugUnitTest lintDebug assembleDebug connectedDebugAndroidTest --no-daemon` 성공(2026-09-10). 단위 52개·connected 14개 모두 통과하며 신규 9개 테스트를 포함한다.
-  - 실제 검증: connected suite는 `SM-G973N`(Android 12)에서 실행했다. 실제 TalkBack 음성 검증은 T025에 남긴다. Related Jira: S15P21A206-17.
+  - 실제 검증: connected suite는 `SM-G973N`(Android 12)에서 실행했다. TalkBack 실사용 검증은 2026-09-11 사용자 결정으로 필수 조건에서 제외했다. Related Jira: S15P21A206-17.
 - [X] T024 [US3] `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/capture/CaptureWorkspaceScreen.kt`와 `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`에 상태별 제어 활성화, 준비 실패·확정 중 일회성 안내, BackHandler·전체 화면 sheet X 닫기 확인을 구현한다.
   - 구현/production: `MainActivity.kt`의 `CaptureScreen.controlPolicy` → `CaptureWorkspaceControls`/`CaptureWorkspaceExitControls`와 재생·일시 정지·정지·`requestCaptureExit`/`finalizeCapture`가 같은 정책을 사용한다. `CaptureControlPolicy.kt`는 준비·Episode 진행·Session 유지·확정의 네 상태를 정의한다. 시작/저장 잠금과 확정 잠금은 비동기 실행 전에 설정하고 완료·실패 시 해제해 중복 입력을 차단한다.
   - 안내/접근성: 첫 preview frame·유효한 메타데이터가 준비되기 전 재생 차단, 프리뷰 실패 Snackbar, 확정 진행 표시, `CaptureTooltip`의 리소스 라벨과 길게 누르기, `CaptureStopConfirmation`의 공통 확인/취소를 연결했다. 확정 처리는 IO에서 수행하고 동시에 interrupt하지 않으며 백그라운드에서 끝나면 전송을 지속하지 않고 재전송 가능한 Detail로 보존한다. `contracts/capture-control-ui.md`와 `plan.md`에 제어 정책을 반영했다.
   - 자동 검증: T023의 전체 명령 성공. `CaptureControlStateTest`의 상태/잠금/확인 정책과 `CaptureControlStateScreenTest`의 `finalizing_disables_controls_and_exposes_progress`, `system_back_and_close_share_exit_callback_and_finalizing_blocks_both`, `stop_confirmation_explains_upload_and_separates_cancel_from_confirm` 통과.
-  - 외부 검증: SM-G973N에서 UI instrumentation 성공. 실제 TalkBack은 T025, 실제 카메라·센서/확정 중 백그라운드·서버 전송은 T035에 별도 기록하며 자동 검증으로 대체하지 않는다.
-- [ ] T025 [US3] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/CaptureControlStateTest.kt`를 통과시키고 TalkBack에서 아이콘의 접근성 이름과 툴팁을 실제 기기에서 확인한다.
+  - 외부 검증: SM-G973N에서 UI instrumentation 성공. TalkBack 실사용은 필수 범위에서 제외하고, 실제 카메라·센서/확정 중 백그라운드·서버 전송은 T035에 별도 기록하며 자동 검증으로 대체하지 않는다.
+- [X] T025 [US3] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/CaptureControlStateTest.kt`와 `app/src/androidTest/java/com/ssafy/s15p21a206/tiger/ui/CaptureControlStateScreenTest.kt`로 제어 상태·입력 차단·종료 확인·아이콘 이름·툴팁 표시를 자동 검증한다.
   - 자동 검증 완료: T023의 `CaptureControlStateTest` 4개와 SM-G973N의 `CaptureControlStateScreenTest` 5개가 성공했다. 아이콘 semantics, 비활성 입력 차단, `long_press_shows_accessible_control_tooltip`을 검증했다.
-  - 남은 실제 검증: TalkBack에서 시작·일시 정지·작업 구간 시작·종료·닫기의 실제 음성/이름 및 각 툴팁을 사용자가 확인한 결과가 아직 없다. T022의 프리뷰/접근성 이름 확인과 이번 Compose 자동 테스트를 TalkBack 검증으로 간주하지 않고 `[ ]`를 유지한다. 절차는 `quickstart.md` Phase 5에 기록했다.
+  - 구현/호출 경로: T024의 `CaptureScreen.controlPolicy` → 제어 콜백·`CaptureWorkspaceControls`·`CaptureWorkspaceExitControls`·`CaptureStopConfirmation`을 대조했다. 구현 커밋 `fda4294`는 `3c26f5b`로 develop에 병합됐고 코드 변경 없이 기존 테스트 근거를 유지한다.
+  - 완료 조건 변경(2026-09-11): 사용자가 배포용이 아닌 개발용 앱이므로 접근성 목적의 TalkBack 검증이 불필요하다고 결정했다. `spec.md`, `plan.md`, UI 계약과 `quickstart.md`를 함께 갱신했다. 실제 TalkBack 검증은 수행하지 않았으며 필수 인수 조건에서 제외한 결과로 완료 처리한다. Related Jira: S15P21A206-17.
 
 ### 요청 범위 수렴 대조 (2026-09-10)
 
 - `$speckit-converge`: 사용자 지정 범위 T022·Phase 5에 한정해 US3 인수 시나리오 4개, FR-008/FR-008a/FR-009, 준비/확정 중 중복 입력 엣지 케이스, 단일 모듈·부모 상태 소유·리소스 문자열·기존 데이터/전송 계약을 코드와 대조했다. Constitution은 미작성 템플릿이므로 강제 원칙 검사는 생략했다. 확장 hook 설정은 없다.
-- 구현 연결·자동 검증 범위에서 추가 미구현은 발견하지 않았다. 외부 검증 T025가 남아 있으므로 Phase 5 전체 또는 기능 전체의 `converged`/완료를 선언하지 않는다. 기존 T025·T035에 추적되는 외부 검증을 중복 task로 추가하거나 Phase 6·7을 이번 범위로 확대하지 않았다.
+- 당시 구현 연결·자동 검증 범위에서 추가 미구현은 발견하지 않았으나 T025의 TalkBack 실사용 검증이 남아 완료를 보류했다.
+- 재대조(2026-09-11): 사용자 결정으로 TalkBack 필수 조건을 제외한 명세·계획·T022~T025를 병합된 production 코드 및 2026-09-10 자동 검사 근거와 대조했다. 요청 범위 T022·Phase 5는 `converged`이며 추가 remediation task는 없다. Phase 6·7 및 T035의 실제 수집·서버 검증은 이번 완료 판정에 포함하지 않는다.
 
 **검증 지점**: 사용자는 상시 상태 문구 없이 가능한 다음 조작을 알 수 있고, 수집 종료 전 확인 기회를 받는다.
 
