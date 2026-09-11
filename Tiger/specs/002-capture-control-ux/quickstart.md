@@ -63,4 +63,4 @@
 ## Phase 7 부분 실제 기기 검증
 
 - 2026-09-11, `SM-G973N`(Android 12, page size 4096): `./gradlew.bat connectedDebugAndroidTest --no-daemon --offline`가 14개 테스트를 실패·건너뜀 없이 통과했다. 목록·수집 제어·종료 확인·export UI의 Compose semantics와 migration 경로를 확인했다.
-- 이 기기는 4KB page이므로 16KB 페이지 기기 검증(T037)을 대신하지 않는다. 실제 camera/AR 프리뷰, ingestion server 자동 업로드·취소·백그라운드 중단·재전송, legacy 외부 bundle 제외의 수동 확인도 T035에 남아 있다.
+- 내부 개발용 앱 범위에서는 `SM-G973N`을 기준 기기로 사용하며, 16KB 페이지 기기 검증은 요구하지 않는다(2026-09-11 사용자 결정). 실제 camera/AR 프리뷰, ingestion server 자동 업로드·취소·백그라운드 중단·재전송, legacy 외부 bundle 제외의 수동 확인은 T035에 남아 있다.

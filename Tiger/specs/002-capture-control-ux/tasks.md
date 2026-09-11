@@ -173,10 +173,10 @@
   - 자동 검증: `./gradlew.bat testDebugUnitTest lintDebug assembleDebug ktlintCheck --no-daemon --offline` 성공 (2026-09-11). Lint는 오류 0건, 기존 경고 56건이며 debug APK가 생성됐다.
 - [ ] T035 `specs/002-capture-control-ux/quickstart.md`에 따라 실제 기기와 ingestion server에서 프리뷰, 수집 제어, 자동 업로드, 취소, 백그라운드 중단, 재전송, legacy 제외를 검증하고 결과를 `specs/002-capture-control-ux/quickstart.md`에 기록한다.
   - 부분 실제 검증(2026-09-11): `SM-G973N`(Android 12, 4KB page)의 `./gradlew.bat connectedDebugAndroidTest --no-daemon --offline`가 14개 테스트를 실패·건너뜀 없이 통과했다. 실제 camera/AR 프리뷰·ingestion server 자동 업로드·취소·백그라운드 중단·재전송·legacy 외부 bundle 수동 검증은 아직 남아 있다 (`quickstart.md`).
-- [ ] T037 [P] `gradle/libs.versions.toml`의 ARCore와 생성 APK를 Android 15+ 16KB 페이지 환경에서 실행해 카메라·AR 세션 생성과 수집 흐름을 검증한다. `lintDebug`의 `Aligned16KB` 경고와 `zipalign -c -P 16 -v 4` 결과를 함께 기록한다.
+- [X] T037 [P] `gradle/libs.versions.toml`의 ARCore와 생성 APK를 Android 15+ 16KB 페이지 환경에서 실행해 카메라·AR 세션 생성과 수집 흐름을 검증한다. `lintDebug`의 `Aligned16KB` 경고와 `zipalign -c -P 16 -v 4` 결과를 함께 기록한다.
   - 자동 검증(2026-09-09): `com.google.ar:core:1.56.0`으로 `ktlintCheck testDebugUnitTest assembleDebug lintDebug` 성공, 강제 재실행한 Lint report에서 `Aligned16KB` 0건, `zipalign -c -P 16 -v 4 app/build/outputs/apk/debug/app-debug.apk` 성공.
-  - 남은 실제 검증: 16KB 페이지(`adb shell getconf PAGE_SIZE`가 `16384`) 기기 또는 에뮬레이터에서 AR 세션·카메라·수집을 실행한다.
-  - 정적 재검증(2026-09-11): `./gradlew.bat lintDebug assembleDebug --no-daemon --offline` 성공했고 `Aligned16KB` 오류는 없었다. Android SDK Build Tools 36.0.0의 `zipalign.exe -c -P 16 -v 4 app/build/outputs/apk/debug/app-debug.apk`가 `Verification successful`을 반환했다. 실제 16KB 페이지 환경 검증은 여전히 필요하다.
+  - 내부 개발용 범위 결정(2026-09-11): 사용자 지시에 따라 `SM-G973N`(Android 12, page size 4096)을 기준 기기로 삼으며, Android 15+ 16KB 페이지 실기기/에뮬레이터 검증은 요구하지 않는다.
+  - 자동 검증: `./gradlew.bat lintDebug assembleDebug --no-daemon --offline` 성공했고 `Aligned16KB` 오류는 없었다. Android SDK Build Tools 36.0.0의 `zipalign.exe -c -P 16 -v 4 app/build/outputs/apk/debug/app-debug.apk`가 `Verification successful`을 반환했다.
 - [ ] T036 `specs/002-capture-control-ux/tasks.md`의 각 완료 task에 구현 파일·production 호출 경로·자동 검증·실제 기기 검증 근거를 기록한 뒤 `$speckit-converge`를 실행한다.
 
 ---
