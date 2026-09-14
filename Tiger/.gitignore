@@ -28,3 +28,8 @@ Thumbs.db
 # Codex·Spec Kit 로컬 도구 런타임
 /.agents/
 /.specify/
+
+# Claude Code 로컬 상태 (스킬·공유 설정은 커밋한다)
+/.claude/settings.local.json
+/.claude/.credentials.json
+/.claude/plugins/
