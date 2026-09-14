@@ -242,3 +242,17 @@ T026/T027: US4 Detail·업로드 상태 테스트
 - 구현: 변경 파일과 실제 production 호출 경로
 - 자동 검증: 테스트 파일·테스트명·실행 명령·결과
 - 실제 검증: 기기·서버·권한 조건과 결과, 또는 남은 별도 작업
+
+---
+
+## 정합화 기록 (2026-09-14, 003-session-episode-tracking-gate)
+
+T021의 대상 파일 목록에 `CaptureSessionCoordinator.kt`가 포함되어 있으나, 실제 구현은 Coordinator를
+거치지 않았다. 같은 task의 증거 항목이 기록한 대로 `finalizeCapture` → `AndroidCaptureRuntime.stop`
+→ `startUpload` 경로로 구현되었다.
+
+T021이 요구한 동작(정지가 열린 Episode를 완료하고 finalize 성공 뒤 자동 업로드와 업로드 상태
+목적지를 시작한다)은 충족되어 있으므로 완료 판정은 유지한다. 파일 목록의 사실관계만 여기에 기록한다.
+
+`CaptureSessionCoordinator`는 003 기능의 T009에서 `MainActivity`에 연결되었다. 이 시점부터 Session과
+Episode 상태의 단일 판단 주체는 Coordinator다.

@@ -55,10 +55,33 @@ class SessionRepository(
     suspend fun updateExport(export: SessionExport) =
         sessionDao.updateExport(export.sessionId, export.state.name, export.treeUri, export.failureReason)
 
+    /**
+     * staging에 남은 Session을 구제한다.
+     *
+     * 홈 버튼이나 화면 꺼짐으로 수집 화면이 중단되면 번들이 마감되지 못한 채 staging에 남는다.
+     * 그때까지 수집된 영상·IMU·pose·Episode는 그 자체로 유효한 데이터이므로 버리지 않고
+     * 정상 Session으로 마감한다. 마감할 수 없을 만큼 손상된 번들만 `INTERRUPTED`로 남긴다.
+     */
     suspend fun recoverInterruptedStaging() {
-        val stagingPaths = bundleStore.interruptedStagingBundles().map(File::getAbsolutePath).toSet()
-        sessionDao.activeSessions().filter { it.bundlePath in stagingPaths }.forEach { session ->
-            sessionDao.upsert(session.copy(recordingState = RecordingState.INTERRUPTED.name))
+        val stagingDirectories = bundleStore.interruptedStagingBundles().associateBy(File::getAbsolutePath)
+        sessionDao.recoverableSessions().filter { it.bundlePath in stagingDirectories }.forEach { session ->
+            val directory = stagingDirectories.getValue(session.bundlePath)
+            val bundle = SessionBundle(session.sessionId, session.displayNumber, directory.name, directory)
+            // 손상된 번들에서 예외가 나더라도 나머지 Session 구제를 막지 않는다.
+            val result =
+                runCatching { SessionFinalizer(bundleStore).finalize(bundle) }
+                    .getOrElse { FinalizeResult.Failed(it.message.orEmpty()) }
+            when (result) {
+                is FinalizeResult.Completed ->
+                    sessionDao.upsert(
+                        session.copy(
+                            recordingState = RecordingState.COMPLETED.name,
+                            bundlePath = result.directory.absolutePath,
+                        ),
+                    )
+                is FinalizeResult.Failed ->
+                    sessionDao.upsert(session.copy(recordingState = RecordingState.INTERRUPTED.name))
+            }
         }
     }
 

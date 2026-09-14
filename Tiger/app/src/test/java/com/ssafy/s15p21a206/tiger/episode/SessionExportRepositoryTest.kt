@@ -86,6 +86,8 @@ class SessionExportRepositoryTest {
 
         override suspend fun activeSessions(): List<CaptureSessionEntity> = emptyList()
 
+        override suspend fun recoverableSessions(): List<CaptureSessionEntity> = emptyList()
+
         override suspend fun sessionsInCaptureOrder(): List<CaptureSessionEntity> = sessions.values.toList()
 
         override suspend fun updateDisplayNumber(

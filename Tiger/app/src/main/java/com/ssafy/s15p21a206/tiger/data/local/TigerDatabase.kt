@@ -115,6 +115,13 @@ interface CaptureSessionDao {
     @Query("SELECT * FROM sessions WHERE recordingState IN ('INITIALIZING', 'READY', 'FINALIZING')")
     suspend fun activeSessions(): List<CaptureSessionEntity>
 
+    /**
+     * 마감되지 않은 Session. 구제 대상이므로 이전 실행에서 `INTERRUPTED`로 남은 것도 포함한다.
+     * 한 번 중단으로 표시됐더라도 번들이 온전하면 다음 실행에서 정상 마감할 수 있다.
+     */
+    @Query("SELECT * FROM sessions WHERE recordingState IN ('INITIALIZING', 'READY', 'FINALIZING', 'INTERRUPTED')")
+    suspend fun recoverableSessions(): List<CaptureSessionEntity>
+
     @Query("SELECT * FROM sessions ORDER BY recordingStartEpochMs ASC, recordingStartNs ASC, sessionId ASC")
     suspend fun sessionsInCaptureOrder(): List<CaptureSessionEntity>
 

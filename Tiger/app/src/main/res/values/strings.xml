@@ -62,8 +62,13 @@
     <string name="upload_cancel_title">업로드를 중단할까요?</string>
     <string name="upload_cancel_message">업로드를 중단하면 전송 상태가 실패로 기록되며 상세 화면에서 다시 시도할 수 있습니다.</string>
     <string name="upload_cancel_confirm">업로드 중단</string>
-    <string name="capture_ready">ARCore · Camera · IMU: READY</string>
-    <string name="capture_idle">ARCore · Camera · IMU: IDLE</string>
+    <string name="capture_status_idle">IDLE</string>
+    <string name="capture_status_initializing">INITIALIZING · ARCore Tracking 준비 중</string>
+    <string name="capture_status_ready">READY</string>
+    <string name="capture_status_episode_active">EPISODE ACTIVE</string>
+    <string name="capture_status_finalizing">FINALIZING</string>
+    <string name="capture_tracking_not_ready">ARCore Tracking이 안정화되면 작업 구간을 시작할 수 있습니다.</string>
+    <string name="capture_episode_invalid_tracking">Tracking이 끊겨 현재 작업 구간을 무효로 종료했습니다. 수집은 계속됩니다.</string>
     <string name="control_play">▶</string>
     <string name="control_pause">Ⅱ</string>
     <string name="control_stop">■</string>

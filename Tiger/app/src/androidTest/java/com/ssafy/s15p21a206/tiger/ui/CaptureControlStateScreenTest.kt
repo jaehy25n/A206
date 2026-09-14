@@ -4,6 +4,7 @@ import androidx.activity.OnBackPressedDispatcher
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.longClick
@@ -16,6 +17,7 @@ import com.ssafy.s15p21a206.tiger.ui.capture.CaptureStopConfirmation
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceControlState
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceControls
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceExitControls
+import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceStatus
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -62,17 +64,47 @@ class CaptureControlStateScreenTest {
     fun unprepared_preview_disables_start() {
         composeRule.setContent {
             TigerTheme {
-                CaptureWorkspaceControls(CaptureWorkspaceControlState.Ready, {}, {}, {}, ready = false)
+                CaptureWorkspaceControls(CaptureWorkspaceControlState.Idle, {}, {}, {}, ready = false)
             }
         }
         composeRule.onNodeWithContentDescription("수집 시작").assertIsNotEnabled()
+    }
+
+    // Tracking이 안정화되기 전에는 Episode를 시작할 수 없고, 그 사실이 화면에 보여야 한다.
+    @Test
+    fun initializing_blocks_episode_start_and_shows_its_state() {
+        var calls = 0
+        composeRule.setContent {
+            TigerTheme {
+                CaptureWorkspaceControls(CaptureWorkspaceControlState.Initializing, { calls++ }, { calls++ }, { calls++ })
+                CaptureWorkspaceStatus(CaptureWorkspaceControlState.Initializing)
+            }
+        }
+        composeRule.onNodeWithContentDescription("작업 구간 시작").assertIsNotEnabled().performClick()
+        composeRule.onNodeWithContentDescription("수집 종료").assertIsEnabled()
+        composeRule.onNodeWithContentDescription("INITIALIZING · ARCore Tracking 준비 중").assertIsDisplayed()
+        assertEquals(0, calls)
+    }
+
+    @Test
+    fun ready_state_enables_episode_start() {
+        var plays = 0
+        composeRule.setContent {
+            TigerTheme {
+                CaptureWorkspaceControls(CaptureWorkspaceControlState.Ready, { plays++ }, {}, {})
+                CaptureWorkspaceStatus(CaptureWorkspaceControlState.Ready)
+            }
+        }
+        composeRule.onNodeWithContentDescription("작업 구간 시작").assertIsEnabled().performClick()
+        composeRule.onNodeWithContentDescription("READY").assertIsDisplayed()
+        assertEquals(1, plays)
     }
 
     @Test
     fun long_press_shows_accessible_control_tooltip() {
         composeRule.setContent {
             TigerTheme {
-                CaptureWorkspaceControls(CaptureWorkspaceControlState.Ready, {}, {}, {})
+                CaptureWorkspaceControls(CaptureWorkspaceControlState.Idle, {}, {}, {})
             }
         }
         composeRule.onNodeWithContentDescription("수집 시작").performTouchInput { longClick() }

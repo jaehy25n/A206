@@ -51,7 +51,7 @@ fun CaptureWorkspaceControls(
         horizontalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         when (state) {
-            CaptureWorkspaceControlState.Ready ->
+            CaptureWorkspaceControlState.Idle ->
                 CaptureControlIcon(
                     iconRes = R.drawable.ic_capture_play,
                     contentDescriptionRes = R.string.capture_control_start,
@@ -72,7 +72,10 @@ fun CaptureWorkspaceControls(
                     enabled = policy.canStop,
                 )
             }
-            CaptureWorkspaceControlState.SessionActive, CaptureWorkspaceControlState.Finalizing -> {
+            CaptureWorkspaceControlState.Initializing,
+            CaptureWorkspaceControlState.Ready,
+            CaptureWorkspaceControlState.Finalizing,
+            -> {
                 CaptureControlIcon(
                     iconRes = R.drawable.ic_capture_play,
                     contentDescriptionRes = R.string.capture_control_resume,
@@ -92,6 +95,35 @@ fun CaptureWorkspaceControls(
             CircularProgressIndicator(modifier = Modifier.size(48.dp).semantics { contentDescription = description }, color = Color.White)
         }
     }
+}
+
+/** 현재 수집 상태를 프리뷰 위에 표시한다. Tracking 안정화 여부를 사용자가 바로 알 수 있어야 한다. */
+@Composable
+@Suppress("FunctionName")
+fun CaptureWorkspaceStatus(
+    state: CaptureWorkspaceControlState,
+    modifier: Modifier = Modifier,
+) {
+    val labelRes =
+        when (state) {
+            CaptureWorkspaceControlState.Idle -> R.string.capture_status_idle
+            CaptureWorkspaceControlState.Initializing -> R.string.capture_status_initializing
+            CaptureWorkspaceControlState.Ready -> R.string.capture_status_ready
+            CaptureWorkspaceControlState.EpisodeActive -> R.string.capture_status_episode_active
+            CaptureWorkspaceControlState.Finalizing -> R.string.capture_status_finalizing
+        }
+    val label = stringResource(labelRes)
+    Text(
+        text = label,
+        color = Color.White,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 14.sp,
+        modifier =
+            modifier
+                .background(Color.Black.copy(alpha = 0.45f), CircleShape)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .semantics { contentDescription = label },
+    )
 }
 
 @Composable
