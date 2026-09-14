@@ -73,6 +73,8 @@ class SessionSummaryRepositoryTest {
 
         override suspend fun activeSessions(): List<CaptureSessionEntity> = emptyList()
 
+        override suspend fun recoverableSessions(): List<CaptureSessionEntity> = emptyList()
+
         override suspend fun sessionsInCaptureOrder(): List<CaptureSessionEntity> = emptyList()
 
         override suspend fun updateDisplayNumber(
