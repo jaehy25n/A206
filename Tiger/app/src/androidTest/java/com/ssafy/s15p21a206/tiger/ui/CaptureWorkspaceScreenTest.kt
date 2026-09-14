@@ -15,8 +15,8 @@ class CaptureWorkspaceScreenTest {
     @get:Rule val composeRule = createComposeRule()
 
     @Test
-    fun ready_workspace_exposes_only_start_control() {
-        setControls(CaptureWorkspaceControlState.Ready)
+    fun idle_workspace_exposes_only_session_start_control() {
+        setControls(CaptureWorkspaceControlState.Idle)
 
         composeRule.onNodeWithContentDescription("수집 시작").assertIsDisplayed().performClick()
         assertEquals("play", clicked)
@@ -32,8 +32,8 @@ class CaptureWorkspaceScreenTest {
     }
 
     @Test
-    fun paused_episode_exposes_resume_and_stop_controls() {
-        setControls(CaptureWorkspaceControlState.SessionActive)
+    fun ready_session_exposes_episode_start_and_stop_controls() {
+        setControls(CaptureWorkspaceControlState.Ready)
 
         composeRule.onNodeWithContentDescription("작업 구간 시작").assertIsDisplayed().performClick()
         composeRule.onNodeWithContentDescription("수집 종료").assertIsDisplayed()

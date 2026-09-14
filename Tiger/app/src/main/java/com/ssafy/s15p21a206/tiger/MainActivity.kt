@@ -64,6 +64,8 @@ import com.ssafy.s15p21a206.tiger.capture.CameraPreviewController
 import com.ssafy.s15p21a206.tiger.capture.CapturePreviewController
 import com.ssafy.s15p21a206.tiger.capture.CapturePreviewPreflight
 import com.ssafy.s15p21a206.tiger.capture.CapturePreviewState
+import com.ssafy.s15p21a206.tiger.capture.CaptureSessionCoordinator
+import com.ssafy.s15p21a206.tiger.capture.MonotonicClock
 import com.ssafy.s15p21a206.tiger.capture.PreviewRuntime
 import com.ssafy.s15p21a206.tiger.data.local.MIGRATION_2_3
 import com.ssafy.s15p21a206.tiger.data.local.MIGRATION_3_4
@@ -79,6 +81,7 @@ import com.ssafy.s15p21a206.tiger.episode.SessionBundle
 import com.ssafy.s15p21a206.tiger.episode.SessionBundleExporter
 import com.ssafy.s15p21a206.tiger.episode.SessionBundleStore
 import com.ssafy.s15p21a206.tiger.episode.SessionRepository
+import com.ssafy.s15p21a206.tiger.episode.TrackingState
 import com.ssafy.s15p21a206.tiger.episode.UploadState
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureControlPolicy
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureExitAction
@@ -86,6 +89,7 @@ import com.ssafy.s15p21a206.tiger.ui.capture.CaptureStopConfirmation
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceControlState
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceControls
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceExitControls
+import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceStatus
 import com.ssafy.s15p21a206.tiger.ui.session.SessionDetailPresentation
 import com.ssafy.s15p21a206.tiger.ui.session.SessionListScreen
 import com.ssafy.s15p21a206.tiger.ui.session.TaskSessionListScreen
@@ -98,11 +102,11 @@ import com.ssafy.s15p21a206.tiger.upload.SessionUploader
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import java.io.File
-import java.util.UUID
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -234,15 +238,36 @@ fun CaptureScreen() {
     var uploadJob by remember { mutableStateOf<Job?>(null) }
     var showStopConfirmation by remember { mutableStateOf(false) }
     var showCaptureMetadataDialog by remember { mutableStateOf(false) }
+    var trackingReady by remember { mutableStateOf(false) }
+    val episodeInvalidatedMessage = stringResource(R.string.capture_episode_invalid_tracking)
+    val coordinator =
+        remember {
+            CaptureSessionCoordinator(
+                clock = MonotonicClock(SystemClock::elapsedRealtimeNanos),
+                writers = emptyList(),
+                onEpisodeClosed = { marker ->
+                    // 사용자 종료와 Tracking 유실 자동 마감이 같은 경로로 기록된다.
+                    if (marker.outcome == EpisodeState.INVALID_TRACKING) message = episodeInvalidatedMessage
+                    scope.launch {
+                        runCatching {
+                            repository.save(marker)
+                            captureRuntime.appendEpisode(marker)
+                        }.onFailure { message = operationFailureMessage }
+                    }
+                },
+            )
+        }
 
     fun controlPolicy() =
         CaptureControlPolicy(
             state =
                 when {
                     finalizing -> CaptureWorkspaceControlState.Finalizing
-                    !collecting -> CaptureWorkspaceControlState.Ready
+                    !collecting -> CaptureWorkspaceControlState.Idle
                     active -> CaptureWorkspaceControlState.EpisodeActive
-                    else -> CaptureWorkspaceControlState.SessionActive
+                    // ARCore Tracking이 안정화되기 전에는 Episode를 시작할 수 없다.
+                    trackingReady -> CaptureWorkspaceControlState.Ready
+                    else -> CaptureWorkspaceControlState.Initializing
                 },
             ready = previewReady && !previewFailed && task.isNotBlank() && objectName.isNotBlank() && !showCaptureMetadataDialog,
             busy = controlBusy,
@@ -263,6 +288,7 @@ fun CaptureScreen() {
     val exportFailedUnexpected = stringResource(R.string.export_failed_unexpected)
     val recordingCameraUnavailable = stringResource(R.string.recording_camera_unavailable)
     val activeEpisodeEndRequired = stringResource(R.string.active_episode_end_required)
+    val trackingNotReadyMessage = stringResource(R.string.capture_tracking_not_ready)
     val captureFinalizeFailed = stringResource(R.string.capture_finalize_failed)
     val arCoreUnavailable = stringResource(R.string.arcore_unavailable)
     val arCoreInstallMessage = stringResource(R.string.arcore_install_requested)
@@ -338,17 +364,11 @@ fun CaptureScreen() {
                             .onSuccess { bundle ->
                                 activeBundle = bundle
                                 recordingStartNs = SystemClock.elapsedRealtimeNanos()
-                                activeEpisode =
-                                    EpisodeMarker(
-                                        UUID.randomUUID().toString(),
-                                        bundle.sessionId,
-                                        recordingStartNs,
-                                        task = task,
-                                        objectName = objectName,
-                                        outcome = EpisodeState.ACTIVE,
-                                    )
+                                // Session 시작은 Episode를 만들지 않는다. Tracking 안정화 뒤 사용자가 따로 시작한다.
+                                coordinator.start(bundle.sessionId, bundle.displayNumber, bundle.directory.absolutePath)
+                                activeEpisode = null
                                 collecting = true
-                                active = true
+                                active = false
                                 repository.save(
                                     CaptureSession(
                                         bundle.sessionId,
@@ -398,6 +418,23 @@ fun CaptureScreen() {
             previewPermission.launch(Manifest.permission.CAMERA)
         }
     }
+    // onTracking은 호출 시점 기준으로 경과 시간을 판정하므로, 값이 변하지 않아도 계속 호출되어야
+    // 안정화(1초)와 유실(0.5초) 마감이 발화한다. 값 변화 구독만으로는 유실 마감이 오지 않는다.
+    LaunchedEffect(collecting) {
+        if (!collecting) {
+            trackingReady = false
+            return@LaunchedEffect
+        }
+        while (true) {
+            val sample = captureRuntime.tracking.value
+            coordinator.onTracking(sample.isTracking, sample.observedAtNs.takeIf { it > 0L })
+            trackingReady = coordinator.trackingState == TrackingState.READY
+            // Tracking 유실 자동 마감은 사용자 조작 없이 일어나므로 화면 상태를 여기서 맞춘다.
+            activeEpisode = coordinator.activeEpisode
+            active = activeEpisode != null
+            delay(TRACKING_TICK_MS)
+        }
+    }
     LaunchedEffect(message, destination) {
         if (destination == AppDestination.CaptureWorkspace && message.isNotBlank()) {
             val notice = message
@@ -430,6 +467,8 @@ fun CaptureScreen() {
         activeEpisode = null
         active = false
         collecting = false
+        coordinator.release()
+        trackingReady = false
     }
 
     fun startUpload(sessionId: String) {
@@ -515,15 +554,14 @@ fun CaptureScreen() {
 
     fun finalizeCapture() {
         if (!controlPolicy().canStop) return
+        // 진행 중인 Episode가 있으면 Session을 마감하지 않고 먼저 종료하도록 안내한다.
+        if (coordinator.activeEpisode != null) {
+            message = activeEpisodeEndRequired
+            return
+        }
         finalizing = true
         scope.launch {
             try {
-                activeEpisode
-                    ?.copy(endTimestampNs = SystemClock.elapsedRealtimeNanos(), outcome = EpisodeState.COMPLETED)
-                    ?.let { marker ->
-                        repository.save(marker)
-                        captureRuntime.appendEpisode(marker)
-                    }
                 activeEpisode = null
                 active = false
                 when (
@@ -557,6 +595,9 @@ fun CaptureScreen() {
                 }
                 activeBundle = null
                 collecting = false
+                // 다음 Session을 시작할 수 있도록 Coordinator의 Session·Tracking 상태를 닫는다.
+                coordinator.release()
+                trackingReady = false
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
@@ -616,6 +657,10 @@ fun CaptureScreen() {
             onExit = ::requestCaptureExit,
             modifier = Modifier.align(Alignment.TopEnd).padding(top = 20.dp, end = 20.dp),
         )
+        CaptureWorkspaceStatus(
+            state = controlPolicy().state,
+            modifier = Modifier.align(Alignment.TopStart).padding(top = 20.dp, start = 20.dp),
+        )
         SnackbarHost(snackbarHostState, Modifier.align(Alignment.TopCenter).padding(top = 80.dp))
         if (!showCaptureMetadataDialog) {
             CaptureWorkspaceControls(
@@ -630,40 +675,24 @@ fun CaptureScreen() {
                         capturePreviewController.release()
                         cameraPermission.launch(Manifest.permission.CAMERA)
                     } else {
-                        activeEpisode =
-                            activeBundle?.let { bundle ->
-                                EpisodeMarker(
-                                    UUID.randomUUID().toString(),
-                                    bundle.sessionId,
-                                    SystemClock.elapsedRealtimeNanos(),
-                                    task = task,
-                                    objectName = objectName,
-                                    outcome = EpisodeState.ACTIVE,
-                                )
-                            }
-                        active = activeEpisode != null
+                        // Episode 시작은 Coordinator가 Tracking 안정화 여부를 확인한 뒤에만 허용한다.
+                        runCatching { coordinator.startEpisode(task, objectName) }
+                            .onSuccess {
+                                activeEpisode = it
+                                active = true
+                            }.onFailure { message = trackingNotReadyMessage }
                     }
                 },
                 onPause = pause@{
                     if (!controlPolicy().canPause) return@pause
-                    val marker =
-                        activeEpisode?.copy(endTimestampNs = SystemClock.elapsedRealtimeNanos(), outcome = EpisodeState.COMPLETED)
-                            ?: return@pause
                     controlBusy = true
-                    scope.launch {
-                        try {
-                            repository.save(marker)
-                            captureRuntime.appendEpisode(marker)
+                    // 기록은 coordinator의 onEpisodeClosed가 담당한다.
+                    runCatching { coordinator.endEpisode() }
+                        .onSuccess {
                             activeEpisode = null
                             active = false
-                        } catch (cancelled: CancellationException) {
-                            throw cancelled
-                        } catch (_: Exception) {
-                            message = operationFailureMessage
-                        } finally {
-                            controlBusy = false
-                        }
-                    }
+                        }.onFailure { message = operationFailureMessage }
+                    controlBusy = false
                 },
                 onStop = { if (controlPolicy().canStop) requestCaptureExit() },
                 modifier = Modifier.align(Alignment.BottomCenter),
@@ -944,3 +973,6 @@ internal fun UploadControls(
         }
     }
 }
+
+// Tracking 판정 주기. 안정화(1초)와 유실(0.5초) 임계값보다 충분히 촘촘해야 마감 시점이 제때 발화한다.
+private const val TRACKING_TICK_MS = 100L

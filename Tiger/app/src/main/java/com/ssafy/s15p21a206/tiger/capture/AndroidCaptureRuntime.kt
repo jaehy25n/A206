@@ -19,11 +19,15 @@ import android.os.HandlerThread
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.google.ar.core.Session
+import com.ssafy.s15p21a206.tiger.episode.CameraMetadata
 import com.ssafy.s15p21a206.tiger.episode.EpisodeMarker
 import com.ssafy.s15p21a206.tiger.episode.FinalizeResult
 import com.ssafy.s15p21a206.tiger.episode.SessionBundle
 import com.ssafy.s15p21a206.tiger.episode.SessionBundleStore
 import com.ssafy.s15p21a206.tiger.episode.SessionFinalizer
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
 import java.util.EnumSet
 import java.util.concurrent.CountDownLatch
@@ -44,10 +48,22 @@ class AndroidCaptureRuntime(
     private var arSession: Session? = null
     private var poseThread: Thread? = null
 
+    private val trackingState = MutableStateFlow(TrackingSample(false, 0L))
+
+    /**
+     * 최신 ARCore Tracking 관측값. pose 수집 스레드가 갱신하고 수집 화면이 주기적으로 읽는다.
+     *
+     * 카메라 시각을 함께 실어 보내므로, 유실 구간의 기록용 시작 시각을 `arcore_poses.csv`와
+     * 같은 값으로 맞출 수 있다.
+     */
+    val tracking: StateFlow<TrackingSample> = trackingState.asStateFlow()
+
     @Volatile private var poseCollectionRunning = false
     private var bundle: SessionBundle? = null
-    private var lastFrameTimestampNs = Long.MIN_VALUE
+    private var frameTimestamps: FrameTimestampWriter? = null
     private var lastPoseTimestampNs = Long.MIN_VALUE
+
+    @Volatile private var cameraMetadata: CameraMetadata? = null
 
     fun start(displayNumber: Int): SessionBundle {
         check(bundle == null) { "Capture is already running" }
@@ -84,15 +100,18 @@ class AndroidCaptureRuntime(
     fun stop(): FinalizeResult {
         val active = requireNotNull(bundle) { "No active capture" }
         sensorManager.unregisterListener(this)
+        frameTimestamps?.recording = false
         val stopError = runCatching { mediaRecorder?.stop() }.exceptionOrNull()
+        val camera = cameraMetadata
         releaseResources()
         bundle = null
         if (stopError != null) return FinalizeResult.Failed(stopError.message ?: "Video recording could not be finalized")
-        return SessionFinalizer(store).finalize(active)
+        return SessionFinalizer(store).finalize(active, camera = camera)
     }
 
     fun interrupt() {
         sensorManager.unregisterListener(this)
+        frameTimestamps?.recording = false
         runCatching { mediaRecorder?.stop() }
         releaseResources()
         bundle = null
@@ -162,10 +181,7 @@ class AndroidCaptureRuntime(
                     result: TotalCaptureResult,
                 ) {
                     val timestampNs = result.get(CaptureResult.SENSOR_TIMESTAMP) ?: return
-                    if (timestampNs != lastFrameTimestampNs) {
-                        lastFrameTimestampNs = timestampNs
-                        bundle?.mainFrameTimestamps?.appendText("$timestampNs,$timestampNs,SENSOR_TIMESTAMP\n")
-                    }
+                    frameTimestamps?.record(timestampNs)
                 }
             }
         val deviceCallback =
@@ -190,6 +206,8 @@ class AndroidCaptureRuntime(
                                             session.resume()
                                             sharedCamera.setCaptureCallback(captureCallback, handler)
                                             recorder.start()
+                                            // 인코더가 실제로 돌기 시작한 뒤부터 Camera timestamp를 남긴다.
+                                            frameTimestamps?.recording = true
                                             startPoseCollection(session)
                                         } catch (error: Exception) {
                                             failure = error
@@ -249,6 +267,9 @@ class AndroidCaptureRuntime(
                         if (timestampNs == 0L || timestampNs == lastPoseTimestampNs) continue
                         lastPoseTimestampNs = timestampNs
                         val camera = frame.camera
+                        trackingState.value =
+                            TrackingSample(camera.trackingState == com.google.ar.core.TrackingState.TRACKING, timestampNs)
+                        if (cameraMetadata == null) cameraMetadata = readCameraMetadata(session, camera)
                         val translation = camera.pose.translation
                         val rotation = camera.pose.rotationQuaternion
                         bundle?.arcorePoses?.appendText(
@@ -263,6 +284,37 @@ class AndroidCaptureRuntime(
                 start()
             }
     }
+
+    /**
+     * 첫 유효 프레임에서 촬영 Camera의 Intrinsic을 1회 확보한다.
+     *
+     * ARCore의 이미지 스트림 기준 값이며, MediaRecorder 해상도를 같은 `cameraConfig.imageSize`로
+     * 설정하므로 녹화 해상도와 대응이 보장된다. 실패하면 null을 돌려주고 수집은 그대로 이어간다.
+     */
+    private fun readCameraMetadata(
+        session: Session,
+        camera: com.google.ar.core.Camera,
+    ): CameraMetadata? =
+        runCatching {
+            val intrinsics = camera.imageIntrinsics
+            val focalLength = intrinsics.focalLength
+            val principalPoint = intrinsics.principalPoint
+            val dimensions = intrinsics.imageDimensions
+            val optics = CameraMetadataReader(cameraManager).read(session.cameraConfig.cameraId)
+            CameraMetadata(
+                cameraId = session.cameraConfig.cameraId,
+                imageWidth = dimensions[0],
+                imageHeight = dimensions[1],
+                fx = focalLength[0],
+                fy = focalLength[1],
+                cx = principalPoint[0],
+                cy = principalPoint[1],
+                focalLengthMm = optics.focalLengthMm,
+                sensorWidthMm = optics.sensorWidthMm,
+                sensorHeightMm = optics.sensorHeightMm,
+                distortionCoefficients = optics.distortionCoefficients,
+            )
+        }.onFailure { Log.w(TAG, "Could not read camera metadata", it) }.getOrNull()
 
     private fun releaseResources() {
         poseCollectionRunning = false
@@ -279,6 +331,8 @@ class AndroidCaptureRuntime(
         mediaRecorder = null
         cameraThread?.quitSafely()
         cameraThread = null
+        frameTimestamps = null
+        cameraMetadata = null
         sensorFiles.clear()
     }
 
@@ -287,7 +341,7 @@ class AndroidCaptureRuntime(
     }
 
     private fun writeHeaders(bundle: SessionBundle) {
-        bundle.mainFrameTimestamps.writeText("frame_number,timestamp_ns,timestamp_source\n")
+        frameTimestamps = FrameTimestampWriter(bundle.mainFrameTimestamps).also(FrameTimestampWriter::start)
         bundle.accelerometer.writeText("timestamp_ns,x,y,z,accuracy\n")
         bundle.gyroscope.writeText("timestamp_ns,x,y,z,accuracy\n")
         bundle.rotationVector.writeText("timestamp_ns,x,y,z,scalar_component,heading_accuracy_rad,accuracy\n")
@@ -306,3 +360,14 @@ class AndroidCaptureRuntime(
         const val TAG = "TigerCapture"
     }
 }
+
+/**
+ * ARCore Tracking 관측 한 건.
+ *
+ * [observedAtNs]는 이 관측을 만든 프레임의 카메라 시각이며 `arcore_poses.csv`의
+ * `android_camera_timestamp_ns`와 같은 값이다.
+ */
+data class TrackingSample(
+    val isTracking: Boolean,
+    val observedAtNs: Long,
+)
