@@ -64,3 +64,4 @@
 
 - 2026-09-11, `SM-G973N`(Android 12, page size 4096): `./gradlew.bat connectedDebugAndroidTest --no-daemon --offline`가 14개 테스트를 실패·건너뜀 없이 통과했다. 목록·수집 제어·종료 확인·export UI의 Compose semantics와 migration 경로를 확인했다.
 - 내부 개발용 앱 범위에서는 `SM-G973N`을 기준 기기로 사용하며, 16KB 페이지 기기 검증은 요구하지 않는다(2026-09-11 사용자 결정). 실제 camera/AR 프리뷰, ingestion server 자동 업로드·취소·백그라운드 중단·재전송, legacy 외부 bundle 제외의 수동 확인은 T035에 남아 있다.
+- 2026-09-14, `SM-G973N`(Android 12, page size 4096): Task `T035`/Object `upload`을 입력해 라이브 카메라 프리뷰에서 실제 수집을 시작·종료했다. 종료 확인 뒤 `업로드 중` 비결정적 진행 표시와 “이 화면을 나가면 전송이 중단됩니다.” 경고를 확인했다. 앱을 강제 종료·재시작한 뒤 해당 Session Detail이 `업로드 완료`로 표시되는 것을 확인했다. 이 업로드는 짧은 시간 안에 완료돼 취소 확인·업로드 중 백그라운드 중단·실패 후 재전송은 재현하지 못했다. legacy 외부 bundle 수동 제외도 미검증이다.

@@ -173,6 +173,7 @@
   - 자동 검증: `./gradlew.bat testDebugUnitTest lintDebug assembleDebug ktlintCheck --no-daemon --offline` 성공 (2026-09-11). Lint는 오류 0건, 기존 경고 56건이며 debug APK가 생성됐다.
 - [ ] T035 `specs/002-capture-control-ux/quickstart.md`에 따라 실제 기기와 ingestion server에서 프리뷰, 수집 제어, 자동 업로드, 취소, 백그라운드 중단, 재전송, legacy 제외를 검증하고 결과를 `specs/002-capture-control-ux/quickstart.md`에 기록한다.
   - 부분 실제 검증(2026-09-11): `SM-G973N`(Android 12, 4KB page)의 `./gradlew.bat connectedDebugAndroidTest --no-daemon --offline`가 14개 테스트를 실패·건너뜀 없이 통과했다. 실제 camera/AR 프리뷰·ingestion server 자동 업로드·취소·백그라운드 중단·재전송·legacy 외부 bundle 수동 검증은 아직 남아 있다 (`quickstart.md`).
+  - 부분 실제 검증(2026-09-14): `SM-G973N`(Android 12, page size 4096)에서 Task/Object 입력 뒤 카메라 프리뷰를 열고 실제 수집을 시작·종료했다. 종료 확인 뒤 `업로드 중` 진행 표시와 이탈 경고를 확인했고, 앱을 강제 종료·재시작한 뒤 Session Detail에서 `업로드 완료`를 확인했다. 업로드가 짧은 시간 안에 완료되어 취소·업로드 중 백그라운드 전환·실패 후 재전송은 재현하지 못했고, legacy 외부 bundle 수동 제외 검증도 남아 있다 (`quickstart.md`).
 - [X] T037 [P] `gradle/libs.versions.toml`의 ARCore와 생성 APK를 Android 15+ 16KB 페이지 환경에서 실행해 카메라·AR 세션 생성과 수집 흐름을 검증한다. `lintDebug`의 `Aligned16KB` 경고와 `zipalign -c -P 16 -v 4` 결과를 함께 기록한다.
   - 자동 검증(2026-09-09): `com.google.ar:core:1.56.0`으로 `ktlintCheck testDebugUnitTest assembleDebug lintDebug` 성공, 강제 재실행한 Lint report에서 `Aligned16KB` 0건, `zipalign -c -P 16 -v 4 app/build/outputs/apk/debug/app-debug.apk` 성공.
   - 내부 개발용 범위 결정(2026-09-11): 사용자 지시에 따라 `SM-G973N`(Android 12, page size 4096)을 기준 기기로 삼으며, Android 15+ 16KB 페이지 실기기/에뮬레이터 검증은 요구하지 않는다.
