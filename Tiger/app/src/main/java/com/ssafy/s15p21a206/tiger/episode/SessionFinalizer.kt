@@ -13,6 +13,8 @@ class SessionFinalizer(
     fun finalize(
         bundle: SessionBundle,
         includesUltraWide: Boolean = false,
+        // 확보하지 못했으면 null. 메타데이터 부재가 Session 마감을 실패시키지 않는다.
+        camera: CameraMetadata? = null,
     ): FinalizeResult {
         val validation = SessionBundleValidator.validate(bundle.directory, includesUltraWide, requireMetadata = false)
         if (validation is BundleValidationResult.Invalid) return FinalizeResult.Failed(validation.reason)
@@ -33,6 +35,7 @@ class SessionFinalizer(
                             put("ultrawide", includesUltraWide)
                         },
                     )
+                    camera?.let { put("camera", Json.encodeToJsonElement(CameraMetadata.serializer(), it)) }
                     put(
                         "files",
                         buildJsonArray {

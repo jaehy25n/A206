@@ -124,6 +124,27 @@ data class EpisodeMarker(
     val outcome: EpisodeState,
 )
 
+/**
+ * 실제 촬영에 사용된 Camera의 식별자·해상도·Intrinsic.
+ *
+ * 필수 값은 ARCore가 사용하는 이미지 스트림에서 얻으므로 촬영 해상도와 대응이 보장된다.
+ * nullable 필드는 기기가 제공할 때만 채운다. 값을 억지로 계산해 채우지 않는다.
+ */
+@Serializable
+data class CameraMetadata(
+    @SerialName("camera_id") val cameraId: String,
+    @SerialName("image_width") val imageWidth: Int,
+    @SerialName("image_height") val imageHeight: Int,
+    val fx: Float,
+    val fy: Float,
+    val cx: Float,
+    val cy: Float,
+    @SerialName("focal_length_mm") val focalLengthMm: Float? = null,
+    @SerialName("sensor_width_mm") val sensorWidthMm: Float? = null,
+    @SerialName("sensor_height_mm") val sensorHeightMm: Float? = null,
+    @SerialName("distortion_coefficients") val distortionCoefficients: List<Float>? = null,
+)
+
 @Serializable data class ProbeResult(
     val result: UltraWideProbeResult,
     val detail: String? = null,
