@@ -178,7 +178,8 @@
   - 자동 검증(2026-09-09): `com.google.ar:core:1.56.0`으로 `ktlintCheck testDebugUnitTest assembleDebug lintDebug` 성공, 강제 재실행한 Lint report에서 `Aligned16KB` 0건, `zipalign -c -P 16 -v 4 app/build/outputs/apk/debug/app-debug.apk` 성공.
   - 내부 개발용 범위 결정(2026-09-11): 사용자 지시에 따라 `SM-G973N`(Android 12, page size 4096)을 기준 기기로 삼으며, Android 15+ 16KB 페이지 실기기/에뮬레이터 검증은 요구하지 않는다.
   - 자동 검증: `./gradlew.bat lintDebug assembleDebug --no-daemon --offline` 성공했고 `Aligned16KB` 오류는 없었다. Android SDK Build Tools 36.0.0의 `zipalign.exe -c -P 16 -v 4 app/build/outputs/apk/debug/app-debug.apk`가 `Verification successful`을 반환했다.
-- [ ] T036 `specs/002-capture-control-ux/tasks.md`의 각 완료 task에 구현 파일·production 호출 경로·자동 검증·실제 기기 검증 근거를 기록한 뒤 `$speckit-converge`를 실행한다.
+- [X] T036 `specs/002-capture-control-ux/tasks.md`의 각 완료 task에 구현 파일·production 호출 경로·자동 검증·실제 기기 검증 근거를 기록한 뒤 `$speckit-converge`를 실행한다.
+  - 수렴 검사(2026-09-14): `$speckit-converge` 절차로 `spec.md`·`plan.md`·`tasks.md`와 production 경로를 대조했다. 내부 completed root/legacy 제외, 수집 확정의 자동 업로드 전환, 업로드 이탈 확인·`ON_STOP` 취소·`FAILED` 보존이 명세와 일치하며 새 구현 remediation task는 없다. T035의 취소·업로드 중 백그라운드 중단·실패 재전송·legacy 외부 bundle 실제 검증은 구현 누락이 아닌 미완료 검증으로 남겼다. `.specify/extensions.yml`은 없다.
 
 ---
 
