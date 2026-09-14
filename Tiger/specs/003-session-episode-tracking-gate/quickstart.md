@@ -110,6 +110,127 @@ Compose 제어 상태 검증은 연결된 기기 또는 에뮬레이터가 있�
 - SAF export가 계속 동작한다.
 - `arcore_poses.csv`의 헤더와 `tracking_state` 기록 형식이 변경되지 않았다.
 
+## 자동 검증 실행 기록
+
+**2026-09-14** · 브랜치 `feature/session-episode-tracking-gate`
+
+```bash
+./gradlew.bat ktlintFormat testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest --no-daemon
+```
+
+`BUILD SUCCESSFUL` (49s). 변경 전 기준선도 같은 명령으로 통과했다(53s).
+
+추가·수정된 테스트:
+
+| 파일 | 테스트 |
+|---|---|
+| `capture/FrameTimestampWriterTest.kt` (신규) | 헤더 불변, `frame_number` 0부터 증가, 중복 timestamp 무시, 녹화 구간 밖 입력 무시, 녹화 공백을 건너뛴 연속 증가 |
+| `capture/CaptureSessionCoordinatorTest.kt` | Session 시작이 Episode를 만들지 않음, Episode 3회 반복, 진행 중 Episode가 finalize 차단, READY gate 이전 시작 거부, 0.5초 미만 유실 유지, **값 고정 반복 호출로 마감 발화**, 중복 마감 방지, 회복 후 재개 |
+| `ui/CaptureControlStateTest.kt` | 다섯 상태별 제어 표, `Initializing` 재생 차단, `Idle` 준비 게이트, 이탈 동작 |
+| `episode/SessionFinalizerTest.kt` (신규) | `camera` 직렬화, 선택 필드 생략·기록, 메타데이터 없이 finalize 완료, 기존 키 보존 및 `SessionBundleValidator` 통과 |
+| `ui/CaptureControlStateScreenTest.kt` | `Initializing` 재생 차단과 상태 표시, `Ready` 재생 허용 (Compose, 실기기 실행은 T032) |
+
+`assembleDebugAndroidTest`는 instrumentation APK 컴파일만 확인한 것이며 실행은 T032의 실기기 작업으로 남는다.
+
 ## 완료 판정
 
 `specs/AGENTS.md`에 따라, 위 자동 검증과 실기기 시나리오 1~5가 모두 통과하고 그 근거(실행한 명령, 테스트명, 기기와 결과)가 `tasks.md`에 기록된 경우에만 완료로 보고한다. 단위 테스트 통과만으로 실기기 동작을 검증했다고 판단하지 않는다.
+
+## 실기기 검증 기록
+
+**2026-09-14** · `SM-G973N`(Galaxy S10, Android 12) · Session `45f255d0-41e3-493a-9573-4f35ac67bcac`
+
+### T032 · Compose 제어 상태
+
+`./gradlew.bat connectedDebugAndroidTest --no-daemon` → 16개 테스트 전부 통과, 실패 0 (11.6s).
+신규 `initializing_blocks_episode_start_and_shows_its_state`, `ready_state_enables_episode_start` 포함.
+
+### T033 · Session과 Episode 분리 (SC-001, SC-004)
+
+한 Session에서 Episode 4개를 수집했다. `episodes.csv`의 모든 `start_timestamp_ns`가 Session 시작
+(영상 첫 timestamp `19141231810688`)보다 늦다.
+
+Session 전체 55.6초 동안 모든 스트림이 끊김 없이 기록됐다. Episode 사이 공백이 없다.
+
+| 스트림 | 범위 | 길이 | 최대 간격 |
+|---|---|---|---|
+| `accelerometer.csv` | 19141437241344 ~ 19196800269221 | 55.4초 | 21 ms |
+| `gyroscope.csv` | 19141037242344 ~ 19196800269221 | 55.8초 | 22 ms |
+| `rotation_vector.csv` | 19141057241344 ~ 19196800269221 | 55.7초 | 21 ms |
+| `arcore_poses.csv` | 19141331794842 ~ 19196917367687 | 55.6초 | 42 ms |
+| `main_frame_timestamps.csv` | 19141231810688 ~ 19196750724610 | 55.5초 | — |
+
+### T034 · Tracking 게이트 (SC-002, SC-003)
+
+`episodes.csv` 결과:
+
+```
+2bf129ba… 19148077977530 19155623725947 test test COMPLETED
+41c5ac96… 19159733022598 19166958714747 test test COMPLETED
+a77ac39d… 19171699700782 19177565158201 test test INVALID_TRACKING
+3024d3ee… 19190212819576 19193833541805 test test COMPLETED
+```
+
+Tracking이 끊긴 Episode만 `INVALID_TRACKING`으로 마감됐다. `arcore_poses.csv` 대조 결과
+`COMPLETED` Episode 3개 구간에는 `PAUSED` pose가 **0건**이다(각각 TRACKING 226·216·108건).
+Session 전체로는 `TRACKING` 1486건, `PAUSED` 182건이다.
+
+`INVALID_TRACKING` 마감 후에도 Session 수집이 계속됐고, Tracking 회복 뒤 Episode 4를 정상 수집했다.
+SC-004(다른 Episode와 기록이 손실되지 않음)가 충족된다.
+
+**편차**: 마감 시각과 첫 `PAUSED` pose의 간격이 **0.717초**로, 명세의 0.5초보다 **217 ms** 크다.
+원인은 아래 `관측된 편차` 절에 기록한다.
+
+### T035 · frame_number와 영상 대응 (SC-005, SC-009)
+
+- 헤더 `frame_number,timestamp_ns,timestamp_source` 유지 ✓
+- `frame_number`가 0에서 시작해 1665행까지 **결번 없이 1씩 증가** ✓
+- `timestamp_ns` 단조 증가, 중복 없음 ✓
+- CSV 데이터 행 1665 · MP4 sample_count 1667 → **차이 2 frame**. SC-009(2 이하) 충족.
+  수신 측이 보고한 기존 3~9 frame 차이가 줄었다. 영상 중간 구간의 drop은 관측되지 않았다.
+
+MP4 frame 수는 `stsz` box의 `sample_count`로 확인했다(ffprobe 미설치).
+
+### T036 · Camera Metadata (SC-006, SC-007)
+
+`metadata.json`의 `camera` 객체:
+
+```json
+{"camera_id":"0","image_width":640,"image_height":480,
+ "fx":497.29745,"fy":497.2151,"cx":324.0054,"cy":240.17395,
+ "focal_length_mm":4.32,"sensor_width_mm":5.645,"sensor_height_mm":4.234}
+```
+
+- 필수 7개 필드 모두 존재 ✓
+- MP4 `avc1` 해상도 `640 x 480`으로 `image_width`/`image_height`와 **일치** ✓ (SC-007)
+- `cx`≈324, `cy`≈240으로 해상도의 절반 부근 — 올바른 스트림의 intrinsics다
+- `distortion_coefficients`는 기기가 `LENS_DISTORTION`을 제공하지 않아 **키가 생략**됐다.
+  FR-024대로 값을 계산해 채우지 않았다 ✓
+- `session_id`·`camera_streams`·`files` 세 키 형식 그대로 유지 ✓ (FR-026)
+
+### T038 · 회귀
+
+- ARCore `SharedCamera` 기반 Main RGB 녹화 정상. MP4 7.7 MB, 55.6초, H.264 640×480
+- `arcore_poses.csv` 헤더와 `tracking_state` 기록 형식 변경 없음 ✓
+- Session 목록 화면에서 완료 Session이 정상 표시됨
+
+### 관측된 편차
+
+**`INVALID_TRACKING` 마감 시각이 첫 `PAUSED` pose + 0.5초보다 217 ms 늦다.**
+
+원인은 두 지연의 합이다.
+
+1. ARCore pose 처리 지연. `arcore_poses.csv`의 시각은 camera sensor timestamp이지만,
+   `session.update()`가 그 프레임을 내놓고 `tracking` 플래그가 바뀌는 시점은 그보다 뒤다.
+2. Tracking 평가 주기 100 ms. `lossSinceNs`는 첫 `onTracking(false)` **호출 시각**으로 잡히므로
+   최대 한 tick만큼 늦게 시작한다.
+
+Episode 유효성 판정 자체는 의도대로 동작하므로 기능 결함은 아니다. 다만
+[contracts/capture-state-machine.md](contracts/capture-state-machine.md)가 명시한
+`end = 유실 시작 + 0.5초`를 `arcore_poses.csv` 기준으로 재면 이 편차만큼 어긋난다.
+수신 측이 pose CSV로 경계를 재계산할 경우를 위해 허용 오차를 문서화하거나,
+pose timestamp를 유실 시작 시각으로 쓰도록 바꾸는 선택지가 있다. 이번 범위에서는 기록만 남긴다.
+
+### T037 · 미검증
+
+EC2 업로드는 수행하지 않았다. 별도 확인이 필요하다.

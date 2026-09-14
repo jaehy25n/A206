@@ -138,3 +138,23 @@ T025 + T026 + T027 + T028
 2. export model과 tests를 완료한 뒤 migration·repository·gateway·exporter를 순서대로 구현한다.
 3. attempt validation/publish/retry와 UI를 확인하고 build gate를 통과한다.
 4. Galaxy S10에서 connected UI test와 SAF manual scenario를 수행한 뒤 완료 처리한다.
+
+---
+
+## 정합화 기록 (2026-09-14, 003-session-episode-tracking-gate)
+
+T007·T008·T009는 `CaptureSessionCoordinator`에 frame timestamp writer, READY gate, tracking loss
+interruption을 구현하고 단위 테스트까지 갖췄으나, 이 클래스가 production 호출 경로에 연결되지 않은
+`미연결` 상태였다. `MainActivity`와 `AndroidCaptureRuntime` 어디에서도 참조하지 않았고, 실제 frame
+timestamp 기록은 `AndroidCaptureRuntime`이 직접 수행했다.
+
+`specs/AGENTS.md`의 완료 판정 규칙에 따라 완료 이력을 지우는 대신 연결 task로 세분화했다. 연결은
+003 기능에서 수행했다.
+
+- T007 → 003의 T018~T020. `FrameTimestampWriter`가 실제 CSV 기록 경로가 되었고 `frame_number`가
+  순차 index로 정정되었다.
+- T008 → 003의 T008~T010, T015, T016. READY gate가 수집 화면 상태와 Episode 시작 가능 여부를
+  결정하게 되었다.
+- T009 → 003의 T012~T017. tracking loss가 Episode를 `INVALID_TRACKING`으로 마감하게 되었다.
+
+세 task의 실기기 검증은 003의 T033~T035에서 수행한다.

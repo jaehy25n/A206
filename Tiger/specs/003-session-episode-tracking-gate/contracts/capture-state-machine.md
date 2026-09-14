@@ -11,7 +11,7 @@
 | `Idle` | `IDLE` | Session START | 비활성 | 비활성 | 즉시 이탈 |
 | `Initializing` | `INITIALIZING` | **비활성** (사유 표시) | 비활성 | Session END | 확인 후 이탈 |
 | `Ready` | `READY` | Episode START | 비활성 | Session END | 확인 후 이탈 |
-| `EpisodeActive` | `EPISODE ACTIVE` | 비활성 | Episode END | 확인 후 Session END | 확인 후 이탈 |
+| `EpisodeActive` | `EPISODE ACTIVE` | 비활성 | Episode END | 활성이지만 거부 후 안내 | 확인 후 이탈 |
 | `Finalizing` | `FINALIZING` | 비활성 | 비활성 | 비활성 | 무시 |
 
 `Idle`에서 재생은 task/object 입력이 완료되고 프리뷰가 준비된 경우에만 활성화된다(기존 동작 유지).
@@ -29,6 +29,9 @@ Ready         ──정지──>  Finalizing       Session 마감
 EpisodeActive ──정지──>  (거부)           진행 중 Episode를 먼저 종료하도록 안내
 Finalizing    ──완료──>  Idle
 ```
+
+`EpisodeActive`에서 정지 버튼은 비활성이 아니라 **활성 상태로 두고 누르면 안내를 표시한다.** 버튼을 비활성화하면
+사용자가 왜 종료할 수 없는지 알 수 없기 때문이다. 실제 Session 마감은 일어나지 않는다.
 
 ### Tracking 신호
 
@@ -66,3 +69,27 @@ EpisodeActive ──유실 0.5초 이상 지속──>       Initializing   (Epi
 | Tracking 유실 0.5초 지속 | `INVALID_TRACKING` | 유실 시작 시각 + 0.5초 |
 
 두 경로 모두 동일한 형식으로 `episodes.csv`와 로컬 색인에 기록된다.
+
+### 유실 시작 시각의 기준
+
+`INVALID_TRACKING`의 `end_timestamp_ns`를 계산하는 **유실 시작 시각은 `arcore_poses.csv`에서
+`tracking_state`가 처음 `TRACKING`이 아닌 값으로 바뀐 행의 `android_camera_timestamp_ns`다.**
+수신 측이 pose 기록만으로 경계를 재계산할 수 있어야 하기 때문이다.
+
+이 값은 시스템이 유실을 **알아챈** 시각과 다르다. ARCore가 프레임을 처리해 내보내기까지의 지연과
+평가 주기(0.1초) 때문에 인지 시각이 더 늦다. 실기기에서 측정된 차이는 217 ms였다.
+
+따라서 두 시각을 분리해 쓴다.
+
+| 용도 | 기준 | 이유 |
+|---|---|---|
+| 0.5초 경과 판정 | 단조 시계 | pose 지연이 섞이면 실제보다 짧은 유실에도 마감된다 |
+| `end_timestamp_ns` 기록 | pose 카메라 시각 | `arcore_poses.csv`와 정확히 대응시킨다 |
+
+판정에 pose 시각을 쓰면 지연만큼 게이트가 앞당겨져, 0.5초 미만 유실도 무효로 마감된다.
+이는 "짧은 유실은 Recording 계속"이라는 요구와 어긋난다.
+
+**폴백**: 카메라 timestamp 소스가 `REALTIME`이 아닌 기기에서는 pose 시각이 단조 시계와 다른
+시간축이다. 그 값이 진행 중 Episode의 시작보다 이르거나 현재보다 미래이면 다른 시간축으로 보고
+버리며, 이때는 인지 시각을 기록에 사용한다. 그 Session의 `end_timestamp_ns`는 최대
+평가 주기 + pose 지연만큼 늦어지지만, 시간축이 뒤섞인 값이 기록되지는 않는다.
