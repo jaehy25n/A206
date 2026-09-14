@@ -27,7 +27,11 @@ Thumbs.db
 
 # Codex·Spec Kit 로컬 도구 런타임
 /.agents/
-/.specify/
+# constitution은 팀 규약이므로 예외로 추적한다.
+/.specify/*
+!/.specify/memory/
+/.specify/memory/*
+!/.specify/memory/constitution.md
 
 # Claude Code 로컬 상태 (스킬·공유 설정은 커밋한다)
 /.claude/settings.local.json
