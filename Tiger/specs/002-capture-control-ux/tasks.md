@@ -114,20 +114,22 @@
 - [X] T023 [P] [US3] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/CaptureControlStateTest.kt`에 네 수집 상태의 아이콘 활성화, 확정 중 중복 입력 차단, 정지·뒤로 가기·닫기 확인 테스트를 작성한다.
   - 구현: `src/test/.../ui/CaptureControlStateTest.kt`의 네 상태·준비 실패·작업 잠금·종료 확인 정책 4개 테스트와 `src/androidTest/.../ui/CaptureControlStateScreenTest.kt`의 비활성 제어/진행 표시·프리뷰 차단·툴팁·확인/취소·시스템 Back/X 5개 테스트. UI는 기존 프로젝트 구성에 따라 `androidTest`에 배치했다.
   - 자동 검증: 구현 전 `testDebugUnitTest --tests '*CaptureControlStateTest' --no-daemon`에서 새 정책/확정 상태 미구현으로 실패함을 확인한 뒤 구현했다. 구현 후 `.\gradlew.bat ktlintCheck testDebugUnitTest lintDebug assembleDebug connectedDebugAndroidTest --no-daemon` 성공(2026-09-10). 단위 52개·connected 14개 모두 통과하며 신규 9개 테스트를 포함한다.
-  - 실제 검증: connected suite는 `SM-G973N`(Android 12)에서 실행했다. 실제 TalkBack 음성 검증은 T025에 남긴다. Related Jira: S15P21A206-17.
+  - 실제 검증: connected suite는 `SM-G973N`(Android 12)에서 실행했다. TalkBack 실사용 검증은 2026-09-11 사용자 결정으로 필수 조건에서 제외했다. Related Jira: S15P21A206-17.
 - [X] T024 [US3] `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/capture/CaptureWorkspaceScreen.kt`와 `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`에 상태별 제어 활성화, 준비 실패·확정 중 일회성 안내, BackHandler·전체 화면 sheet X 닫기 확인을 구현한다.
   - 구현/production: `MainActivity.kt`의 `CaptureScreen.controlPolicy` → `CaptureWorkspaceControls`/`CaptureWorkspaceExitControls`와 재생·일시 정지·정지·`requestCaptureExit`/`finalizeCapture`가 같은 정책을 사용한다. `CaptureControlPolicy.kt`는 준비·Episode 진행·Session 유지·확정의 네 상태를 정의한다. 시작/저장 잠금과 확정 잠금은 비동기 실행 전에 설정하고 완료·실패 시 해제해 중복 입력을 차단한다.
   - 안내/접근성: 첫 preview frame·유효한 메타데이터가 준비되기 전 재생 차단, 프리뷰 실패 Snackbar, 확정 진행 표시, `CaptureTooltip`의 리소스 라벨과 길게 누르기, `CaptureStopConfirmation`의 공통 확인/취소를 연결했다. 확정 처리는 IO에서 수행하고 동시에 interrupt하지 않으며 백그라운드에서 끝나면 전송을 지속하지 않고 재전송 가능한 Detail로 보존한다. `contracts/capture-control-ui.md`와 `plan.md`에 제어 정책을 반영했다.
   - 자동 검증: T023의 전체 명령 성공. `CaptureControlStateTest`의 상태/잠금/확인 정책과 `CaptureControlStateScreenTest`의 `finalizing_disables_controls_and_exposes_progress`, `system_back_and_close_share_exit_callback_and_finalizing_blocks_both`, `stop_confirmation_explains_upload_and_separates_cancel_from_confirm` 통과.
-  - 외부 검증: SM-G973N에서 UI instrumentation 성공. 실제 TalkBack은 T025, 실제 카메라·센서/확정 중 백그라운드·서버 전송은 T035에 별도 기록하며 자동 검증으로 대체하지 않는다.
-- [ ] T025 [US3] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/CaptureControlStateTest.kt`를 통과시키고 TalkBack에서 아이콘의 접근성 이름과 툴팁을 실제 기기에서 확인한다.
+  - 외부 검증: SM-G973N에서 UI instrumentation 성공. TalkBack 실사용은 필수 범위에서 제외하고, 실제 카메라·센서/확정 중 백그라운드·서버 전송은 T035에 별도 기록하며 자동 검증으로 대체하지 않는다.
+- [X] T025 [US3] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/CaptureControlStateTest.kt`와 `app/src/androidTest/java/com/ssafy/s15p21a206/tiger/ui/CaptureControlStateScreenTest.kt`로 제어 상태·입력 차단·종료 확인·아이콘 이름·툴팁 표시를 자동 검증한다.
   - 자동 검증 완료: T023의 `CaptureControlStateTest` 4개와 SM-G973N의 `CaptureControlStateScreenTest` 5개가 성공했다. 아이콘 semantics, 비활성 입력 차단, `long_press_shows_accessible_control_tooltip`을 검증했다.
-  - 남은 실제 검증: TalkBack에서 시작·일시 정지·작업 구간 시작·종료·닫기의 실제 음성/이름 및 각 툴팁을 사용자가 확인한 결과가 아직 없다. T022의 프리뷰/접근성 이름 확인과 이번 Compose 자동 테스트를 TalkBack 검증으로 간주하지 않고 `[ ]`를 유지한다. 절차는 `quickstart.md` Phase 5에 기록했다.
+  - 구현/호출 경로: T024의 `CaptureScreen.controlPolicy` → 제어 콜백·`CaptureWorkspaceControls`·`CaptureWorkspaceExitControls`·`CaptureStopConfirmation`을 대조했다. 구현 커밋 `fda4294`는 `3c26f5b`로 develop에 병합됐고 코드 변경 없이 기존 테스트 근거를 유지한다.
+  - 완료 조건 변경(2026-09-11): 사용자가 배포용이 아닌 개발용 앱이므로 접근성 목적의 TalkBack 검증이 불필요하다고 결정했다. `spec.md`, `plan.md`, UI 계약과 `quickstart.md`를 함께 갱신했다. 실제 TalkBack 검증은 수행하지 않았으며 필수 인수 조건에서 제외한 결과로 완료 처리한다. Related Jira: S15P21A206-17.
 
 ### 요청 범위 수렴 대조 (2026-09-10)
 
 - `$speckit-converge`: 사용자 지정 범위 T022·Phase 5에 한정해 US3 인수 시나리오 4개, FR-008/FR-008a/FR-009, 준비/확정 중 중복 입력 엣지 케이스, 단일 모듈·부모 상태 소유·리소스 문자열·기존 데이터/전송 계약을 코드와 대조했다. Constitution은 미작성 템플릿이므로 강제 원칙 검사는 생략했다. 확장 hook 설정은 없다.
-- 구현 연결·자동 검증 범위에서 추가 미구현은 발견하지 않았다. 외부 검증 T025가 남아 있으므로 Phase 5 전체 또는 기능 전체의 `converged`/완료를 선언하지 않는다. 기존 T025·T035에 추적되는 외부 검증을 중복 task로 추가하거나 Phase 6·7을 이번 범위로 확대하지 않았다.
+- 당시 구현 연결·자동 검증 범위에서 추가 미구현은 발견하지 않았으나 T025의 TalkBack 실사용 검증이 남아 완료를 보류했다.
+- 재대조(2026-09-11): 사용자 결정으로 TalkBack 필수 조건을 제외한 명세·계획·T022~T025를 병합된 production 코드 및 2026-09-10 자동 검사 근거와 대조했다. 요청 범위 T022·Phase 5는 `converged`이며 추가 remediation task는 없다. Phase 6·7 및 T035의 실제 수집·서버 검증은 이번 완료 판정에 포함하지 않는다.
 
 **검증 지점**: 사용자는 상시 상태 문구 없이 가능한 다음 조작을 알 수 있고, 수집 종료 전 확인 기회를 받는다.
 
@@ -139,12 +141,20 @@
 
 **독립 검증**: 로컬 보관·실패 Session Detail에서 전송·재전송을 시작하고, 업로드 상태 화면에서 로딩·종료·이탈 확인·백그라운드 중단 뒤 retry를 확인한다.
 
-- [ ] T026 [P] [US4] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/SessionDetailScreenTest.kt`에 Detail 수집 시각·길이·완료 Episode 개수·데이터 상태와 전송/재전송 행동 테스트를 작성한다.
-- [ ] T027 [P] [US4] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/UploadStatusScreenTest.kt`에 비결정적 진행 표시, 화면 이탈 경고 문구, 완료/실패 상태, 뒤로 가기 취소 확인, lifecycle background 취소 테스트를 작성한다.
-- [ ] T028 [US4] `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`, `app/src/main/res/drawable/`, `app/src/main/res/values/strings.xml`에 Session 식별 정보·수집 시각·길이·완료 Episode 개수·데이터 상태·로컬 원본 동영상 재생·전체 화면 확장, 상태별 전송·재전송 행동과 좌측 상단 뒤로가기 아이콘을 구현한다.
-- [ ] T029 [US4] `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/upload/UploadStatusScreen.kt`와 `app/src/main/res/values/strings.xml`에 비결정적 로딩, 화면 이탈 경고, 성공·실패 표시와 취소 확인 dialog를 구현한다.
-- [ ] T030 [US4] `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`와 `app/src/main/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadService.kt`에 Detail·정지의 공통 전송 시작, Upload Status 화면 소유 Job, back/close 확인 취소, `ON_STOP` 즉시 취소 및 `FAILED` persist를 연결한다.
-- [ ] T031 [US4] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/SessionDetailScreenTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/UploadStatusScreenTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadServiceTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/upload/SessionUploaderTest.kt`를 통과시키고 MockWebServer에서 `201`, `200 duplicate`, 네트워크 실패, 취소를 확인한다.
+- [X] T026 [P] [US4] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/SessionDetailScreenTest.kt`에 Detail 수집 시각·길이·완료 Episode 개수·데이터 상태와 전송/재전송 행동 테스트를 작성한다.
+  - 구현/production: `SessionDetailPresentation`이 `SessionDetailScreen`의 길이와 전송/재전송 행동을 결정하며, 화면은 기존 수집 시각·ID·완료 Episode 개수·데이터 상태·동영상/전체 화면 경로를 유지한다.
+  - 자동 검증: `SessionDetailScreenTest`의 `detail presentation retains duration episode data source and upload action`, `failed session exposes retry while completed upload exposes no action`.
+- [X] T027 [P] [US4] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/UploadStatusScreenTest.kt`에 비결정적 진행 표시, 화면 이탈 경고 문구, 완료/실패 상태, 뒤로 가기 취소 확인, lifecycle background 취소 테스트를 작성한다.
+  - 구현/production: `UploadStatusScreen`은 `UPLOADING`에서 indeterminate indicator·이탈 경고·확인 dialog를 표시하고 `uploadExitAction`으로 terminal 상태와 구분한다. `CaptureScreen`의 `ON_STOP`은 해당 화면의 Job을 즉시 취소한다.
+  - 자동 검증: `UploadStatusScreenTest`의 uploading 이탈 확인·terminal 직접 복귀·lifecycle stop 취소 정책과 `SessionUploadServiceTest.cancelled upload persists failed`.
+- [X] T028 [US4] `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`, `app/src/main/res/drawable/`, `app/src/main/res/values/strings.xml`에 Session 식별 정보·수집 시각·길이·완료 Episode 개수·데이터 상태·로컬 원본 동영상 재생·전체 화면 확장, 상태별 전송·재전송 행동과 좌측 상단 뒤로가기 아이콘을 구현한다.
+  - 구현/production: `CaptureScreen`의 `SessionDetail`/`SessionVideo` 목적지 → `SessionDetailScreen`/`FullScreenVideoScreen`과 `SessionDetailPresentation` 경로.
+- [X] T029 [US4] `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/upload/UploadStatusScreen.kt`와 `app/src/main/res/values/strings.xml`에 비결정적 로딩, 화면 이탈 경고, 성공·실패 표시와 취소 확인 dialog를 구현한다.
+  - 구현/production: `UploadStatusScreen`의 `CircularProgressIndicator`, 상태 문구와 취소 dialog가 `CaptureScreen`의 `UploadStatus` 목적지에서 호출된다.
+- [X] T030 [US4] `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`와 `app/src/main/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadService.kt`에 Detail·정지의 공통 전송 시작, Upload Status 화면 소유 Job, back/close 확인 취소, `ON_STOP` 즉시 취소 및 `FAILED` persist를 연결한다.
+  - 구현/production: Detail과 capture finalize가 공통 `startUpload`를 호출하며, 확인된 이탈과 `ON_STOP`은 `uploadJob.cancel()` → `SessionUploadService`의 cancellation handler → `FAILED` 저장으로 연결된다.
+- [X] T031 [US4] `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/SessionDetailScreenTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/ui/UploadStatusScreenTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/upload/SessionUploadServiceTest.kt`, `app/src/test/java/com/ssafy/s15p21a206/tiger/upload/SessionUploaderTest.kt`를 통과시키고 MockWebServer에서 `201`, `200 duplicate`, 네트워크 실패, 취소를 확인한다.
+  - 자동 검증: `./gradlew.bat ktlintCheck testDebugUnitTest --tests "com.ssafy.s15p21a206.tiger.ui.SessionDetailScreenTest" --tests "com.ssafy.s15p21a206.tiger.ui.UploadStatusScreenTest" --tests "com.ssafy.s15p21a206.tiger.upload.SessionUploadServiceTest" --tests "com.ssafy.s15p21a206.tiger.upload.SessionUploaderTest" --rerun-tasks --no-daemon --offline` 성공 (2026-09-11). `SessionUploaderTest`가 MockWebServer의 `201`, `200 duplicate`, 네트워크 실패·취소를 검증한다.
 
 **검증 지점**: Detail은 전송을 시작하고, 업로드 상태 화면은 polling 없이 진행을 보여 주며 이탈·백그라운드 중단 후 재전송을 보장한다.
 
@@ -154,14 +164,23 @@
 
 **목적**: 사용자 흐름·계약·자동/실제 기기 검증을 하나로 확인한다.
 
-- [ ] T032 [P] `app/src/main/res/values/strings.xml`과 `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/`의 사용자 문구·content description·툴팁을 점검해 하드코딩 문자열과 접근성 누락을 수정한다.
-- [ ] T033 [P] `specs/001-episode-recorder/spec.md`, `specs/001-episode-recorder/data-model.md`, `specs/001-episode-recorder/contracts/episode-bundle.md`, `specs/002-capture-control-ux/spec.md`, `specs/002-capture-control-ux/data-model.md`, `specs/002-capture-control-ux/contracts/capture-control-ui.md`를 구현 결과와 대조해 storage·Episode·업로드 계약 불일치를 갱신한다.
-- [ ] T034 `specs/002-capture-control-ux/quickstart.md`에 따라 `.\gradlew.bat testDebugUnitTest`, `.\gradlew.bat lintDebug`, `.\gradlew.bat assembleDebug`, `.\gradlew.bat ktlintCheck`를 실행하고 명령·결과를 각 완료 task의 증거로 기록한다.
-- [ ] T035 `specs/002-capture-control-ux/quickstart.md`에 따라 실제 기기와 ingestion server에서 프리뷰, 수집 제어, 자동 업로드, 취소, 백그라운드 중단, 재전송, legacy 제외를 검증하고 결과를 `specs/002-capture-control-ux/quickstart.md`에 기록한다.
-- [ ] T037 [P] `gradle/libs.versions.toml`의 ARCore와 생성 APK를 Android 15+ 16KB 페이지 환경에서 실행해 카메라·AR 세션 생성과 수집 흐름을 검증한다. `lintDebug`의 `Aligned16KB` 경고와 `zipalign -c -P 16 -v 4` 결과를 함께 기록한다.
+- [X] T032 [P] `app/src/main/res/values/strings.xml`과 `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/`의 사용자 문구·content description·툴팁을 점검해 하드코딩 문자열과 접근성 누락을 수정한다.
+  - 구현/검토: UI 사용자 문구와 `contentDescription`은 리소스 기반임을 대조했다. `UploadStatusScreen`의 뒤로가기 설명, 진행 표시 설명 및 취소 확인 문구를 추가하고, 재구성 시 취소 dialog 상태가 유지되도록 `remember`를 적용했다.
+  - 자동 검증: `./gradlew.bat ktlintCheck lintDebug --no-daemon --offline` 성공 (2026-09-11).
+- [X] T033 [P] `specs/001-episode-recorder/spec.md`, `specs/001-episode-recorder/data-model.md`, `specs/001-episode-recorder/contracts/episode-bundle.md`, `specs/002-capture-control-ux/spec.md`, `specs/002-capture-control-ux/data-model.md`, `specs/002-capture-control-ux/contracts/capture-control-ui.md`를 구현 결과와 대조해 storage·Episode·업로드 계약 불일치를 갱신한다.
+  - 검토: 내부 `filesDir/capture/completed/<session_id>` 경계, `CANCELLED` 미사용, 완료 Episode 집계, 업로드 취소/백그라운드 전환의 `FAILED` 저장, legacy 외부 bundle 제외를 production 경로와 대조했다. 계약 불일치가 없어 문서 내용 변경은 필요하지 않았다.
+- [X] T034 `specs/002-capture-control-ux/quickstart.md`에 따라 `.\gradlew.bat testDebugUnitTest`, `.\gradlew.bat lintDebug`, `.\gradlew.bat assembleDebug`, `.\gradlew.bat ktlintCheck`를 실행하고 명령·결과를 각 완료 task의 증거로 기록한다.
+  - 자동 검증: `./gradlew.bat testDebugUnitTest lintDebug assembleDebug ktlintCheck --no-daemon --offline` 성공 (2026-09-11). Lint는 오류 0건, 기존 경고 56건이며 debug APK가 생성됐다.
+- [X] T035 `specs/002-capture-control-ux/quickstart.md`에 따라 실제 기기와 ingestion server에서 프리뷰, 수집 제어, 자동 업로드, 취소, 백그라운드 중단, 재전송, legacy 제외를 검증하고 결과를 `specs/002-capture-control-ux/quickstart.md`에 기록한다.
+  - 부분 실제 검증(2026-09-11): `SM-G973N`(Android 12, 4KB page)의 `./gradlew.bat connectedDebugAndroidTest --no-daemon --offline`가 14개 테스트를 실패·건너뜀 없이 통과했다. 실제 camera/AR 프리뷰·ingestion server 자동 업로드·취소·백그라운드 중단·재전송·legacy 외부 bundle 수동 검증은 아직 남아 있다 (`quickstart.md`).
+  - 부분 실제 검증(2026-09-14): `SM-G973N`(Android 12, page size 4096)에서 Task/Object 입력 뒤 카메라 프리뷰를 열고 실제 수집을 시작·종료했다. 종료 확인 뒤 `업로드 중` 진행 표시와 이탈 경고를 확인했고, 앱을 강제 종료·재시작한 뒤 Session Detail에서 `업로드 완료`를 확인했다. 업로드가 짧은 시간 안에 완료되어 취소·업로드 중 백그라운드 전환·실패 후 재전송은 재현하지 못했고, legacy 외부 bundle 수동 제외 검증도 남아 있다 (`quickstart.md`).
+  - 완료 범위 결정(2026-09-14): 사용자 지시에 따라 내부 개발용 앱의 이번 완료 판정은 실제 프리뷰·수집 제어·ingestion server 자동 업로드 확인까지로 한정한다. 업로드 취소·업로드 중 백그라운드 중단·실패 재전송·legacy 외부 bundle 수동 검증은 통과했다고 주장하지 않으며, 후속 실제 기기 검증으로 보류한다. 관련 취소·백그라운드·재전송·legacy 경계의 자동 검증은 기존 T004·T009·T027·T031 및 저장소 테스트로 유지한다.
+- [X] T037 [P] `gradle/libs.versions.toml`의 ARCore와 생성 APK를 Android 15+ 16KB 페이지 환경에서 실행해 카메라·AR 세션 생성과 수집 흐름을 검증한다. `lintDebug`의 `Aligned16KB` 경고와 `zipalign -c -P 16 -v 4` 결과를 함께 기록한다.
   - 자동 검증(2026-09-09): `com.google.ar:core:1.56.0`으로 `ktlintCheck testDebugUnitTest assembleDebug lintDebug` 성공, 강제 재실행한 Lint report에서 `Aligned16KB` 0건, `zipalign -c -P 16 -v 4 app/build/outputs/apk/debug/app-debug.apk` 성공.
-  - 남은 실제 검증: 16KB 페이지(`adb shell getconf PAGE_SIZE`가 `16384`) 기기 또는 에뮬레이터에서 AR 세션·카메라·수집을 실행한다.
-- [ ] T036 `specs/002-capture-control-ux/tasks.md`의 각 완료 task에 구현 파일·production 호출 경로·자동 검증·실제 기기 검증 근거를 기록한 뒤 `$speckit-converge`를 실행한다.
+  - 내부 개발용 범위 결정(2026-09-11): 사용자 지시에 따라 `SM-G973N`(Android 12, page size 4096)을 기준 기기로 삼으며, Android 15+ 16KB 페이지 실기기/에뮬레이터 검증은 요구하지 않는다.
+  - 자동 검증: `./gradlew.bat lintDebug assembleDebug --no-daemon --offline` 성공했고 `Aligned16KB` 오류는 없었다. Android SDK Build Tools 36.0.0의 `zipalign.exe -c -P 16 -v 4 app/build/outputs/apk/debug/app-debug.apk`가 `Verification successful`을 반환했다.
+- [X] T036 `specs/002-capture-control-ux/tasks.md`의 각 완료 task에 구현 파일·production 호출 경로·자동 검증·실제 기기 검증 근거를 기록한 뒤 `$speckit-converge`를 실행한다.
+  - 수렴 검사(2026-09-14): `$speckit-converge` 절차로 `spec.md`·`plan.md`·`tasks.md`와 production 경로를 대조했다. 내부 completed root/legacy 제외, 수집 확정의 자동 업로드 전환, 업로드 이탈 확인·`ON_STOP` 취소·`FAILED` 보존이 명세와 일치하며 새 구현 remediation task는 없다. T035의 취소·업로드 중 백그라운드 중단·실패 재전송·legacy 외부 bundle 실제 검증은 구현 누락이 아닌 미완료 검증으로 남겼다. `.specify/extensions.yml`은 없다.
 
 ---
 
