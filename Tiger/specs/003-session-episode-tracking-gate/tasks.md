@@ -384,6 +384,8 @@ PBuffer로 가므로 그쪽에서도 프리뷰가 나올 수 없었다.
 - [X] T054 `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`가 `SurfaceTexture`를 보관하고 하드코딩된 `1920×1080` 대신 `DEFAULT_PREVIEW_SIZE`(640×480)를 쓰며, 수집 시작 시 provider로 ARCore 해상도를 받아 버퍼를 다시 맞추게 한다 per FR-032
 - [X] T055 같은 파일에 `restoreIdlePreview()`를 추가하고 ARCore 시작 실패·`finalizeCapture` 실패 잔류·`ON_START` 복귀 경로에서 유휴 프리뷰를 되살린다 per FR-031
 - [X] T056 `app/src/test/java/com/ssafy/s15p21a206/tiger/capture/CapturePreviewControllerTest.kt`에 Ready 상태에서 release 후 다시 prepare하면 프리뷰가 실제로 재개된다는 테스트를 추가한다 per FR-031
+- [X] T062 `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/AndroidCaptureRuntime.kt`의 pose 루프가 `session.update()` 실패와 `eglSwapBuffers` 거부를 남기고 다음 프레임으로 넘어가게 해, 한 번의 실패로 프리뷰와 pose 수집이 함께 멈추지 않게 한다 per FR-031
+- [X] T063 같은 파일이 마감·중단 시 `stopRepeating()`으로 프레임 공급을 먼저 끊고, 진행 중인 프레임이 정리된 뒤에 타임스탬프 기록 창을 닫게 한다 per FR-033, SC-009
 - [X] T057 실기기에서 수집 중 프리뷰가 실시간으로 갱신되는지, 프리뷰가 저장된 MP4와 같은 방향으로 잘림 없이 보이는지, `main_frame_timestamps.csv` 행 수와 MP4 frame 수 차이 및 실효 FPS에 회귀가 없는지 확인한다 per FR-031, FR-032, FR-033, SC-009, SC-011 (실기기)
 
 
@@ -414,15 +416,21 @@ GL 렌더링으로 전환했다. `research.md` 결정 10에 기록한 대안 경
 | `frame_number` 결번 | 0건 (0..4961) |
 | `timestamp_ns` 단조 증가 | 위반 0건 |
 | 실효 FPS | **29.998** (프리뷰 없는 대조군 30.004). 회귀 없음 |
-| CSV 행 수 대 MP4 frame 수 | 4962 대 4965 → **차이 3**. 같은 날 프리뷰 없는 대조군도 1245 대 1248로 **차이 3**. 이번 변경에 대해 중립 |
+| CSV 행 수 대 MP4 frame 수 | **정상 마감 1111 대 1113, 중단 841 대 843 → 모두 차이 2**. SC-009 충족 |
 | `metadata.json` 해상도 | 640×480, MP4와 일치. `camera` 필수 7필드 존재 |
 
-대조군은 같은 기기·같은 세션에서 프리뷰를 끈 빌드로 수집한 `82c11c1c`다.
+FPS 대조군은 같은 기기·같은 날 프리뷰를 끈 빌드로 수집한 `82c11c1c`다.
 
-**SC-009 관련 관측**: 오늘 두 실행 모두 차이가 3으로, 명세의 2 이하를 1 frame 초과한다.
-프리뷰를 완전히 끈 대조군에서도 같은 값이 나오므로 이번 변경의 회귀가 아니다.
-T035의 기준값은 2였으므로 이 경계 편차는 실행마다 흔들린다. SC-009의 허용치를 3으로 조정할지는
-별도 판단이 필요하다.
+**SC-009를 맞추기 위한 수정**: 처음 측정에서는 차이가 3으로 명세의 2 이하를 넘겼다.
+프리뷰를 끈 대조군도 3이었으므로 이번 변경의 회귀는 아니었고, 마감 경로 자체의 경계 문제였다.
+
+원인은 두 가지다. 마감 시 프레임 공급이 계속되는 상태에서 타임스탬프 기록 창만 닫아,
+`MediaRecorder.stop()`이 끝날 때까지 인코딩된 프레임이 CSV에 남지 않았다. 또 `stopRepeating()`을
+불러도 이미 진행 중인 프레임은 계속 인코딩되므로, 그 프레임의 `onCaptureCompleted`를 받기 전에
+창을 닫으면 같은 차이가 남는다.
+
+`stopRepeating()`으로 공급을 먼저 끊고, 진행 중인 프레임이 정리될 시간을 준 뒤 창을 닫도록 고쳤다.
+정상 마감과 중단 경로 모두 차이가 **2**로 내려와 SC-009를 충족한다.
 
 **미검증**: Tracking 게이트(SC-002·SC-003)를 확인하지 못했다. 기기를 책상에 고정한 채 원격으로
 조작해 ARCore가 시차를 얻지 못했고 Tracking이 `INITIALIZING`을 벗어나지 않았다.

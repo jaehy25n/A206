@@ -115,7 +115,7 @@ class AndroidCaptureRuntime(
     fun stop(): FinalizeResult {
         val active = requireNotNull(bundle) { "No active capture" }
         sensorManager.unregisterListener(this)
-        frameTimestamps?.recording = false
+        closeFrameWindow()
         val stopError = runCatching { mediaRecorder?.stop() }.exceptionOrNull()
         val camera = cameraMetadata
         releaseResources()
@@ -124,9 +124,25 @@ class AndroidCaptureRuntime(
         return SessionFinalizer(store).finalize(active, camera = camera)
     }
 
+    /**
+     * Camera 프레임 공급을 먼저 끊고 타임스탬프 기록 창을 닫는다.
+     *
+     * 공급이 계속되는 상태에서 창만 닫으면, `MediaRecorder.stop()`이 끝나기까지 인코딩된 프레임이
+     * `main_frame_timestamps.csv`에 남지 않아 MP4 frame 수와 벌어진다. 공급을 먼저 끊으면 인코더와
+     * CSV가 같은 마지막 프레임에서 끝난다.
+     */
+    private fun closeFrameWindow() {
+        runCatching { captureSession?.stopRepeating() }
+            .onFailure { Log.w(TAG, "Could not stop the repeating request", it) }
+        // stopRepeating 시점에 이미 진행 중인 프레임은 계속 인코딩된다. 그 프레임의
+        // onCaptureCompleted까지 받고 창을 닫아야 CSV가 MP4와 같은 프레임에서 끝난다.
+        runCatching { Thread.sleep(FRAME_DRAIN_DELAY_MS) }
+        frameTimestamps?.recording = false
+    }
+
     fun interrupt() {
         sensorManager.unregisterListener(this)
-        frameTimestamps?.recording = false
+        closeFrameWindow()
         runCatching { mediaRecorder?.stop() }
         releaseResources()
         bundle = null
@@ -318,12 +334,20 @@ class AndroidCaptureRuntime(
                         )
                     }
                     while (poseCollectionRunning) {
-                        val frame = session.update()
+                        // Tracking 유실·회복 구간에서 한 번 실패한다고 프리뷰와 pose 수집이 통째로
+                        // 멈추면 안 된다. 실패를 남기고 다음 프레임으로 넘어간다.
+                        val frame =
+                            runCatching { session.update() }
+                                .onFailure {
+                                    Log.w(TAG, "Could not update the ARCore frame", it)
+                                    Thread.sleep(FRAME_RETRY_DELAY_MS)
+                                }.getOrNull() ?: continue
                         if (renderer != null) {
                             // 타임스탬프 중복으로 걸러지는 프레임도 화면에는 그려야 프리뷰가 끊기지 않는다.
                             runCatching {
                                 renderer.draw(frame, textureId, textureSize.width, textureSize.height)
-                                egl.swapBuffers()
+                                // swapBuffers는 예외 대신 false를 돌려주므로, 조용히 정지하지 않게 확인한다.
+                                check(egl.swapBuffers()) { "eglSwapBuffers rejected the preview surface" }
                             }.onFailure { Log.w(TAG, "Could not draw the capture preview", it) }
                         }
                         val timestampNs = frame.androidCameraTimestamp
@@ -339,6 +363,10 @@ class AndroidCaptureRuntime(
                             "$timestampNs,${translation[0]},${translation[1]},${translation[2]},${rotation[0]},${rotation[1]},${rotation[2]},${rotation[3]},${camera.trackingState.name},${camera.trackingFailureReason}\n",
                         )
                     }
+                } catch (error: Throwable) {
+                    // 여기서 끝나면 프리뷰와 pose 기록이 함께 멈춘다. 원인을 반드시 남긴다.
+                    Log.e(TAG, "Pose collection stopped unexpectedly", error)
+                    throw error
                 } finally {
                     egl.close()
                 }
@@ -421,6 +449,12 @@ class AndroidCaptureRuntime(
 
     private companion object {
         const val TAG = "TigerCapture"
+
+        /** ARCore frame 갱신이 실패했을 때 다음 시도까지 쉬는 시간. 실패가 이어져도 CPU를 태우지 않는다. */
+        const val FRAME_RETRY_DELAY_MS = 20L
+
+        /** stopRepeating 뒤 진행 중인 프레임이 정리될 때까지 기다리는 시간. 30fps 기준 서너 프레임 분량이다. */
+        const val FRAME_DRAIN_DELAY_MS = 120L
     }
 }
 
