@@ -260,7 +260,7 @@ java.lang.IllegalArgumentException
 
 ### 수정 후
 
-- 홈 버튼 중단과 정상 마감 모두 PID가 그대로 유지되고 `FATAL EXCEPTION` 0건(마감 연속 5회 포함)
+- 홈 버튼 중단 2회, 정상 마감 연속 4회 모두 PID가 그대로 유지되고 `FATAL EXCEPTION` 0건
 - 복귀 시 수집 화면이 `IDLE`로 정상 표시
 - 재실행 시 중단 Session이 `completed/`로 복구되고 `metadata.json`이 생성됨
 - 정상 마감과 업로드에 회귀 없음(`업로드 완료` 확인)
@@ -270,3 +270,19 @@ java.lang.IllegalArgumentException
 
 이 결함은 프리뷰 작업과 무관하다. 프리뷰를 완전히 끈 빌드에서도 동일한 스택으로 재현되는 것을
 이분법으로 확인했다.
+
+### 함께 고친 기존 결함
+
+종료 순서만 고친 빌드로 검증하던 중 정상 마감 3회 중 1회 프로세스가 죽었다. 원인은 다른 결함이었다.
+
+```text
+FATAL EXCEPTION: TigerPreview
+java.lang.IllegalStateException: CameraDevice was already closed
+  at CameraPreviewController$prepare$1$onOpened$1.onConfigured(CameraPreviewController.kt:54)
+```
+
+유휴 프리뷰를 닫자마자 다시 열 때, 앞선 열기의 `onConfigured`가 이미 닫힌 `CameraDevice`에
+`setRepeatingRequest`를 부른다. `prepare()`의 가드가 열기 진행 중인 상태를 잡지 못했다.
+develop에 있던 기존 결함이므로 같은 브랜치에서 함께 고쳤다.
+
+두 수정을 함께 넣은 빌드로 위 수치를 측정했다. 한쪽만 고치면 수집을 끝낼 때 앱이 계속 죽는다.

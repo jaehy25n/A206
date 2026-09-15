@@ -392,7 +392,8 @@ Phase 11의 구제 경로가 있어 데이터는 다음 실행에서 복구되�
 
 - [X] T058 `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/AndroidCaptureRuntime.kt`의 `openSharedCamera`가 capture session의 `onClosed`를 받아 `CountDownLatch`를 내리게 한다
 - [X] T059 같은 파일의 `releaseResources()`가 `pause` → `captureSession.close()` → 닫힘 대기 → `cameraDevice.close()` → `arSession.close()` 순서로 정리하게 바꾼다. 핸들러 스레드는 콜백이 모두 전달된 뒤에 정리한다
-- [X] T060 대기가 한계를 넘으면 경고를 남겨, 종료를 확인하지 못한 채 진행한 경우를 알 수 있게 한다
+- [X] T060 `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/CameraPreviewController.kt`가 세대 번호로 오래된 열기의 콜백을 버리고, 열기와 요청 호출을 `runCatching`으로 감싸 닫힌 `CameraDevice` 접근이 프로세스를 죽이지 않게 한다 per FR-034
+- [X] T064 대기가 한계를 넘으면 경고를 남겨, 종료를 확인하지 못한 채 진행한 경우를 알 수 있게 한다
 - [X] T061 실기기에서 수집 중 홈 버튼과 정상 마감 양쪽에서 프로세스가 생존하는지, 복귀와 재실행 시 중단 Session 복구가 정상인지, 업로드에 회귀가 없는지 확인한다 (실기기)
 
 ### Phase 13 완료 증거 (2026-09-15)
@@ -408,8 +409,8 @@ Phase 11의 구제 경로가 있어 데이터는 다음 실행에서 복구되�
 
 | 항목 | 결과 |
 |---|---|
-| 수집 중 홈 버튼 → 프로세스 생존 | **정상.** PID 9812 유지, `FATAL EXCEPTION` 0건 |
-| 정상 마감 → 프로세스 생존 | **정상.** 수정 전에는 간헐적으로 죽었다. 수정 후 연속 5회 Session 마감에서 `FATAL EXCEPTION` 0건 |
+| 수집 중 홈 버튼 → 프로세스 생존 | **정상.** 2회 모두 PID 유지, `FATAL EXCEPTION` 0건 |
+| 정상 마감 → 프로세스 생존 | **정상.** 수정 전에는 간헐적으로 죽었다. 수정 후 연속 4회 마감에서 PID 유지, `FATAL EXCEPTION` 0건 |
 | 복귀 후 수집 화면 | 정상. `IDLE`로 복귀 |
 | 재실행 시 중단 Session 복구 | 정상. staging 번들이 `completed/`로 이동하며 `metadata.json` 생성 |
 | 정상 마감·업로드 | 정상. `업로드 완료`까지 확인 |
@@ -418,6 +419,15 @@ Phase 11의 구제 경로가 있어 데이터는 다음 실행에서 복구되�
 
 수정 전에는 홈 버튼 중단에서 매번, 정상 마감에서 간헐적으로 위 스택으로 죽었다. 프리뷰를 완전히 끈 빌드에서도
 동일하게 재현되어, 이 결함이 프리뷰 작업과 무관한 기존 결함임을 이분법으로 확인했다.
+
+**함께 고친 기존 결함**: 종료 순서만 고친 빌드로 검증하던 중 3회 중 1회 프로세스가 죽었다.
+원인은 다른 결함이었다. 유휴 프리뷰를 닫자마자 다시 열 때 앞선 열기의 `onConfigured`가 이미 닫힌
+`CameraDevice`에 `setRepeatingRequest`를 불러 `CameraPreviewController`에서 죽는다.
+이 역시 develop에 있던 기존 결함이므로 같은 브랜치에서 함께 고쳤다. 세대 번호로 오래된 열기의
+콜백을 버리고, 열기와 요청 호출을 `runCatching`으로 감싼다.
+
+두 수정을 함께 넣은 빌드로 위 표를 측정했다. 한쪽만 고치면 "수집을 끝낼 때 앱이 죽지 않는다"가
+성립하지 않는다.
 
 **staging에 남은 번들 1건**: `0dcbd597`은 `main_rgb.mp4`가 0바이트라 마감할 수 없어 staging에 남는다.
 이번 검증 이전의 다른 실험에서 생긴 것이며, 마감 불가 번들만 남기는 FR-029의 의도대로 동작한 결과다.
