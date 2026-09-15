@@ -69,6 +69,9 @@ class AndroidCaptureRuntime(
     private var frameTimestamps: FrameTimestampWriter? = null
     private var lastPoseTimestampNs = Long.MIN_VALUE
 
+    /** 마지막 `TRACKING` 이후 처음 유실된 pose의 카메라 시각. 회복하면 비운다. */
+    private var lossStartedAtNs: Long? = null
+
     @Volatile private var cameraMetadata: CameraMetadata? = null
 
     fun start(
@@ -321,6 +324,8 @@ class AndroidCaptureRuntime(
         previewSurface: Surface?,
     ) {
         poseCollectionRunning = true
+        lossStartedAtNs = null
+        lastPoseTimestampNs = Long.MIN_VALUE
         poseThread =
             Thread {
                 val egl = CaptureEgl(previewSurface)
@@ -364,8 +369,12 @@ class AndroidCaptureRuntime(
                         if (timestampNs == 0L || timestampNs == lastPoseTimestampNs) continue
                         lastPoseTimestampNs = timestampNs
                         val camera = frame.camera
-                        trackingState.value =
-                            TrackingSample(camera.trackingState == com.google.ar.core.TrackingState.TRACKING, timestampNs)
+                        val isTracking = camera.trackingState == com.google.ar.core.TrackingState.TRACKING
+                        // 유실 구간에서는 첫 유실 pose 시각을 계속 실어 보낸다. 화면 ticker는 100 ms
+                        // 주기로 읽으므로, 매 프레임 최신 시각을 덮어쓰면 그사이 진행한 pose 시각이
+                        // 기록에 들어가 `end_timestamp_ns`가 첫 유실 + 0.5초보다 늦어진다.
+                        lossStartedAtNs = if (isTracking) null else lossStartedAtNs ?: timestampNs
+                        trackingState.value = TrackingSample(isTracking, lossStartedAtNs ?: timestampNs)
                         if (cameraMetadata == null) cameraMetadata = readCameraMetadata(session, camera)
                         val translation = camera.pose.translation
                         val rotation = camera.pose.rotationQuaternion

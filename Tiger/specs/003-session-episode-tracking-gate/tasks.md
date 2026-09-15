@@ -328,7 +328,7 @@ ARCore pose 처리 지연과 100 ms 평가 주기의 합이다. 기능 결함은
 - [X] T044 `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/CaptureSessionCoordinator.kt`에 pose 시각이 진행 중 Episode 시작보다 이르거나 현재보다 미래이면 버리고 인지 시각으로 폴백하는 가드를 추가해, 카메라 timestamp 소스가 `REALTIME`이 아닌 기기에서 시간축이 뒤섞인 값이 기록되지 않게 한다 per FR-012 (missing)
 - [X] T045 `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/AndroidCaptureRuntime.kt`의 tracking 노출을 `TrackingSample(isTracking, observedAtNs)`로 바꾸고 `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`의 ticker가 pose 시각을 함께 전달하게 한다 per FR-012 (partial)
 - [X] T046 `app/src/test/java/com/ssafy/s15p21a206/tiger/capture/CaptureSessionCoordinatorTest.kt`에 pose 시각이 기록에 쓰인다는 것, pose 지연이 0.4초 유실을 무효로 만들지 않는다는 것, 다른 시간축·미래 시각이 폴백된다는 것의 테스트를 추가한다 per FR-010, FR-012 (missing)
-- [ ] T047 갱신된 앱으로 Session을 다시 수집해 `INVALID_TRACKING`의 `end_timestamp_ns`가 `arcore_poses.csv`의 첫 유실 행 + 0.5초와 일치하는지 실기기에서 확인한다 per FR-012 (실기기)
+- [X] T047 갱신된 앱으로 Session을 다시 수집해 `INVALID_TRACKING`의 `end_timestamp_ns`가 `arcore_poses.csv`의 첫 유실 행 + 0.5초와 일치하는지 실기기에서 확인한다 per FR-012 (실기기)
 
 ### Phase 10 완료 증거 (2026-09-14)
 

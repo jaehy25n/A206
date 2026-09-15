@@ -455,3 +455,29 @@ c17b6023    테스트  ㅣ      COMPLETED
 
 Phase 10 이전의 217 ms에서 67 ms로 줄었지만, `contracts/capture-state-machine.md`의
 `end = 첫 유실 + 0.5초`는 여전히 정확히 성립하지 않는다.
+
+### T047 해소 · 첫 유실 pose를 걸어 두도록 수정
+
+pose 수집 스레드가 매 프레임 최신 시각을 덮어쓰고 있었다. 유실 구간에서는 **마지막 `TRACKING` 이후
+첫 유실 pose 시각을 걸어 두고 그 값을 계속 실어 보내도록** 바꿨다. 회복하면 비운다.
+
+같은 절차(정상 수집 → 렌즈 가림 → 회복 후 재수집)로 Session `e933aaf0`을 수집해 검산했다.
+
+```text
+첫 비TRACKING pose  112952196474091  (INSUFFICIENT_LIGHT)
+              + 0.5초 = 112952696474091
+기록된 end            = 112952696474091
+```
+
+**편차 0.0 ms.** `contracts/capture-state-machine.md`의 `end = 첫 유실 + 0.5초`가 정확히 성립한다.
+수정 전 같은 절차에서는 67 ms 어긋났다.
+
+| 항목 | 값 |
+|---|---|
+| Episode 기록 | `COMPLETED` → `INVALID_TRACKING` → `COMPLETED` |
+| pose | `TRACKING` 659행 / `PAUSED` 98행 |
+| CSV 행 수 대 MP4 frame 수 | 758 대 759 → 차이 1 |
+| `frame_number` 결번·역전 | 0건 |
+| 실효 FPS | 29.945 |
+| 회복 후 Episode 시작 | 유실 마감 이후 (5.8초 뒤) |
+| 진단 경고·`FATAL EXCEPTION` | 0건 |
