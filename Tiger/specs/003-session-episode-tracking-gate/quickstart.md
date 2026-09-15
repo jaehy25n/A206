@@ -235,20 +235,20 @@ pose timestamp를 유실 시작 시각으로 쓰도록 바꾸는 선택지가 �
 
 EC2 업로드는 수행하지 않았다. 별도 확인이 필요하다.
 
-## 수집 중단 시 ARCore 종료 순서 (Phase 13) · 2026-09-15 · `SM-G973N`, Android 12
+## 수집 종료 시 ARCore 종료 순서 (Phase 13) · 2026-09-15 · `SM-G973N`, Android 12
 
 `adb push` + `pm install`로 설치하고 설치 시각을 대조해 새 빌드임을 확인했다.
 
-### 재현 절차
+### 재현 절차 (두 경로 모두)
 
 1. 수집 화면에서 Session START
-2. 홈 버튼
+2. 홈 버튼으로 중단하거나, 수집 종료로 정상 마감한다
 3. `adb shell pidof com.ssafy.s15p21a206.tiger`로 프로세스 생존을 확인하고,
    `adb logcat -d | grep 'FATAL EXCEPTION'`으로 크래시 여부를 본다
 
 ### 수정 전
 
-매번 아래 스택으로 프로세스가 죽었다.
+홈 버튼 중단에서는 매번, 정상 마감에서는 간헐적으로 아래 스택으로 프로세스가 죽었다.
 
 ```text
 FATAL EXCEPTION: TigerCamera
@@ -260,7 +260,7 @@ java.lang.IllegalArgumentException
 
 ### 수정 후
 
-- 홈 버튼 후에도 PID가 그대로 유지되고 `FATAL EXCEPTION` 0건
+- 홈 버튼 중단과 정상 마감 모두 PID가 그대로 유지되고 `FATAL EXCEPTION` 0건(마감 연속 5회 포함)
 - 복귀 시 수집 화면이 `IDLE`로 정상 표시
 - 재실행 시 중단 Session이 `completed/`로 복구되고 `metadata.json`이 생성됨
 - 정상 마감과 업로드에 회귀 없음(`업로드 완료` 확인)
