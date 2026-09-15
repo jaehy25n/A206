@@ -143,7 +143,49 @@ data class CameraMetadata(
     @SerialName("sensor_width_mm") val sensorWidthMm: Float? = null,
     @SerialName("sensor_height_mm") val sensorHeightMm: Float? = null,
     @SerialName("distortion_coefficients") val distortionCoefficients: List<Float>? = null,
-)
+    /** `main_rgb.mp4`에 적용된 시계 방향 회전. 이 값을 반영한 뒤의 기하가 위 필드에 담긴다. */
+    @SerialName("video_rotation_degrees") val videoRotationDegrees: Int = 0,
+) {
+    /**
+     * 영상에 적용한 시계 방향 회전을 Intrinsic에도 반영한다.
+     *
+     * 회전을 반영하는 도구로 영상을 열면 프레임이 이미 돌아간 상태로 나오므로, Intrinsic도 같은
+     * 기하를 가리켜야 투영이 맞는다. 90도와 270도에서는 가로세로와 초점거리 축이 바뀐다.
+     *
+     * 픽셀 좌표 `(x, y)`는 90도에서 `(H - y, x)`로, 270도에서 `(y, W - x)`로, 180도에서
+     * `(W - x, H - y)`로 옮겨진다. `W`, `H`는 회전 전 가로·세로다.
+     */
+    fun rotatedClockwise(degrees: Int): CameraMetadata =
+        when (((degrees % 360) + 360) % 360) {
+            90 ->
+                copy(
+                    imageWidth = imageHeight,
+                    imageHeight = imageWidth,
+                    fx = fy,
+                    fy = fx,
+                    cx = imageHeight - cy,
+                    cy = cx,
+                    videoRotationDegrees = 90,
+                )
+            180 ->
+                copy(
+                    cx = imageWidth - cx,
+                    cy = imageHeight - cy,
+                    videoRotationDegrees = 180,
+                )
+            270 ->
+                copy(
+                    imageWidth = imageHeight,
+                    imageHeight = imageWidth,
+                    fx = fy,
+                    fy = fx,
+                    cx = cy,
+                    cy = imageWidth - cx,
+                    videoRotationDegrees = 270,
+                )
+            else -> copy(videoRotationDegrees = 0)
+        }
+}
 
 @Serializable data class ProbeResult(
     val result: UltraWideProbeResult,

@@ -8,7 +8,6 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.hardware.camera2.CameraCaptureSession
-import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CaptureRequest
@@ -91,15 +90,18 @@ class AndroidCaptureRuntime(
                     setVideoFrameRate(30)
                     setVideoSize(session.cameraConfig.imageSize.width, session.cameraConfig.imageSize.height)
                     setOutputFile(next.mainVideo.absolutePath)
+                    // Camera 센서가 90도 눕혀 장착돼 있어 인코더에는 가로로 누운 프레임이 들어간다.
+                    // 재생 시 시계 방향 90도로 세우도록 회전 정보를 남긴다. 픽셀은 그대로다.
+                    setOrientationHint(RECORDING_ROTATION_DEGREES)
                     prepare()
                 }
             arSession = session
             mediaRecorder = recorder
             bundle = next
-            // 프리뷰는 ARCore GPU 텍스처를 그리므로 그 크기를 알려 준다. 녹화용 imageSize와 다를 수 있다.
+            // 프리뷰는 ARCore GPU 텍스처를 세워서 그리므로 가로세로를 바꾼 크기를 알려 준다.
             val textureSize = session.cameraConfig.textureSize
             val previewSurface =
-                runCatching { previewSurfaces.surfaceFor(textureSize.width, textureSize.height) }
+                runCatching { previewSurfaces.surfaceFor(textureSize.height, textureSize.width) }
                     .onFailure { Log.w(TAG, "Could not obtain a preview surface", it) }
                     .getOrNull()
 
@@ -301,24 +303,6 @@ class AndroidCaptureRuntime(
         failure?.let { throw it }
     }
 
-    /**
-     * Sensor 방향을 그대로 [Surface]의 회전 상수로 옮긴다.
-     *
-     * ARCore에 이 값을 표시 회전으로 주면 회전 보정이 상쇄되어, 녹화본과 같은 방향의 프레임이 그려진다.
-     * 값을 읽지 못하면 대부분의 후면 Camera 기본값인 90도로 둔다.
-     */
-    private fun sensorDisplayRotation(cameraId: String): Int =
-        when (
-            runCatching {
-                cameraManager.getCameraCharacteristics(cameraId).get(CameraCharacteristics.SENSOR_ORIENTATION)
-            }.getOrNull()
-        ) {
-            0 -> Surface.ROTATION_0
-            180 -> Surface.ROTATION_180
-            270 -> Surface.ROTATION_270
-            else -> Surface.ROTATION_90
-        }
-
     private fun startPoseCollection(
         session: Session,
         previewSurface: Surface?,
@@ -338,15 +322,11 @@ class AndroidCaptureRuntime(
                     // 돌리므로, 두 값이 같으면 회전이 0이 되어 녹화본과 같은 방향의 프레임이 그려진다.
                     // ROTATION_0을 주면 세로 화면 기준으로 90도 돌면서 가로 화각도 절반 넘게 잘린다.
                     //
-                    // 크기는 Camera 텍스처 크기를 그대로 쓴다. 다른 비율을 주면 ARCore가 그 비율에 맞춰
-                    // 텍스처를 잘라내므로, 화면에 보여 줄 수 있는 화각이 그만큼 좁아진다.
+                    // 크기는 Camera 텍스처의 가로세로를 바꿔서 준다. 세운 이미지와 같은 비율이라
+                    // ARCore가 잘라내지 않고, 화각이 그대로 유지된다.
                     val textureSize = session.cameraConfig.textureSize
                     if (renderer != null) {
-                        session.setDisplayGeometry(
-                            sensorDisplayRotation(session.cameraConfig.cameraId),
-                            textureSize.width,
-                            textureSize.height,
-                        )
+                        session.setDisplayGeometry(Surface.ROTATION_0, textureSize.height, textureSize.width)
                     }
                     while (poseCollectionRunning) {
                         // Tracking 유실·회복 구간에서 한 번 실패한다고 프리뷰와 pose 수집이 통째로
@@ -360,7 +340,7 @@ class AndroidCaptureRuntime(
                         if (renderer != null) {
                             // 타임스탬프 중복으로 걸러지는 프레임도 화면에는 그려야 프리뷰가 끊기지 않는다.
                             runCatching {
-                                renderer.draw(frame, textureId, textureSize.width, textureSize.height)
+                                renderer.draw(frame, textureId, textureSize.height, textureSize.width)
                                 // swapBuffers는 예외 대신 false를 돌려주므로, 조용히 정지하지 않게 확인한다.
                                 check(egl.swapBuffers()) { "eglSwapBuffers rejected the preview surface" }
                             }.onFailure { Log.w(TAG, "Could not draw the capture preview", it) }
@@ -375,7 +355,11 @@ class AndroidCaptureRuntime(
                         // 기록에 들어가 `end_timestamp_ns`가 첫 유실 + 0.5초보다 늦어진다.
                         lossStartedAtNs = if (isTracking) null else lossStartedAtNs ?: timestampNs
                         trackingState.value = TrackingSample(isTracking, lossStartedAtNs ?: timestampNs)
-                        if (cameraMetadata == null) cameraMetadata = readCameraMetadata(session, camera)
+                        if (cameraMetadata ==
+                            null
+                        ) {
+                            cameraMetadata = readCameraMetadata(session, camera)?.rotatedClockwise(RECORDING_ROTATION_DEGREES)
+                        }
                         val translation = camera.pose.translation
                         val rotation = camera.pose.rotationQuaternion
                         bundle?.arcorePoses?.appendText(
@@ -476,6 +460,9 @@ class AndroidCaptureRuntime(
 
     private companion object {
         const val TAG = "TigerCapture"
+
+        /** 녹화본에 남길 회전. Camera 센서가 90도 눕혀 장착돼 있어 시계 방향 90도로 세운다. */
+        const val RECORDING_ROTATION_DEGREES = 90
 
         /** capture session 닫힘을 기다리는 한계. 넘기면 기다림을 포기하고 나머지 정리를 이어간다. */
         const val CLOSE_TIMEOUT_SECONDS = 2L

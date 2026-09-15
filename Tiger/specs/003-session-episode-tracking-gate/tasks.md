@@ -507,3 +507,44 @@ Phase 11의 구제 경로가 있어 데이터는 다음 실행에서 복구되�
 
 **staging에 남은 번들 1건**: `0dcbd597`은 `main_rgb.mp4`가 0바이트라 마감할 수 없어 staging에 남는다.
 이번 검증 이전의 다른 실험에서 생긴 것이며, 마감 불가 번들만 남기는 FR-029의 의도대로 동작한 결과다.
+
+---
+
+## Phase 14: 영상 회전과 좌표계 정합
+
+Camera 센서가 90도 눕혀 장착돼 있어 `main_rgb.mp4`가 90도 돌아간 채 저장됐다. 수집 화면에서는
+Android가 프리뷰를 자동으로 세워 주기 때문에 드러나지 않았고, Phase 12에서 프리뷰를 저장본 기준으로
+맞추면서 화면에도 드러났다. 제 변경이 만든 결함이 아니라 원래부터 있던 것이다.
+
+- [X] T065 `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/AndroidCaptureRuntime.kt`가 `MediaRecorder.setOrientationHint(90)`로 회전 정보를 남기고, 수집 중 프리뷰도 같은 방향으로 세워 그리게 한다 per FR-036
+- [X] T066 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/EpisodeModels.kt`의 `CameraMetadata`에 `rotatedClockwise()`와 `video_rotation_degrees`를 추가해, Intrinsic이 회전 후 기하를 담게 한다 per FR-037
+- [X] T067 `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/CameraMetadataRotationTest.kt`에 90·180·270도 변환, 네 번 회전 시 원복, 각도 정규화 테스트를 추가한다 per FR-037
+- [X] T068 `specs/003-session-episode-tracking-gate/contracts/video-orientation.md`에 수신 측 전달 문서를 작성한다. 도구별 회전 처리 차이, Pose와 함께 쓸 때의 변환, 이전 수집분 구분 방법을 포함한다 per FR-038
+- [ ] T069 수신 측에 [video-orientation.md](contracts/video-orientation.md)를 전달하고, 영상 디코딩 도구가 회전 행렬을 반영하는지와 Pose 변환 적용 여부를 확인받는다
+
+### Phase 14 완료 증거 (2026-09-15)
+
+- 구현: `setOrientationHint(90)`으로 MP4에 회전 행렬을 남긴다. 픽셀은 재인코딩하지 않는다. `CameraMetadata.rotatedClockwise(90)`이 `fx↔fy`, `cx = H − cy`, `cy = cx`, 가로세로 교환을 적용하고 `video_rotation_degrees`를 남긴다. 수집 중 프리뷰는 `setDisplayGeometry(ROTATION_0, textureHeight, textureWidth)`로 세워 그린다. 뷰포트 비율이 세운 텍스처와 같아 잘림이 없다.
+- production 호출 경로: `AndroidCaptureRuntime.start` → `MediaRecorder.setOrientationHint`, `startPoseCollection` → `readCameraMetadata(...)?.rotatedClockwise(RECORDING_ROTATION_DEGREES)` → `stop()` → `SessionFinalizer.finalize(camera = ...)` → `metadata.json`.
+- 자동 검증: `CameraMetadataRotationTest` 6건. `./gradlew.bat ktlintCheck testDebugUnitTest lintDebug assembleDebug` → `BUILD SUCCESSFUL`.
+
+#### 실기기 검증 · `SM-G973N`, Android 12, Session `72e463a1`
+
+```text
+tkhd matrix       0, 65536, 0 / -65536, 0, 0 / 0, 0, 1073741824   (시계 방향 90도)
+track 해상도      640 x 480   (회전 전 픽셀)
+metadata.camera   image_width 480, image_height 640,
+                  fx 497.2151, fy 497.29745, cx 239.82605, cy 324.0054,
+                  video_rotation_degrees 90
+```
+
+같은 번들에서 CSV 721행 대 MP4 722 frame(차이 1), `frame_number` 결번 0건. 회전이 frame 대응을
+바꾸지 않는다. `FATAL EXCEPTION`과 진단 경고 0건.
+
+**미검증**: 회전 방향이 시계 방향이 맞는지 눈으로 확인하지 못했다. 기기가 균일한 면을 향하고 있어
+화면에서 방향을 판정할 수 없었다. 글자처럼 방향이 보이는 대상으로 한 번 확인해야 한다.
+반대로 돌아가 있으면 `RECORDING_ROTATION_DEGREES`를 270으로, 표시 회전을 `ROTATION_180`으로 바꾼다.
+
+**Pose는 회전하지 않았다**: `arcore_poses.csv`는 ARCore 원본 기록을 유지한다. 앱에서 미리 돌리면
+원본 기록이 아니게 되고 검산할 기준이 없어서다. 수신 측이 적용할 변환은 `video-orientation.md` §4에
+있다. 수신 측이 Pose까지 회전된 상태를 원하면 그때 다시 판단한다.

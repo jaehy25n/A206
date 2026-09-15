@@ -72,3 +72,15 @@ Session 번들의 `metadata.json`이 수신 측에 제공하는 형식. 이번 �
 수신 측 파이프라인과 앱의 `SessionBundleValidator`는 모두 `session_id`, `camera_streams`, `files`만 읽고 알 수 없는 키를 무시한다. `camera` 추가는 하위 호환 변경이며, 기존 EC2 업로드 경로 수정이 필요하지 않다.
 
 `camera` 키가 없는 과거 Session도 계속 유효하다. 수신 측은 키 부재를 "해당 Session에 Camera 정보 없음"으로 해석한다.
+
+## 영상 회전 (2026-09-15 추가)
+
+`camera` 객체에 `video_rotation_degrees`(int, 기본 0)가 추가됐다. `main_rgb.mp4`에 적용한 시계 방향
+회전이며, `image_width`·`image_height`·`fx`·`fy`·`cx`·`cy`는 **이 회전을 반영한 기하**다.
+
+따라서 위 "`image_width` × `image_height`는 `main_rgb.mp4` 해상도와 일치한다"는 규칙은
+**회전을 반영해 디코딩했을 때** 성립한다. 컨테이너에 저장된 track 해상도는 회전 전 값 그대로다.
+
+값이 없거나 `0`이면 회전 이전 수집분이며, 예전 규칙이 그대로 적용된다.
+
+Pose와 함께 쓸 때 필요한 변환은 [video-orientation.md](video-orientation.md)에 있다.
