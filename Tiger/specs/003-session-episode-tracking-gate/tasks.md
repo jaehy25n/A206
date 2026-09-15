@@ -365,3 +365,55 @@ Session이 Episode 여러 개를 담는 긴 단위가 되면서 002의 "백그�
 - `./gradlew.bat ktlintCheck testDebugUnitTest lintDebug assembleDebug --no-daemon` → `BUILD SUCCESSFUL` (2m 19s).
 
 **진단 기록**: 처음 두 번의 기기 확인에서 복구가 돌지 않았는데, 원인은 코드가 아니라 **복구 변경 이전에 빌드된 APK가 설치돼 있던 것**이었다. 올바른 APK 설치 후 첫 실행에서 바로 복구됐다. `adb install` 스트리밍이 이 기기에서 자주 멈춰, `adb push` + `pm install`로 우회해야 했다.
+
+---
+
+## Phase 13: 수집 중단 시 ARCore 종료 순서
+
+수집 중 홈 버튼으로 중단하면 앱 프로세스가 죽었다. 실기기에서 재현을 확인했다.
+
+```text
+FATAL EXCEPTION: TigerCamera
+java.lang.IllegalArgumentException
+  at com.google.ar.core.SharedCamera.nativeSharedCameraCaptureSessionClosed(Native Method)
+  at com.google.ar.core.SharedCamera.onCaptureSessionClosed(SharedCamera.java:1)
+```
+
+`releaseResources()`가 ARCore Session을 capture session보다 **먼저** 닫았다. `captureSession.close()`가
+ARCore의 래핑된 `onClosed`를 camera 핸들러 스레드에서 발화시키는데, 그 시점에 native Session이 이미
+닫혀 있어 예외가 났다. 콜백 안에서 나므로 잡히지 않고 프로세스가 죽는다.
+
+Phase 11의 구제 경로가 있어 데이터는 다음 실행에서 복구되지만, 사용자에게는 앱이 갑자기 종료되는
+것으로 보였다. Phase 11의 진단 기록에 남은 "홈 버튼으로 중단되자 Session이 사라졌다"의 실제 모습이
+이것이었다.
+
+- [X] T058 `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/AndroidCaptureRuntime.kt`의 `openSharedCamera`가 capture session의 `onClosed`를 받아 `CountDownLatch`를 내리게 한다
+- [X] T059 같은 파일의 `releaseResources()`가 `pause` → `captureSession.close()` → 닫힘 대기 → `cameraDevice.close()` → `arSession.close()` 순서로 정리하게 바꾼다. 핸들러 스레드는 콜백이 모두 전달된 뒤에 정리한다
+- [X] T060 대기가 한계를 넘으면 경고를 남겨, 종료를 확인하지 못한 채 진행한 경우를 알 수 있게 한다
+- [X] T061 실기기에서 수집 중 홈 버튼 → 프로세스 생존 → 복귀 정상 → 재실행 시 중단 Session 복구를 확인하고, 정상 마감·업로드에 회귀가 없는지 확인한다 (실기기)
+
+### Phase 13 완료 증거 (2026-09-15)
+
+- 구현: `openSharedCamera`가 session마다 `CountDownLatch`를 만들어 inner `CameraCaptureSession.StateCallback.onClosed`에서 내린다. `releaseResources()`는 `arSession.pause()` → `captureSession.close()` → latch 대기(최대 2초) → `cameraDevice.close()` → `arSession.close()` 순서로 정리하며, `cameraThread.quitSafely()`는 그 뒤에 부른다. 대기가 한계를 넘으면 `Log.w`로 남긴다.
+- production 호출 경로: `MainActivity`의 `LifecycleEventEffect(ON_STOP)` → `AndroidCaptureRuntime.interrupt()` → `releaseResources()`. 정상 마감 경로인 `stop()`도 같은 함수를 쓴다.
+- 자동 검증: 없음. `AndroidCaptureRuntime`은 `Session`·`CameraManager`·`MediaRecorder`를 직접 만들어 JVM에서 테스트할 수 없고, 이번 변경으로 seam을 새로 만들지 않았다. 종료 순서는 실기기로만 확인된다.
+- `./gradlew.bat ktlintCheck testDebugUnitTest lintDebug assembleDebug` → `BUILD SUCCESSFUL`.
+
+#### 실기기 검증 (T061) · `SM-G973N`, Android 12
+
+`adb push` + `pm install`로 설치하고 설치 시각을 대조해 새 빌드임을 확인한 뒤 수행했다.
+
+| 항목 | 결과 |
+|---|---|
+| 수집 중 홈 버튼 → 프로세스 생존 | **정상.** PID 9812 유지, `FATAL EXCEPTION` 0건 |
+| 복귀 후 수집 화면 | 정상. `IDLE`로 복귀 |
+| 재실행 시 중단 Session 복구 | 정상. staging 번들이 `completed/`로 이동하며 `metadata.json` 생성 |
+| 정상 마감·업로드 | 정상. `업로드 완료`까지 확인 |
+| 종료 대기 한계 초과 | 0건. `onClosed`가 제때 도착해 2초 대기에 걸리지 않는다 |
+| ANR·프레임 누락 | 관측되지 않음 |
+
+수정 전에는 같은 조작에서 매번 위 스택으로 프로세스가 죽었다. 프리뷰를 완전히 끈 빌드에서도
+동일하게 재현되어, 이 결함이 프리뷰 작업과 무관한 기존 결함임을 이분법으로 확인했다.
+
+**staging에 남은 번들 1건**: `0dcbd597`은 `main_rgb.mp4`가 0바이트라 마감할 수 없어 staging에 남는다.
+이번 검증 이전의 다른 실험에서 생긴 것이며, 마감 불가 번들만 남기는 FR-029의 의도대로 동작한 결과다.
