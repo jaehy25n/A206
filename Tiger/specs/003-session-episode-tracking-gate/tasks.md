@@ -541,9 +541,8 @@ metadata.camera   image_width 480, image_height 640,
 같은 번들에서 CSV 721행 대 MP4 722 frame(차이 1), `frame_number` 결번 0건. 회전이 frame 대응을
 바꾸지 않는다. `FATAL EXCEPTION`과 진단 경고 0건.
 
-**미검증**: 회전 방향이 시계 방향이 맞는지 눈으로 확인하지 못했다. 기기가 균일한 면을 향하고 있어
-화면에서 방향을 판정할 수 없었다. 글자처럼 방향이 보이는 대상으로 한 번 확인해야 한다.
-반대로 돌아가 있으면 `RECORDING_ROTATION_DEGREES`를 270으로, 표시 회전을 `ROTATION_180`으로 바꾼다.
+**방향 확인**: 수집 중 프리뷰와 저장된 영상이 모두 바로 선 것을 사람이 눈으로 확인했다.
+자동 측정으로는 판정할 수 없는 항목이라 사람 확인으로 대체했다.
 
 **Pose는 회전하지 않았다**: `arcore_poses.csv`는 ARCore 원본 기록을 유지한다. 앱에서 미리 돌리면
 원본 기록이 아니게 되고 검산할 기준이 없어서다. 수신 측이 적용할 변환은 `video-orientation.md` §4에
