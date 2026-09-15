@@ -1010,6 +1010,6 @@ internal fun UploadControls(
 // Tracking 판정 주기. 안정화(1초)와 유실(0.5초) 임계값보다 충분히 촘촘해야 마감 시점이 제때 발화한다.
 private const val TRACKING_TICK_MS = 100L
 
-// 수집 시작 전 프리뷰 버퍼 크기. 저장 영상과 화각을 맞추기 위해 ARCore 카메라 구성과 같은 4:3을 쓴다.
-// 수집이 시작되면 ARCore가 실제로 고른 해상도로 교체된다.
+// 수집 시작 전 프리뷰 버퍼 크기. 수집이 시작되면 ARCore Camera 텍스처 크기로 교체된다.
+
 private val DEFAULT_PREVIEW_SIZE = 640 to 480

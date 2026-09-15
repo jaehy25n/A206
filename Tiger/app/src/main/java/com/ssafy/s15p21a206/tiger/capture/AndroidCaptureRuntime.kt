@@ -8,6 +8,7 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.hardware.camera2.CameraCaptureSession
+import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CaptureRequest
@@ -89,12 +90,13 @@ class AndroidCaptureRuntime(
             arSession = session
             mediaRecorder = recorder
             bundle = next
-            // 프리뷰 화각을 저장 영상과 맞추기 위해 ARCore가 고른 해상도를 그대로 알려 준다.
-            val imageSize = session.cameraConfig.imageSize
+            // 프리뷰는 ARCore GPU 텍스처를 그리므로 그 크기를 알려 준다. 녹화용 imageSize와 다를 수 있다.
+            val textureSize = session.cameraConfig.textureSize
             val previewSurface =
-                runCatching { previewSurfaces.surfaceFor(imageSize.width, imageSize.height) }
+                runCatching { previewSurfaces.surfaceFor(textureSize.width, textureSize.height) }
                     .onFailure { Log.w(TAG, "Could not obtain a preview surface", it) }
                     .getOrNull()
+
             openSharedCamera(session, recorder, previewSurface)
             register(Sensor.TYPE_ACCELEROMETER)
             register(Sensor.TYPE_GYROSCOPE)
@@ -270,6 +272,24 @@ class AndroidCaptureRuntime(
         failure?.let { throw it }
     }
 
+    /**
+     * Sensor 방향을 그대로 [Surface]의 회전 상수로 옮긴다.
+     *
+     * ARCore에 이 값을 표시 회전으로 주면 회전 보정이 상쇄되어, 녹화본과 같은 방향의 프레임이 그려진다.
+     * 값을 읽지 못하면 대부분의 후면 Camera 기본값인 90도로 둔다.
+     */
+    private fun sensorDisplayRotation(cameraId: String): Int =
+        when (
+            runCatching {
+                cameraManager.getCameraCharacteristics(cameraId).get(CameraCharacteristics.SENSOR_ORIENTATION)
+            }.getOrNull()
+        ) {
+            0 -> Surface.ROTATION_0
+            180 -> Surface.ROTATION_180
+            270 -> Surface.ROTATION_270
+            else -> Surface.ROTATION_90
+        }
+
     private fun startPoseCollection(
         session: Session,
         previewSurface: Surface?,
@@ -283,18 +303,26 @@ class AndroidCaptureRuntime(
                     val renderer = if (egl.hasWindow) CameraTextureRenderer() else null
                     val textureId = renderer?.createTexture() ?: IntArray(1).also { GLES20.glGenTextures(1, it, 0) }[0]
                     session.setCameraTextureName(textureId)
-                    // 프리뷰 버퍼를 촬영 해상도와 같게 두고 그 기준으로 표시 기하를 잡아, 화면에 보이는 화각이
-                    // 저장되는 영상과 정확히 같아진다.
-                    val imageSize = session.cameraConfig.imageSize
+                    // 표시 회전을 Sensor 방향과 같게 준다. ARCore는 (Sensor 방향 - 표시 회전)만큼 이미지를
+                    // 돌리므로, 두 값이 같으면 회전이 0이 되어 녹화본과 같은 방향의 프레임이 그려진다.
+                    // ROTATION_0을 주면 세로 화면 기준으로 90도 돌면서 가로 화각도 절반 넘게 잘린다.
+                    //
+                    // 크기는 Camera 텍스처 크기를 그대로 쓴다. 다른 비율을 주면 ARCore가 그 비율에 맞춰
+                    // 텍스처를 잘라내므로, 화면에 보여 줄 수 있는 화각이 그만큼 좁아진다.
+                    val textureSize = session.cameraConfig.textureSize
                     if (renderer != null) {
-                        session.setDisplayGeometry(Surface.ROTATION_0, imageSize.width, imageSize.height)
+                        session.setDisplayGeometry(
+                            sensorDisplayRotation(session.cameraConfig.cameraId),
+                            textureSize.width,
+                            textureSize.height,
+                        )
                     }
                     while (poseCollectionRunning) {
                         val frame = session.update()
                         if (renderer != null) {
                             // 타임스탬프 중복으로 걸러지는 프레임도 화면에는 그려야 프리뷰가 끊기지 않는다.
                             runCatching {
-                                renderer.draw(frame, textureId, imageSize.width, imageSize.height)
+                                renderer.draw(frame, textureId, textureSize.width, textureSize.height)
                                 egl.swapBuffers()
                             }.onFailure { Log.w(TAG, "Could not draw the capture preview", it) }
                         }
@@ -399,7 +427,7 @@ class AndroidCaptureRuntime(
 /**
  * 수집에 사용할 preview Surface를 내어 준다.
  *
- * ARCore가 고른 카메라 해상도를 인자로 받는다. 프리뷰 화각을 저장 영상과 일치시키려면
+ * ARCore Camera 텍스처의 크기를 인자로 받는다. 프리뷰가 그 텍스처를 잘림 없이 그리려면
  * 호출 측이 이 크기로 버퍼를 맞춘 Surface를 돌려줘야 한다.
  * 프리뷰를 붙일 수 없으면 `null`을 돌려주며, 수집은 프리뷰 없이 진행된다.
  */
