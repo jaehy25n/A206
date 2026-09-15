@@ -89,7 +89,25 @@ EpisodeActive ──유실 0.5초 이상 지속──>       Initializing   (Epi
 판정에 pose 시각을 쓰면 지연만큼 게이트가 앞당겨져, 0.5초 미만 유실도 무효로 마감된다.
 이는 "짧은 유실은 Recording 계속"이라는 요구와 어긋난다.
 
+**첫 유실 pose를 걸어 둔다**: 유실 구간에서 매 프레임 최신 pose 시각을 실어 보내면, 화면 ticker의
+평가 주기(0.1초) 사이에 진행한 pose 시각이 기록에 들어가 `end_timestamp_ns`가 늦어진다. 마지막
+`TRACKING` 이후 첫 유실 pose 시각을 걸어 두고 회복할 때까지 그 값을 보낸다. 실기기에서 편차 0 ms를
+확인했다.
+
 **폴백**: 카메라 timestamp 소스가 `REALTIME`이 아닌 기기에서는 pose 시각이 단조 시계와 다른
 시간축이다. 그 값이 진행 중 Episode의 시작보다 이르거나 현재보다 미래이면 다른 시간축으로 보고
 버리며, 이때는 인지 시각을 기록에 사용한다. 그 Session의 `end_timestamp_ns`는 최대
 평가 주기 + pose 지연만큼 늦어지지만, 시간축이 뒤섞인 값이 기록되지는 않는다.
+
+### Session 중 화면 프리뷰
+
+Session이 진행되는 동안 화면 프리뷰는 **ARCore가 채우는 Camera 텍스처를 pose 수집 스레드가
+프리뷰 Surface에 그려서** 채운다. 카메라 출력 stream은 ARCore의 것과 MediaRecorder surface뿐이며,
+프리뷰 때문에 늘어나지 않는다. 대상 기기가 프리뷰를 포함한 4 stream 조합을 거부하기 때문이다.
+
+프리뷰의 화각은 저장되는 영상과 같다. 프리뷰 버퍼 크기와 `setDisplayGeometry`를 모두
+`cameraConfig.imageSize`로 잡기 때문이다.
+
+이 구성은 상태와 전이를 바꾸지 않는다. 프리뷰 Surface를 얻지 못한 Session(`null`)도 정상 Session이며,
+그리기 실패는 기록되되 pose 수집을 멈추지 않는다. 프레임 타임스탬프는 `SENSOR_TIMESTAMP` 기준
+중복 제거로 기록되므로 프리뷰 표시 여부와 무관하다.

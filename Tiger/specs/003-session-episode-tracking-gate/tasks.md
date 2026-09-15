@@ -328,7 +328,7 @@ ARCore pose 처리 지연과 100 ms 평가 주기의 합이다. 기능 결함은
 - [X] T044 `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/CaptureSessionCoordinator.kt`에 pose 시각이 진행 중 Episode 시작보다 이르거나 현재보다 미래이면 버리고 인지 시각으로 폴백하는 가드를 추가해, 카메라 timestamp 소스가 `REALTIME`이 아닌 기기에서 시간축이 뒤섞인 값이 기록되지 않게 한다 per FR-012 (missing)
 - [X] T045 `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/AndroidCaptureRuntime.kt`의 tracking 노출을 `TrackingSample(isTracking, observedAtNs)`로 바꾸고 `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`의 ticker가 pose 시각을 함께 전달하게 한다 per FR-012 (partial)
 - [X] T046 `app/src/test/java/com/ssafy/s15p21a206/tiger/capture/CaptureSessionCoordinatorTest.kt`에 pose 시각이 기록에 쓰인다는 것, pose 지연이 0.4초 유실을 무효로 만들지 않는다는 것, 다른 시간축·미래 시각이 폴백된다는 것의 테스트를 추가한다 per FR-010, FR-012 (missing)
-- [ ] T047 갱신된 앱으로 Session을 다시 수집해 `INVALID_TRACKING`의 `end_timestamp_ns`가 `arcore_poses.csv`의 첫 유실 행 + 0.5초와 일치하는지 실기기에서 확인한다 per FR-012 (실기기)
+- [X] T047 갱신된 앱으로 Session을 다시 수집해 `INVALID_TRACKING`의 `end_timestamp_ns`가 `arcore_poses.csv`의 첫 유실 행 + 0.5초와 일치하는지 실기기에서 확인한다 per FR-012 (실기기)
 
 ### Phase 10 완료 증거 (2026-09-14)
 
@@ -365,6 +365,82 @@ Session이 Episode 여러 개를 담는 긴 단위가 되면서 002의 "백그�
 - `./gradlew.bat ktlintCheck testDebugUnitTest lintDebug assembleDebug --no-daemon` → `BUILD SUCCESSFUL` (2m 19s).
 
 **진단 기록**: 처음 두 번의 기기 확인에서 복구가 돌지 않았는데, 원인은 코드가 아니라 **복구 변경 이전에 빌드된 APK가 설치돼 있던 것**이었다. 올바른 APK 설치 후 첫 실행에서 바로 복구됐다. `adb install` 스트리밍이 이 기기에서 자주 멈춰, `adb push` + `pm install`로 우회해야 했다.
+
+---
+
+## Phase 12: 수집 중 라이브 프리뷰 유지
+
+수집을 시작하면 프리뷰가 시작 직전 프레임에서 멈춘 정지 화면으로 남았다. 사용자는 수집 내내 얼어붙은
+화면을 봤다. Session이 Episode 여러 개를 담는 긴 단위가 되면서 체감 비용이 커졌다.
+
+원인은 두 단계다. `MainActivity`의 `onPlay`가 같은 camera id를 ARCore에 넘기기 위해 유휴 프리뷰용
+Camera2 세션을 닫는다(필요한 동작이다). 그런데 `AndroidCaptureRuntime.openSharedCamera`가
+MediaRecorder surface만 SharedCamera의 app surface로 등록해, 프리뷰 TextureView가 capture session에도
+repeating request target에도 포함되지 않았다. ARCore 자신의 카메라 텍스처는 `OffscreenEgl`의 1×1
+PBuffer로 가므로 그쪽에서도 프리뷰가 나올 수 없었다.
+
+- [X] T052 `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/AndroidCaptureRuntime.kt`에 `PreviewSurfaceProvider`를 추가하고 `start()`가 이를 받아, ARCore가 고른 `cameraConfig.imageSize`를 호출 측에 알려 준 뒤 받은 Surface를 `openSharedCamera`에 넘기게 한다 per FR-031, FR-032
+- [X] T053 `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/CaptureEgl.kt`(구 `OffscreenEgl`)가 preview Surface 위에 EGL window surface를 만들 수 있게 하고, `CameraTextureRenderer`가 ARCore Camera OES 텍스처를 그 surface에 그리게 한다. Camera2 출력 stream을 늘리지 않는다 per FR-031, FR-033
+- [X] T054 `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`가 `SurfaceTexture`를 보관하고 하드코딩된 `1920×1080` 대신 `DEFAULT_PREVIEW_SIZE`(640×480)를 쓰며, 수집 시작 시 provider로 ARCore 해상도를 받아 버퍼를 다시 맞추게 한다 per FR-032
+- [X] T055 같은 파일에 `restoreIdlePreview()`를 추가하고 ARCore 시작 실패·`finalizeCapture` 실패 잔류·`ON_START` 복귀 경로에서 유휴 프리뷰를 되살린다 per FR-031
+- [X] T056 `app/src/test/java/com/ssafy/s15p21a206/tiger/capture/CapturePreviewControllerTest.kt`에 Ready 상태에서 release 후 다시 prepare하면 프리뷰가 실제로 재개된다는 테스트를 추가한다 per FR-031
+- [X] T062 `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/AndroidCaptureRuntime.kt`의 pose 루프가 `session.update()` 실패와 `eglSwapBuffers` 거부를 남기고 다음 프레임으로 넘어가게 해, 한 번의 실패로 프리뷰와 pose 수집이 함께 멈추지 않게 한다 per FR-031
+- [X] T063 같은 파일이 마감·중단 시 `stopRepeating()`으로 프레임 공급을 먼저 끊고, 진행 중인 프레임이 정리된 뒤에 타임스탬프 기록 창을 닫게 한다 per FR-033, SC-009
+- [X] T057 실기기에서 수집 중 프리뷰가 실시간으로 갱신되는지, 프리뷰가 저장된 MP4와 같은 방향으로 잘림 없이 보이는지, `main_frame_timestamps.csv` 행 수와 MP4 frame 수 차이 및 실효 FPS에 회귀가 없는지 확인한다 per FR-031, FR-032, FR-033, SC-009, SC-011 (실기기)
+
+
+**접근 전환**: 처음에는 프리뷰 surface를 `SharedCamera.setAppSurfaces`에 recorder와 함께 등록했다.
+실기기에서 `createCaptureSession`이 `Error configuring streams: Broken pipe (-32)`로 실패했다.
+로그로 stream 구성을 재보니 `arcore=2 app=2 total=4`였고, 프리뷰만 뺀 3 stream에서는 수집·마감·업로드가
+모두 정상이었다. 즉 대상 기기가 4 stream 조합을 받아들이지 못한다. 그래서 stream을 늘리지 않는
+GL 렌더링으로 전환했다. `research.md` 결정 10에 기록한 대안 경로다.
+
+### Phase 12 완료 증거 (2026-09-15)
+
+- 구현: `PreviewSurfaceProvider`가 ARCore `cameraConfig.imageSize`를 알려 주고 프리뷰 Surface를 받는다. 받은 Surface는 Camera2 출력이 아니라 `CaptureEgl`의 EGL window surface 대상이 되며, pose 수집 스레드가 매 프레임 `CameraTextureRenderer`로 ARCore Camera OES 텍스처를 그린다. 카메라 출력 stream 수는 변경 전과 같다.
+- 방향과 잘림: 표시 회전을 Sensor 방향과 같게 주어 ARCore의 회전 보정을 상쇄하고, 표시 크기는 `cameraConfig.textureSize`로 준다. 처음에는 `ROTATION_0`과 `imageSize`를 줬는데, 녹화본과 90도 어긋난 데다 가로 화각의 58%가 잘렸다. 실기기에서 `transformCoordinates2d`의 UV로 확인하고 바로잡았다. 자세한 측정은 [quickstart.md](quickstart.md)에 있다.
+- production 호출 경로: `MainActivity.onPlay` → `AndroidCaptureRuntime.start(displayNumber) { w, h -> previewSurface }` → `openSharedCamera` → `onActive` → `startPoseCollection(session, previewSurface)` → `CaptureEgl(previewSurface)` + `CameraTextureRenderer.draw`.
+- 부수 수정: `start()` 실패 경로가 `bundle`을 비우지 않아 다음 `start()`가 막히던 잠복 버그, 그리고 `CameraPreviewController`가 release 직후 재개될 때 앞선 열기의 콜백이 닫힌 device를 건드려 프로세스가 죽던 경합(`CameraDevice was already closed`)을 함께 고쳤다. 후자는 `restoreIdlePreview()` 도입으로 드러났다.
+- 자동 검증: `CapturePreviewControllerTest`의 `preview can be reopened after a capture releases the camera`. `./gradlew.bat ktlintCheck testDebugUnitTest lintDebug assembleDebug` → `BUILD SUCCESSFUL` (32s).
+
+#### 실기기 검증 (T057) · `SM-G973N`, Android 12
+
+`adb push` + `pm install`로 설치하고 설치 시각을 대조해 새 빌드임을 확인한 뒤 수행했다.
+
+| 항목 | 결과 |
+|---|---|
+| 유휴 프리뷰 | 정상. `Camera3-OutputStream: First frame for stream 0, width 640, height 480` |
+| **수집 중 프리뷰 갱신** | **정상.** 60초 동안 5초 간격 12개 표본이 모두 서로 다름. 연속 5프레임도 모두 다름 |
+| 수집 시작 | 정상 (GL 경로). surface 등록 방식에서는 실패했다 |
+| Session 마감·업로드 | 정상 |
+| `frame_number` 결번 | 0건 (0..4961) |
+| `timestamp_ns` 단조 증가 | 위반 0건 |
+| 실효 FPS | **29.998** (프리뷰 없는 대조군 30.004). 회귀 없음 |
+| CSV 행 수 대 MP4 frame 수 | **정상 마감 1111 대 1113, 중단 841 대 843 → 모두 차이 2**. SC-009 충족 |
+| `metadata.json` 해상도 | 640×480, MP4와 일치. `camera` 필수 7필드 존재 |
+
+FPS 대조군은 같은 기기·같은 날 프리뷰를 끈 빌드로 수집한 `82c11c1c`다.
+
+**SC-009를 맞추기 위한 수정**: 처음 측정에서는 차이가 3으로 명세의 2 이하를 넘겼다.
+프리뷰를 끈 대조군도 3이었으므로 이번 변경의 회귀는 아니었고, 마감 경로 자체의 경계 문제였다.
+
+원인은 두 가지다. 마감 시 프레임 공급이 계속되는 상태에서 타임스탬프 기록 창만 닫아,
+`MediaRecorder.stop()`이 끝날 때까지 인코딩된 프레임이 CSV에 남지 않았다. 또 `stopRepeating()`을
+불러도 이미 진행 중인 프레임은 계속 인코딩되므로, 그 프레임의 `onCaptureCompleted`를 받기 전에
+창을 닫으면 같은 차이가 남는다.
+
+`stopRepeating()`으로 공급을 먼저 끊고, 진행 중인 프레임이 정리될 시간을 준 뒤 창을 닫도록 고쳤다.
+정상 마감과 중단 경로 모두 차이가 **2**로 내려와 SC-009를 충족한다.
+
+**미검증**: Tracking 게이트(SC-002·SC-003)를 확인하지 못했다. 기기를 책상에 고정한 채 원격으로
+조작해 ARCore가 시차를 얻지 못했고 Tracking이 `INITIALIZING`을 벗어나지 않았다.
+Episode 시작·`INVALID_TRACKING` 자동 마감·회복 후 재수집은 사람이 기기를 들고 움직이며 확인해야 한다.
+프리뷰와 저장 영상을 눈으로 대조하지도 못했다. 방향이 같다는 것은 UV 측정으로 확인했으나,
+두 이미지를 나란히 놓고 본 것은 아니다.
+
+**별건 결함 발견**: 수집을 끝낼 때 ARCore 종료에서 프로세스가 죽는다. 프리뷰를 완전히 끈 빌드에서도
+동일한 스택으로 재현되므로 **기존 결함이며 이번 변경과 무관**하다. 별도 이슈 S15P21A206-31로 등록해
+아래 Phase 13에서 고쳤다.
 
 ---
 
@@ -431,3 +507,43 @@ Phase 11의 구제 경로가 있어 데이터는 다음 실행에서 복구되�
 
 **staging에 남은 번들 1건**: `0dcbd597`은 `main_rgb.mp4`가 0바이트라 마감할 수 없어 staging에 남는다.
 이번 검증 이전의 다른 실험에서 생긴 것이며, 마감 불가 번들만 남기는 FR-029의 의도대로 동작한 결과다.
+
+---
+
+## Phase 14: 영상 회전과 좌표계 정합
+
+Camera 센서가 90도 눕혀 장착돼 있어 `main_rgb.mp4`가 90도 돌아간 채 저장됐다. 수집 화면에서는
+Android가 프리뷰를 자동으로 세워 주기 때문에 드러나지 않았고, Phase 12에서 프리뷰를 저장본 기준으로
+맞추면서 화면에도 드러났다. 제 변경이 만든 결함이 아니라 원래부터 있던 것이다.
+
+- [X] T065 `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/AndroidCaptureRuntime.kt`가 `MediaRecorder.setOrientationHint(90)`로 회전 정보를 남기고, 수집 중 프리뷰도 같은 방향으로 세워 그리게 한다 per FR-036
+- [X] T066 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/EpisodeModels.kt`의 `CameraMetadata`에 `rotatedClockwise()`와 `video_rotation_degrees`를 추가해, Intrinsic이 회전 후 기하를 담게 한다 per FR-037
+- [X] T067 `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/CameraMetadataRotationTest.kt`에 90·180·270도 변환, 네 번 회전 시 원복, 각도 정규화 테스트를 추가한다 per FR-037
+- [X] T068 `specs/003-session-episode-tracking-gate/contracts/video-orientation.md`에 수신 측 전달 문서를 작성한다. 도구별 회전 처리 차이, Pose와 함께 쓸 때의 변환, 이전 수집분 구분 방법을 포함한다 per FR-038
+- [ ] T069 수신 측에 [video-orientation.md](contracts/video-orientation.md)를 전달하고, 영상 디코딩 도구가 회전 행렬을 반영하는지와 Pose 변환 적용 여부를 확인받는다
+
+### Phase 14 완료 증거 (2026-09-15)
+
+- 구현: `setOrientationHint(90)`으로 MP4에 회전 행렬을 남긴다. 픽셀은 재인코딩하지 않는다. `CameraMetadata.rotatedClockwise(90)`이 `fx↔fy`, `cx = H − cy`, `cy = cx`, 가로세로 교환을 적용하고 `video_rotation_degrees`를 남긴다. 수집 중 프리뷰는 `setDisplayGeometry(ROTATION_0, textureHeight, textureWidth)`로 세워 그린다. 뷰포트 비율이 세운 텍스처와 같아 잘림이 없다.
+- production 호출 경로: `AndroidCaptureRuntime.start` → `MediaRecorder.setOrientationHint`, `startPoseCollection` → `readCameraMetadata(...)?.rotatedClockwise(RECORDING_ROTATION_DEGREES)` → `stop()` → `SessionFinalizer.finalize(camera = ...)` → `metadata.json`.
+- 자동 검증: `CameraMetadataRotationTest` 6건. `./gradlew.bat ktlintCheck testDebugUnitTest lintDebug assembleDebug` → `BUILD SUCCESSFUL`.
+
+#### 실기기 검증 · `SM-G973N`, Android 12, Session `72e463a1`
+
+```text
+tkhd matrix       0, 65536, 0 / -65536, 0, 0 / 0, 0, 1073741824   (시계 방향 90도)
+track 해상도      640 x 480   (회전 전 픽셀)
+metadata.camera   image_width 480, image_height 640,
+                  fx 497.2151, fy 497.29745, cx 239.82605, cy 324.0054,
+                  video_rotation_degrees 90
+```
+
+같은 번들에서 CSV 721행 대 MP4 722 frame(차이 1), `frame_number` 결번 0건. 회전이 frame 대응을
+바꾸지 않는다. `FATAL EXCEPTION`과 진단 경고 0건.
+
+**방향 확인**: 수집 중 프리뷰와 저장된 영상이 모두 바로 선 것을 사람이 눈으로 확인했다.
+자동 측정으로는 판정할 수 없는 항목이라 사람 확인으로 대체했다.
+
+**Pose는 회전하지 않았다**: `arcore_poses.csv`는 ARCore 원본 기록을 유지한다. 앱에서 미리 돌리면
+원본 기록이 아니게 되고 검산할 기준이 없어서다. 수신 측이 적용할 변환은 `video-orientation.md` §4에
+있다. 수신 측이 Pose까지 회전된 상태를 원하면 그때 다시 판단한다.

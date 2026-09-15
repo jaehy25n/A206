@@ -14,9 +14,11 @@ import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureResult
 import android.hardware.camera2.TotalCaptureResult
 import android.media.MediaRecorder
+import android.opengl.GLES20
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
+import android.view.Surface
 import androidx.core.content.ContextCompat
 import com.google.ar.core.Session
 import com.ssafy.s15p21a206.tiger.episode.CameraMetadata
@@ -66,9 +68,15 @@ class AndroidCaptureRuntime(
     private var frameTimestamps: FrameTimestampWriter? = null
     private var lastPoseTimestampNs = Long.MIN_VALUE
 
+    /** 마지막 `TRACKING` 이후 처음 유실된 pose의 카메라 시각. 회복하면 비운다. */
+    private var lossStartedAtNs: Long? = null
+
     @Volatile private var cameraMetadata: CameraMetadata? = null
 
-    fun start(displayNumber: Int): SessionBundle {
+    fun start(
+        displayNumber: Int,
+        previewSurfaces: PreviewSurfaceProvider = PreviewSurfaceProvider { _, _ -> null },
+    ): SessionBundle {
         check(bundle == null) { "Capture is already running" }
         val next = store.createStagingBundle(displayNumber)
         writeHeaders(next)
@@ -82,12 +90,22 @@ class AndroidCaptureRuntime(
                     setVideoFrameRate(30)
                     setVideoSize(session.cameraConfig.imageSize.width, session.cameraConfig.imageSize.height)
                     setOutputFile(next.mainVideo.absolutePath)
+                    // Camera 센서가 90도 눕혀 장착돼 있어 인코더에는 가로로 누운 프레임이 들어간다.
+                    // 재생 시 시계 방향 90도로 세우도록 회전 정보를 남긴다. 픽셀은 그대로다.
+                    setOrientationHint(RECORDING_ROTATION_DEGREES)
                     prepare()
                 }
             arSession = session
             mediaRecorder = recorder
             bundle = next
-            openSharedCamera(session, recorder)
+            // 프리뷰는 ARCore GPU 텍스처를 세워서 그리므로 가로세로를 바꾼 크기를 알려 준다.
+            val textureSize = session.cameraConfig.textureSize
+            val previewSurface =
+                runCatching { previewSurfaces.surfaceFor(textureSize.height, textureSize.width) }
+                    .onFailure { Log.w(TAG, "Could not obtain a preview surface", it) }
+                    .getOrNull()
+
+            openSharedCamera(session, recorder, previewSurface)
             register(Sensor.TYPE_ACCELEROMETER)
             register(Sensor.TYPE_GYROSCOPE)
             register(Sensor.TYPE_ROTATION_VECTOR)
@@ -95,6 +113,8 @@ class AndroidCaptureRuntime(
         } catch (error: Exception) {
             Log.e(TAG, "Could not start ARCore shared capture", error)
             releaseResources()
+            // 마감되지 않은 bundle을 남기면 다음 start가 막힌다.
+            bundle = null
             next.directory.deleteRecursively()
             throw error
         }
@@ -103,7 +123,7 @@ class AndroidCaptureRuntime(
     fun stop(): FinalizeResult {
         val active = requireNotNull(bundle) { "No active capture" }
         sensorManager.unregisterListener(this)
-        frameTimestamps?.recording = false
+        closeFrameWindow()
         val stopError = runCatching { mediaRecorder?.stop() }.exceptionOrNull()
         val camera = cameraMetadata
         releaseResources()
@@ -112,9 +132,25 @@ class AndroidCaptureRuntime(
         return SessionFinalizer(store).finalize(active, camera = camera)
     }
 
+    /**
+     * Camera 프레임 공급을 먼저 끊고 타임스탬프 기록 창을 닫는다.
+     *
+     * 공급이 계속되는 상태에서 창만 닫으면, `MediaRecorder.stop()`이 끝나기까지 인코딩된 프레임이
+     * `main_frame_timestamps.csv`에 남지 않아 MP4 frame 수와 벌어진다. 공급을 먼저 끊으면 인코더와
+     * CSV가 같은 마지막 프레임에서 끝난다.
+     */
+    private fun closeFrameWindow() {
+        runCatching { captureSession?.stopRepeating() }
+            .onFailure { Log.w(TAG, "Could not stop the repeating request", it) }
+        // stopRepeating 시점에 이미 진행 중인 프레임은 계속 인코딩된다. 그 프레임의
+        // onCaptureCompleted까지 받고 창을 닫아야 CSV가 MP4와 같은 프레임에서 끝난다.
+        runCatching { Thread.sleep(FRAME_DRAIN_DELAY_MS) }
+        frameTimestamps?.recording = false
+    }
+
     fun interrupt() {
         sensorManager.unregisterListener(this)
-        frameTimestamps?.recording = false
+        closeFrameWindow()
         runCatching { mediaRecorder?.stop() }
         releaseResources()
         bundle = null
@@ -160,6 +196,7 @@ class AndroidCaptureRuntime(
     private fun openSharedCamera(
         session: Session,
         recorder: MediaRecorder,
+        previewSurface: Surface?,
     ) {
         check(ContextCompat.checkSelfPermission(appContext, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             "Camera permission is required for ARCore capture"
@@ -193,8 +230,11 @@ class AndroidCaptureRuntime(
                 override fun onOpened(device: CameraDevice) {
                     cameraDevice = device
                     try {
-                        val surfaces = sharedCamera.arCoreSurfaces.toMutableList().apply { add(recorder.surface) }
+                        // 앱이 소유한 출력을 먼저 등록해야 ARCore가 그에 맞춰 자신의 surface 구성을 정한다.
+                        // 프리뷰는 여기에 넣지 않는다. 대상 기기가 ARCore 2개 + recorder + preview의 4 stream
+                        // 조합을 거부하므로, 프리뷰는 pose 스레드가 ARCore Camera 텍스처를 그려서 채운다.
                         sharedCamera.setAppSurfaces(cameraId, listOf(recorder.surface))
+                        val surfaces = sharedCamera.arCoreSurfaces.toMutableList().apply { add(recorder.surface) }
                         val request = device.createCaptureRequest(CameraDevice.TEMPLATE_RECORD).apply { surfaces.forEach(::addTarget) }
                         device.createCaptureSession(
                             surfaces,
@@ -212,7 +252,7 @@ class AndroidCaptureRuntime(
                                             recorder.start()
                                             // 인코더가 실제로 돌기 시작한 뒤부터 Camera timestamp를 남긴다.
                                             frameTimestamps?.recording = true
-                                            startPoseCollection(session)
+                                            startPoseCollection(session, previewSurface)
                                         } catch (error: Exception) {
                                             failure = error
                                         } finally {
@@ -263,29 +303,73 @@ class AndroidCaptureRuntime(
         failure?.let { throw it }
     }
 
-    private fun startPoseCollection(session: Session) {
+    private fun startPoseCollection(
+        session: Session,
+        previewSurface: Surface?,
+    ) {
         poseCollectionRunning = true
+        lossStartedAtNs = null
+        lastPoseTimestampNs = Long.MIN_VALUE
         poseThread =
             Thread {
-                val egl = OffscreenEgl()
+                val egl = CaptureEgl(previewSurface)
                 try {
                     egl.makeCurrent()
-                    session.setCameraTextureName(egl.createTexture())
+                    val renderer = if (egl.hasWindow) CameraTextureRenderer() else null
+                    val textureId = renderer?.createTexture() ?: IntArray(1).also { GLES20.glGenTextures(1, it, 0) }[0]
+                    session.setCameraTextureName(textureId)
+                    // 표시 회전을 Sensor 방향과 같게 준다. ARCore는 (Sensor 방향 - 표시 회전)만큼 이미지를
+                    // 돌리므로, 두 값이 같으면 회전이 0이 되어 녹화본과 같은 방향의 프레임이 그려진다.
+                    // ROTATION_0을 주면 세로 화면 기준으로 90도 돌면서 가로 화각도 절반 넘게 잘린다.
+                    //
+                    // 크기는 Camera 텍스처의 가로세로를 바꿔서 준다. 세운 이미지와 같은 비율이라
+                    // ARCore가 잘라내지 않고, 화각이 그대로 유지된다.
+                    val textureSize = session.cameraConfig.textureSize
+                    if (renderer != null) {
+                        session.setDisplayGeometry(Surface.ROTATION_0, textureSize.height, textureSize.width)
+                    }
                     while (poseCollectionRunning) {
-                        val frame = session.update()
+                        // Tracking 유실·회복 구간에서 한 번 실패한다고 프리뷰와 pose 수집이 통째로
+                        // 멈추면 안 된다. 실패를 남기고 다음 프레임으로 넘어간다.
+                        val frame =
+                            runCatching { session.update() }
+                                .onFailure {
+                                    Log.w(TAG, "Could not update the ARCore frame", it)
+                                    Thread.sleep(FRAME_RETRY_DELAY_MS)
+                                }.getOrNull() ?: continue
+                        if (renderer != null) {
+                            // 타임스탬프 중복으로 걸러지는 프레임도 화면에는 그려야 프리뷰가 끊기지 않는다.
+                            runCatching {
+                                renderer.draw(frame, textureId, textureSize.height, textureSize.width)
+                                // swapBuffers는 예외 대신 false를 돌려주므로, 조용히 정지하지 않게 확인한다.
+                                check(egl.swapBuffers()) { "eglSwapBuffers rejected the preview surface" }
+                            }.onFailure { Log.w(TAG, "Could not draw the capture preview", it) }
+                        }
                         val timestampNs = frame.androidCameraTimestamp
                         if (timestampNs == 0L || timestampNs == lastPoseTimestampNs) continue
                         lastPoseTimestampNs = timestampNs
                         val camera = frame.camera
-                        trackingState.value =
-                            TrackingSample(camera.trackingState == com.google.ar.core.TrackingState.TRACKING, timestampNs)
-                        if (cameraMetadata == null) cameraMetadata = readCameraMetadata(session, camera)
+                        val isTracking = camera.trackingState == com.google.ar.core.TrackingState.TRACKING
+                        // 유실 구간에서는 첫 유실 pose 시각을 계속 실어 보낸다. 화면 ticker는 100 ms
+                        // 주기로 읽으므로, 매 프레임 최신 시각을 덮어쓰면 그사이 진행한 pose 시각이
+                        // 기록에 들어가 `end_timestamp_ns`가 첫 유실 + 0.5초보다 늦어진다.
+                        lossStartedAtNs = if (isTracking) null else lossStartedAtNs ?: timestampNs
+                        trackingState.value = TrackingSample(isTracking, lossStartedAtNs ?: timestampNs)
+                        if (cameraMetadata ==
+                            null
+                        ) {
+                            cameraMetadata = readCameraMetadata(session, camera)?.rotatedClockwise(RECORDING_ROTATION_DEGREES)
+                        }
                         val translation = camera.pose.translation
                         val rotation = camera.pose.rotationQuaternion
                         bundle?.arcorePoses?.appendText(
                             "$timestampNs,${translation[0]},${translation[1]},${translation[2]},${rotation[0]},${rotation[1]},${rotation[2]},${rotation[3]},${camera.trackingState.name},${camera.trackingFailureReason}\n",
                         )
                     }
+                } catch (error: Throwable) {
+                    // 여기서 끝나면 프리뷰와 pose 기록이 함께 멈춘다. 원인을 반드시 남긴다.
+                    Log.e(TAG, "Pose collection stopped unexpectedly", error)
+                    throw error
                 } finally {
                     egl.close()
                 }
@@ -377,9 +461,37 @@ class AndroidCaptureRuntime(
     private companion object {
         const val TAG = "TigerCapture"
 
+        /** 녹화본에 남길 회전. Camera 센서가 90도 눕혀 장착돼 있어 시계 방향 90도로 세운다. */
+        const val RECORDING_ROTATION_DEGREES = 90
+
         /** capture session 닫힘을 기다리는 한계. 넘기면 기다림을 포기하고 나머지 정리를 이어간다. */
         const val CLOSE_TIMEOUT_SECONDS = 2L
+
+        /** ARCore frame 갱신이 실패했을 때 다음 시도까지 쉬는 시간. 실패가 이어져도 CPU를 태우지 않는다. */
+        const val FRAME_RETRY_DELAY_MS = 20L
+
+        /**
+         * stopRepeating 뒤 진행 중인 프레임이 정리될 때까지 기다리는 시간.
+         *
+         * 120 ms에서는 중단 경로의 차이가 3 frame으로 남았다. 중단은 `ON_STOP`에서 일어나 마감이
+         * 더 오래 걸린다. 220 ms에서 정상 마감과 중단 모두 1~2 frame으로 내려왔다.
+         */
+        const val FRAME_DRAIN_DELAY_MS = 220L
     }
+}
+
+/**
+ * 수집에 사용할 preview Surface를 내어 준다.
+ *
+ * ARCore Camera 텍스처의 크기를 인자로 받는다. 프리뷰가 그 텍스처를 잘림 없이 그리려면
+ * 호출 측이 이 크기로 버퍼를 맞춘 Surface를 돌려줘야 한다.
+ * 프리뷰를 붙일 수 없으면 `null`을 돌려주며, 수집은 프리뷰 없이 진행된다.
+ */
+fun interface PreviewSurfaceProvider {
+    fun surfaceFor(
+        width: Int,
+        height: Int,
+    ): Surface?
 }
 
 /**

@@ -138,3 +138,26 @@
 없다. Technical Context의 `NEEDS CLARIFICATION`이 모두 해소되었다.
 
 Ultra-wide Camera 동시 운용은 [spec.md](spec.md)의 **범위 밖** 절에서 이번 기능에서 제외했으므로 조사 대상이 아니다. 추후 다룬다면 실기기 timebox 확인 작업으로 분리한다.
+
+---
+
+## 결정 10: 수집 중 프리뷰는 ARCore Camera 텍스처를 직접 그려서 채운다
+
+**결정**: pose 수집 스레드의 EGL context를 1×1 PBuffer 대신 프리뷰 Surface 위의 window surface로 만들고(`CaptureEgl`), `session.setCameraTextureName`으로 ARCore가 채우는 OES 텍스처를 매 프레임 그린다(`CameraTextureRenderer`). Camera2 출력 stream은 늘리지 않는다.
+
+**먼저 시도했다가 기각한 안 — 프리뷰 surface를 카메라 출력으로 등록**: `SharedCamera.setAppSurfaces`에 MediaRecorder surface와 함께 프리뷰 surface를 등록하는 방식이다. 변경 폭이 훨씬 작고 자연스러워 이쪽을 먼저 구현했으나, 실기기에서 `createCaptureSession`이 실패했다.
+
+```text
+I TigerCapture: shared camera streams: arcore=2 app=2 total=4 preview=true valid=true
+E TigerCapture: CAMERA_ERROR (3): endConfigure:704: Camera 0: Error configuring streams: Broken pipe (-32)
+```
+
+ARCore가 2개(GPU 텍스처 + CPU 이미지), MediaRecorder 1개에 프리뷰까지 더해 4개다. 프리뷰만 빼 3개로 줄이면 수집·마감·업로드가 모두 정상이므로, 원인은 stream 개수 조합이다. Camera2의 보장 조합표는 `LEVEL_3` 미만에서 동시 `PRIV` 3개를 보장하지 않으며 이 기기가 그 경계에 걸린다. `minSdk = 28`이라 `isSessionConfigurationSupported`(API 29)로 미리 확인할 수도 없다.
+
+**근거**: 채택안은 stream을 하나도 늘리지 않아 이 제약을 원천 회피한다. 또한 ARCore가 이미 카메라 텍스처를 받고 있으므로 추가 카메라 대역폭도 들지 않는다. 실측 결과 실효 FPS는 29.998로 프리뷰 없는 대조군(30.004)과 차이가 없고, `main_frame_timestamps.csv` 행 수 대 MP4 frame 수 차이도 대조군과 같은 3이었다.
+
+**비용**: OES 셰이더와 `Frame.transformCoordinates2d` 기반 UV 처리가 필요하고, pose 수집 스레드가 렌더 스레드를 겸한다. 기록 경로와 렌더링이 한 스레드에 묶이므로, 이후 렌더링을 무겁게 만들면 pose 기록 주기에 영향이 갈 수 있다. 그리기는 `runCatching`으로 감싸 실패가 pose 수집을 멈추지 않게 했다.
+
+**화각 일치**: 프리뷰 버퍼를 `cameraConfig.imageSize`로 두고 `setDisplayGeometry`를 같은 값으로 잡는다. 표시 기하를 화면 크기로 잡으면 ARCore가 화면 비율에 맞춰 이미지를 잘라내므로 저장 영상보다 좁은 화각이 된다. 촬영 해상도를 기준으로 잡아야 저장되는 것과 같은 화각이 그대로 나온다.
+
+**fallback을 넣지 않은 이유**: 대상 기기가 갤럭시 S10 하나이고 실제 배포가 없다. 채택안은 stream 제약을 받지 않으므로 애초에 fallback이 필요한 실패 모드가 없다.

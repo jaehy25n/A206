@@ -235,6 +235,94 @@ pose timestamp를 유실 시작 시각으로 쓰도록 바꾸는 선택지가 �
 
 EC2 업로드는 수행하지 않았다. 별도 확인이 필요하다.
 
+---
+
+## 수집 중 라이브 프리뷰 (Phase 12) · 2026-09-15 · `SM-G973N`, Android 12
+
+`adb push` + `pm install`로 설치하고 설치 시각을 대조해 새 빌드임을 확인했다.
+
+### 확인된 것
+
+- 유휴 프리뷰 640×480 정상. 수집 중 프리뷰가 60초 내내 갱신됨(5초 간격 12개 표본 전부 상이)
+- 수집 시작·Session 마감·업로드 정상
+- `frame_number` 0~4961 결번 없음, `timestamp_ns` 단조 증가
+- 실효 FPS 29.998 (프리뷰 없는 대조군 30.004) — 회귀 없음
+- CSV 4962행 대 MP4 4965 frame → 차이 3. 같은 날 대조군도 차이 3으로 동일
+- `metadata.json` 해상도 640×480이 MP4와 일치
+
+### 접근 전환의 근거가 된 측정
+
+프리뷰 surface를 `setAppSurfaces`에 등록하는 방식은 이 기기에서 실패한다.
+
+```text
+I TigerCapture: shared camera streams: arcore=2 app=2 total=4 preview=true valid=true
+E TigerCapture: CAMERA_ERROR (3): endConfigure:704: Camera 0: Error configuring streams: Broken pipe (-32)
+```
+
+프리뷰만 뺀 3 stream에서는 정상 동작한다. 4 stream 조합을 기기가 거부한다.
+
+### 미검증
+
+- **Tracking 게이트(SC-002·SC-003)**: 기기를 고정한 채 원격 조작해 ARCore가 시차를 얻지 못했고
+  Tracking이 `INITIALIZING`을 벗어나지 않았다. Episode 시작, `INVALID_TRACKING` 자동 마감,
+  회복 후 재수집은 사람이 기기를 들고 움직이며 확인해야 한다.
+- 프리뷰 화각과 저장 영상의 눈 대조. 구조적으로는 같은 해상도·같은 표시 기하를 쓴다.
+
+### 기존 결함 (이번 변경과 무관)
+
+수집 중 홈 버튼 중단 시 `SharedCamera.onCaptureSessionClosed`에서 프로세스가 죽는다.
+프리뷰를 완전히 끈 빌드에서도 동일하게 재현된다. `releaseResources()`의 종료 순서 문제로 보인다.
+데이터는 Phase 11의 구제 경로로 복구된다.
+
+### 프리뷰 방향·화각 수정 (2026-09-15 추가 확인)
+
+첫 GL 구현은 `setDisplayGeometry(ROTATION_0, imageSize)`를 썼고, 녹화본과 90도 어긋난 채
+가로 화각도 크게 잘렸다. ARCore가 돌려주는 텍스처 좌표로 확인했다.
+
+| | NDC 네 꼭짓점의 UV | 해석 |
+|---|---|---|
+| 수정 전 | `0.711,1.000 / 0.711,0.000 / 0.289,1.000 / 0.289,0.000` | 축 교환(90도 회전), u 범위 0.42 → 가로 58% 손실 |
+| 회전만 수정 | `0.125,1.000 / 0.875,1.000 / 0.125,0.000 / 0.875,0.000` | 회전 없음, u 범위 0.75 → 가로 25% 손실 |
+| 최종 | `0.000,1.000 / 1.000,1.000 / 0.000,0.000 / 1.000,0.000` | 회전 없음, 잘림 없음 |
+
+기기의 ARCore Camera 구성은 다음과 같다.
+
+```text
+camera config: image=640x480 texture=1920x1080 fps=[30, 30]
+```
+
+녹화는 `imageSize`(4:3), 프리뷰가 그리는 GPU 텍스처는 `textureSize`(16:9)로 **서로 다른 스트림**이다.
+표시 기하에 녹화 해상도를 주면 ARCore가 4:3에 맞춰 16:9 텍스처를 잘라낸다(0.75 = (4/3)/(16/9)).
+텍스처 크기를 그대로 주어야 잘리지 않는다.
+
+**남는 차이**: 프리뷰는 16:9, 녹화는 4:3이므로 세로 화각이 녹화본보다 좁다.
+프리뷰가 그릴 수 있는 것은 ARCore GPU 텍스처뿐이므로 이 경로에서는 해소할 수 없다.
+없애려면 texture와 image 비율이 같은 ARCore Camera 구성을 `CameraConfigFilter`로 고르는 방법이
+있으나, 녹화 해상도와 Intrinsic이 바뀌므로 수신 측과 합의가 필요하다.
+
+**MP4 방향**: `main_rgb.mp4`는 tkhd 회전 행렬이 항등이고 `setOrientationHint`를 주지 않아
+Sensor 방향 그대로 저장된다. 수집 상세 화면이 영상을 돌려서 보여 주는 것이 아니라 원본이 가로다.
+
+## 프레임 수 차이를 2 이하로 맞춤 (Phase 12 후속) · 2026-09-15
+
+`main_frame_timestamps.csv` 행 수와 MP4 frame 수의 차이가 3으로 SC-009(2 이하)를 넘겼다.
+프리뷰를 끈 대조군도 3이었으므로 프리뷰 작업의 회귀가 아니라 마감 경로의 경계 문제였다.
+
+| 단계 | 정상 마감 | 중단 |
+|---|---|---|
+| 수정 전 | 4962 대 4965 → 3 | 959 대 962 → 3 |
+| `stopRepeating()`을 먼저 호출 | 1976 대 1978 → **2** | 959 대 962 → 3 |
+| 진행 중 프레임 정리 대기 추가 | 1111 대 1113 → **2** | 841 대 843 → **2** |
+
+두 경로 모두 2로 내려와 SC-009를 충족한다. 실효 FPS는 30.004로 변화가 없고
+`frame_number` 결번과 `timestamp_ns` 역전도 0건이다.
+
+**측정 중 관측**: 정상 마감에서도 `SharedCamera.onCaptureSessionClosed` 크래시가 간헐적으로 났다.
+홈 버튼 중단에서만 나는 줄 알았으나 마감 경로에도 나타난다. S15P21A206-31의 종료 순서 수정이
+적용된 빌드에서는 재현되지 않았다. 두 변경을 함께 올린 빌드로 위 수치를 측정했다.
+
+---
+
 ## 수집 종료 시 ARCore 종료 순서 (Phase 13) · 2026-09-15 · `SM-G973N`, Android 12
 
 `adb push` + `pm install`로 설치하고 설치 시각을 대조해 새 빌드임을 확인했다.
@@ -286,3 +374,110 @@ java.lang.IllegalStateException: CameraDevice was already closed
 develop에 있던 기존 결함이므로 같은 브랜치에서 함께 고쳤다.
 
 두 수정을 함께 넣은 빌드로 위 수치를 측정했다. 한쪽만 고치면 수집을 끝낼 때 앱이 계속 죽는다.
+
+---
+
+## develop 병합 후 재검증 · 2026-09-15 · `SM-G973N`, Android 12
+
+`fix/capture-interrupt-teardown`(Phase 13)이 develop에 병합된 뒤, 프리뷰 브랜치에 develop을 병합한
+빌드로 다시 확인했다. 두 작업의 변경이 한 파일에서 합쳐진 상태를 처음 실기기로 검증한 것이다.
+
+| 항목 | 결과 |
+|---|---|
+| 유휴 프리뷰 | 5초간 5개 표본 모두 상이 |
+| 수집 중 프리뷰 | 30초간 3초 간격 10개 표본 모두 상이 |
+| 정상 마감 | 5회, 모두 PID 유지·`FATAL EXCEPTION` 0건 |
+| 홈 버튼 중단 | 4회, 모두 PID 유지·`FATAL EXCEPTION` 0건 |
+| 중단 Session 복구 | 4회 모두 `completed/`로 이동 |
+| 실효 FPS | 29.958~30.004 |
+| `frame_number` 결번 | 0건 |
+| 진단 경고 | `stopRepeating` 실패, 종료 대기 초과, 프리뷰 그리기 실패, frame 갱신 실패 모두 0건 |
+
+### 정리 대기 시간 조정 (120 ms → 220 ms)
+
+병합 빌드에서 정상 마감은 차이 2였으나 **중단 경로가 2회 모두 3**으로 SC-009를 넘겼다.
+중단은 `ON_STOP`에서 일어나 마감이 더 오래 걸려, 120 ms로는 진행 중인 프레임을 다 받지 못했다.
+
+| 대기 | 정상 마감 | 중단 |
+|---|---|---|
+| 120 ms | 2, 2, 2 | 3, 3 |
+| 220 ms | 1, 2 | 1, 1 |
+
+220 ms에서 두 경로 모두 SC-009(2 이하)를 충족한다.
+
+### 여전히 미검증
+
+- **Tracking 게이트(SC-002·SC-003)**: 기기를 고정한 채 원격 조작해 ARCore가 시차를 얻지 못했고
+  Tracking이 `INITIALIZING`을 벗어나지 않았다. 사람이 기기를 들고 움직이며 확인해야 한다.
+- 프리뷰와 저장 영상의 눈 대조. 방향이 같다는 것은 UV 측정으로만 확인했다.
+
+---
+
+## Tracking 게이트 실기기 검증 · 2026-09-15 · `SM-G973N`, Android 12
+
+기기를 들고 움직이며 수집하고, Episode 수행 중 렌즈를 가려 유실을 만들었다. Session `b0bacb36`.
+
+### 게이트 동작 (SC-002·SC-003)
+
+```text
+episode_id  task   object  outcome
+ef98ca48    테스트  ㅣ      COMPLETED
+fcc1235c    테스트  ㅣ      INVALID_TRACKING
+c17b6023    테스트  ㅣ      COMPLETED
+```
+
+유실로 Episode 하나가 자동 마감되고, 회복 뒤 다음 Episode를 시작해 정상 마감했다.
+`arcore_poses.csv`는 `TRACKING` 582행 / `PAUSED` 93행이며 유실 사유는 `INSUFFICIENT_LIGHT`다.
+
+### 데이터 품질
+
+| 항목 | 값 |
+|---|---|
+| CSV 행 수 대 MP4 frame 수 | 676 대 677 → 차이 1 (SC-009) |
+| `frame_number` 결번·역전 | 0건 (SC-005) |
+| 실효 FPS | 29.979 |
+| `metadata.json` | 640×480, intrinsic 7필드 (SC-006·SC-007) |
+
+### T047 · 유실 마감 시각의 편차
+
+`INVALID_TRACKING`의 `end_timestamp_ns`가 **첫 유실 pose + 0.5초와 67 ms 어긋난다.**
+
+```text
+첫 PAUSED pose     112458031800444
+2번째 PAUSED pose   112458065263944
+3번째 PAUSED pose   112458098734175   + 0.5초 = 112458598734175
+기록된 end                                    = 112458598734175   ← 정확히 일치
+```
+
+즉 첫 유실 pose가 아니라 **세 번째 pose** 기준으로 마감됐다. 화면의 tracking ticker가 100 ms 주기로
+`TrackingSample`을 읽는 사이 pose가 33 ms씩 두 프레임 더 진행한 값을 집어 간 것이다.
+편차의 상한은 한 tick(100 ms)이다.
+
+Phase 10 이전의 217 ms에서 67 ms로 줄었지만, `contracts/capture-state-machine.md`의
+`end = 첫 유실 + 0.5초`는 여전히 정확히 성립하지 않는다.
+
+### T047 해소 · 첫 유실 pose를 걸어 두도록 수정
+
+pose 수집 스레드가 매 프레임 최신 시각을 덮어쓰고 있었다. 유실 구간에서는 **마지막 `TRACKING` 이후
+첫 유실 pose 시각을 걸어 두고 그 값을 계속 실어 보내도록** 바꿨다. 회복하면 비운다.
+
+같은 절차(정상 수집 → 렌즈 가림 → 회복 후 재수집)로 Session `e933aaf0`을 수집해 검산했다.
+
+```text
+첫 비TRACKING pose  112952196474091  (INSUFFICIENT_LIGHT)
+              + 0.5초 = 112952696474091
+기록된 end            = 112952696474091
+```
+
+**편차 0.0 ms.** `contracts/capture-state-machine.md`의 `end = 첫 유실 + 0.5초`가 정확히 성립한다.
+수정 전 같은 절차에서는 67 ms 어긋났다.
+
+| 항목 | 값 |
+|---|---|
+| Episode 기록 | `COMPLETED` → `INVALID_TRACKING` → `COMPLETED` |
+| pose | `TRACKING` 659행 / `PAUSED` 98행 |
+| CSV 행 수 대 MP4 frame 수 | 758 대 759 → 차이 1 |
+| `frame_number` 결번·역전 | 0건 |
+| 실효 FPS | 29.945 |
+| 회복 후 Episode 시작 | 유실 마감 이후 (5.8초 뒤) |
+| 진단 경고·`FATAL EXCEPTION` | 0건 |
