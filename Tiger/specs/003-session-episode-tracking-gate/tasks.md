@@ -384,7 +384,7 @@ PBuffer로 가므로 그쪽에서도 프리뷰가 나올 수 없었다.
 - [X] T054 `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`가 `SurfaceTexture`를 보관하고 하드코딩된 `1920×1080` 대신 `DEFAULT_PREVIEW_SIZE`(640×480)를 쓰며, 수집 시작 시 provider로 ARCore 해상도를 받아 버퍼를 다시 맞추게 한다 per FR-032
 - [X] T055 같은 파일에 `restoreIdlePreview()`를 추가하고 ARCore 시작 실패·`finalizeCapture` 실패 잔류·`ON_START` 복귀 경로에서 유휴 프리뷰를 되살린다 per FR-031
 - [X] T056 `app/src/test/java/com/ssafy/s15p21a206/tiger/capture/CapturePreviewControllerTest.kt`에 Ready 상태에서 release 후 다시 prepare하면 프리뷰가 실제로 재개된다는 테스트를 추가한다 per FR-031
-- [X] T057 실기기에서 수집 중 프리뷰가 실시간으로 갱신되는지, 프리뷰 화각이 저장된 MP4와 일치하는지, `main_frame_timestamps.csv` 행 수와 MP4 frame 수 차이 및 실효 FPS에 회귀가 없는지 확인한다 per FR-031, FR-032, FR-033, SC-009, SC-010 (실기기)
+- [X] T057 실기기에서 수집 중 프리뷰가 실시간으로 갱신되는지, 프리뷰가 저장된 MP4와 같은 방향으로 잘림 없이 보이는지, `main_frame_timestamps.csv` 행 수와 MP4 frame 수 차이 및 실효 FPS에 회귀가 없는지 확인한다 per FR-031, FR-032, FR-033, SC-009, SC-011 (실기기)
 
 
 **접근 전환**: 처음에는 프리뷰 surface를 `SharedCamera.setAppSurfaces`에 recorder와 함께 등록했다.
@@ -396,7 +396,7 @@ GL 렌더링으로 전환했다. `research.md` 결정 10에 기록한 대안 경
 ### Phase 12 완료 증거 (2026-09-15)
 
 - 구현: `PreviewSurfaceProvider`가 ARCore `cameraConfig.imageSize`를 알려 주고 프리뷰 Surface를 받는다. 받은 Surface는 Camera2 출력이 아니라 `CaptureEgl`의 EGL window surface 대상이 되며, pose 수집 스레드가 매 프레임 `CameraTextureRenderer`로 ARCore Camera OES 텍스처를 그린다. 카메라 출력 stream 수는 변경 전과 같다.
-- 화각 일치: 프리뷰 버퍼를 `cameraConfig.imageSize`(640×480)로 두고 `setDisplayGeometry(ROTATION_0, 640, 480)`를 같은 값으로 잡아, 그려지는 영역이 저장 영상과 같은 화각이 된다.
+- 방향과 잘림: 표시 회전을 Sensor 방향과 같게 주어 ARCore의 회전 보정을 상쇄하고, 표시 크기는 `cameraConfig.textureSize`로 준다. 처음에는 `ROTATION_0`과 `imageSize`를 줬는데, 녹화본과 90도 어긋난 데다 가로 화각의 58%가 잘렸다. 실기기에서 `transformCoordinates2d`의 UV로 확인하고 바로잡았다. 자세한 측정은 [quickstart.md](quickstart.md)에 있다.
 - production 호출 경로: `MainActivity.onPlay` → `AndroidCaptureRuntime.start(displayNumber) { w, h -> previewSurface }` → `openSharedCamera` → `onActive` → `startPoseCollection(session, previewSurface)` → `CaptureEgl(previewSurface)` + `CameraTextureRenderer.draw`.
 - 부수 수정: `start()` 실패 경로가 `bundle`을 비우지 않아 다음 `start()`가 막히던 잠복 버그, 그리고 `CameraPreviewController`가 release 직후 재개될 때 앞선 열기의 콜백이 닫힌 device를 건드려 프로세스가 죽던 경합(`CameraDevice was already closed`)을 함께 고쳤다. 후자는 `restoreIdlePreview()` 도입으로 드러났다.
 - 자동 검증: `CapturePreviewControllerTest`의 `preview can be reopened after a capture releases the camera`. `./gradlew.bat ktlintCheck testDebugUnitTest lintDebug assembleDebug` → `BUILD SUCCESSFUL` (32s).
@@ -427,7 +427,8 @@ T035의 기준값은 2였으므로 이 경계 편차는 실행마다 흔들린�
 **미검증**: Tracking 게이트(SC-002·SC-003)를 확인하지 못했다. 기기를 책상에 고정한 채 원격으로
 조작해 ARCore가 시차를 얻지 못했고 Tracking이 `INITIALIZING`을 벗어나지 않았다.
 Episode 시작·`INVALID_TRACKING` 자동 마감·회복 후 재수집은 사람이 기기를 들고 움직이며 확인해야 한다.
-프리뷰 화각과 저장 영상의 일치도 구조적으로는 보장되나 두 이미지를 눈으로 대조하지는 않았다.
+프리뷰와 저장 영상을 눈으로 대조하지도 못했다. 방향이 같다는 것은 UV 측정으로 확인했으나,
+두 이미지를 나란히 놓고 본 것은 아니다.
 
 **별건 결함 발견**: 수집 중 홈 버튼으로 중단하면 ARCore 종료에서 프로세스가 죽는다.
 
@@ -441,4 +442,4 @@ java.lang.IllegalArgumentException
 `releaseResources()`가 `captureSession.close()`보다 `arSession.close()`를 먼저 부르기 때문으로 보인다.
 프리뷰를 완전히 끈 빌드에서도 동일한 스택으로 재현되므로 **기존 결함이며 이번 변경과 무관**하다.
 중단된 Session은 Phase 11의 구제 경로로 다음 실행에서 복구되므로 데이터 손실은 없다.
-별도 이슈로 다룬다.
+별도 이슈 S15P21A206-31로 등록했다.

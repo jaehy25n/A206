@@ -237,4 +237,5 @@ Session이 Episode 여러 개를 담는 긴 단위가 되면서 중단 한 번�
 - **FR-033**: 프리뷰 표시를 위한 카메라 출력 추가가 `main_frame_timestamps.csv`의 행 수와
   `frame_number` 연속성에 영향을 주어서는 안 된다.
 
-**SC-011**: 수집 중 프리뷰가 정지하는 Session이 0건이며, SC-009(±2 frame)가 계속 충족된다.
+**SC-011**: 수집 중 프리뷰가 정지하는 Session이 0건이며, `main_frame_timestamps.csv` 행 수와 MP4
+frame 수의 차이가 프리뷰 없는 대조군과 같은 수준을 유지한다.
