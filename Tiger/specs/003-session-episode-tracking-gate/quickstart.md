@@ -234,3 +234,42 @@ pose timestamp를 유실 시작 시각으로 쓰도록 바꾸는 선택지가 �
 ### T037 · 미검증
 
 EC2 업로드는 수행하지 않았다. 별도 확인이 필요하다.
+
+---
+
+## 수집 중 라이브 프리뷰 (Phase 12) · 2026-09-15 · `SM-G973N`, Android 12
+
+`adb push` + `pm install`로 설치하고 설치 시각을 대조해 새 빌드임을 확인했다.
+
+### 확인된 것
+
+- 유휴 프리뷰 640×480 정상. 수집 중 프리뷰가 60초 내내 갱신됨(5초 간격 12개 표본 전부 상이)
+- 수집 시작·Session 마감·업로드 정상
+- `frame_number` 0~4961 결번 없음, `timestamp_ns` 단조 증가
+- 실효 FPS 29.998 (프리뷰 없는 대조군 30.004) — 회귀 없음
+- CSV 4962행 대 MP4 4965 frame → 차이 3. 같은 날 대조군도 차이 3으로 동일
+- `metadata.json` 해상도 640×480이 MP4와 일치
+
+### 접근 전환의 근거가 된 측정
+
+프리뷰 surface를 `setAppSurfaces`에 등록하는 방식은 이 기기에서 실패한다.
+
+```text
+I TigerCapture: shared camera streams: arcore=2 app=2 total=4 preview=true valid=true
+E TigerCapture: CAMERA_ERROR (3): endConfigure:704: Camera 0: Error configuring streams: Broken pipe (-32)
+```
+
+프리뷰만 뺀 3 stream에서는 정상 동작한다. 4 stream 조합을 기기가 거부한다.
+
+### 미검증
+
+- **Tracking 게이트(SC-002·SC-003)**: 기기를 고정한 채 원격 조작해 ARCore가 시차를 얻지 못했고
+  Tracking이 `INITIALIZING`을 벗어나지 않았다. Episode 시작, `INVALID_TRACKING` 자동 마감,
+  회복 후 재수집은 사람이 기기를 들고 움직이며 확인해야 한다.
+- 프리뷰 화각과 저장 영상의 눈 대조. 구조적으로는 같은 해상도·같은 표시 기하를 쓴다.
+
+### 기존 결함 (이번 변경과 무관)
+
+수집 중 홈 버튼 중단 시 `SharedCamera.onCaptureSessionClosed`에서 프로세스가 죽는다.
+프리뷰를 완전히 끈 빌드에서도 동일하게 재현된다. `releaseResources()`의 종료 순서 문제로 보인다.
+데이터는 Phase 11의 구제 경로로 복구된다.
