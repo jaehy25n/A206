@@ -14,9 +14,11 @@ import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureResult
 import android.hardware.camera2.TotalCaptureResult
 import android.media.MediaRecorder
+import android.opengl.GLES20
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
+import android.view.Surface
 import androidx.core.content.ContextCompat
 import com.google.ar.core.Session
 import com.ssafy.s15p21a206.tiger.episode.CameraMetadata
@@ -65,7 +67,10 @@ class AndroidCaptureRuntime(
 
     @Volatile private var cameraMetadata: CameraMetadata? = null
 
-    fun start(displayNumber: Int): SessionBundle {
+    fun start(
+        displayNumber: Int,
+        previewSurfaces: PreviewSurfaceProvider = PreviewSurfaceProvider { _, _ -> null },
+    ): SessionBundle {
         check(bundle == null) { "Capture is already running" }
         val next = store.createStagingBundle(displayNumber)
         writeHeaders(next)
@@ -84,7 +89,13 @@ class AndroidCaptureRuntime(
             arSession = session
             mediaRecorder = recorder
             bundle = next
-            openSharedCamera(session, recorder)
+            // 프리뷰 화각을 저장 영상과 맞추기 위해 ARCore가 고른 해상도를 그대로 알려 준다.
+            val imageSize = session.cameraConfig.imageSize
+            val previewSurface =
+                runCatching { previewSurfaces.surfaceFor(imageSize.width, imageSize.height) }
+                    .onFailure { Log.w(TAG, "Could not obtain a preview surface", it) }
+                    .getOrNull()
+            openSharedCamera(session, recorder, previewSurface)
             register(Sensor.TYPE_ACCELEROMETER)
             register(Sensor.TYPE_GYROSCOPE)
             register(Sensor.TYPE_ROTATION_VECTOR)
@@ -92,6 +103,8 @@ class AndroidCaptureRuntime(
         } catch (error: Exception) {
             Log.e(TAG, "Could not start ARCore shared capture", error)
             releaseResources()
+            // 마감되지 않은 bundle을 남기면 다음 start가 막힌다.
+            bundle = null
             next.directory.deleteRecursively()
             throw error
         }
@@ -157,6 +170,7 @@ class AndroidCaptureRuntime(
     private fun openSharedCamera(
         session: Session,
         recorder: MediaRecorder,
+        previewSurface: Surface?,
     ) {
         check(ContextCompat.checkSelfPermission(appContext, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             "Camera permission is required for ARCore capture"
@@ -189,8 +203,11 @@ class AndroidCaptureRuntime(
                 override fun onOpened(device: CameraDevice) {
                     cameraDevice = device
                     try {
-                        val surfaces = sharedCamera.arCoreSurfaces.toMutableList().apply { add(recorder.surface) }
+                        // 앱이 소유한 출력을 먼저 등록해야 ARCore가 그에 맞춰 자신의 surface 구성을 정한다.
+                        // 프리뷰는 여기에 넣지 않는다. 대상 기기가 ARCore 2개 + recorder + preview의 4 stream
+                        // 조합을 거부하므로, 프리뷰는 pose 스레드가 ARCore Camera 텍스처를 그려서 채운다.
                         sharedCamera.setAppSurfaces(cameraId, listOf(recorder.surface))
+                        val surfaces = sharedCamera.arCoreSurfaces.toMutableList().apply { add(recorder.surface) }
                         val request = device.createCaptureRequest(CameraDevice.TEMPLATE_RECORD).apply { surfaces.forEach(::addTarget) }
                         device.createCaptureSession(
                             surfaces,
@@ -208,7 +225,7 @@ class AndroidCaptureRuntime(
                                             recorder.start()
                                             // 인코더가 실제로 돌기 시작한 뒤부터 Camera timestamp를 남긴다.
                                             frameTimestamps?.recording = true
-                                            startPoseCollection(session)
+                                            startPoseCollection(session, previewSurface)
                                         } catch (error: Exception) {
                                             failure = error
                                         } finally {
@@ -253,16 +270,34 @@ class AndroidCaptureRuntime(
         failure?.let { throw it }
     }
 
-    private fun startPoseCollection(session: Session) {
+    private fun startPoseCollection(
+        session: Session,
+        previewSurface: Surface?,
+    ) {
         poseCollectionRunning = true
         poseThread =
             Thread {
-                val egl = OffscreenEgl()
+                val egl = CaptureEgl(previewSurface)
                 try {
                     egl.makeCurrent()
-                    session.setCameraTextureName(egl.createTexture())
+                    val renderer = if (egl.hasWindow) CameraTextureRenderer() else null
+                    val textureId = renderer?.createTexture() ?: IntArray(1).also { GLES20.glGenTextures(1, it, 0) }[0]
+                    session.setCameraTextureName(textureId)
+                    // 프리뷰 버퍼를 촬영 해상도와 같게 두고 그 기준으로 표시 기하를 잡아, 화면에 보이는 화각이
+                    // 저장되는 영상과 정확히 같아진다.
+                    val imageSize = session.cameraConfig.imageSize
+                    if (renderer != null) {
+                        session.setDisplayGeometry(Surface.ROTATION_0, imageSize.width, imageSize.height)
+                    }
                     while (poseCollectionRunning) {
                         val frame = session.update()
+                        if (renderer != null) {
+                            // 타임스탬프 중복으로 걸러지는 프레임도 화면에는 그려야 프리뷰가 끊기지 않는다.
+                            runCatching {
+                                renderer.draw(frame, textureId, imageSize.width, imageSize.height)
+                                egl.swapBuffers()
+                            }.onFailure { Log.w(TAG, "Could not draw the capture preview", it) }
+                        }
                         val timestampNs = frame.androidCameraTimestamp
                         if (timestampNs == 0L || timestampNs == lastPoseTimestampNs) continue
                         lastPoseTimestampNs = timestampNs
@@ -359,6 +394,20 @@ class AndroidCaptureRuntime(
     private companion object {
         const val TAG = "TigerCapture"
     }
+}
+
+/**
+ * 수집에 사용할 preview Surface를 내어 준다.
+ *
+ * ARCore가 고른 카메라 해상도를 인자로 받는다. 프리뷰 화각을 저장 영상과 일치시키려면
+ * 호출 측이 이 크기로 버퍼를 맞춘 Surface를 돌려줘야 한다.
+ * 프리뷰를 붙일 수 없으면 `null`을 돌려주며, 수집은 프리뷰 없이 진행된다.
+ */
+fun interface PreviewSurfaceProvider {
+    fun surfaceFor(
+        width: Int,
+        height: Int,
+    ): Surface?
 }
 
 /**

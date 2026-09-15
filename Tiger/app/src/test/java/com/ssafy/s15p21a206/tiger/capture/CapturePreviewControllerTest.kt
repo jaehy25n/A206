@@ -40,16 +40,33 @@ class CapturePreviewControllerTest {
         assertTrue(runtime.released)
     }
 
+    @Test
+    fun `preview can be reopened after a capture releases the camera`() {
+        val runtime = FakePreviewRuntime()
+        val controller = CapturePreviewController(CapturePreviewPreflight { null }, runtime)
+
+        assertEquals(CapturePreviewState.Ready, controller.prepare())
+        // 수집이 시작되면 같은 camera id를 넘기기 위해 프리뷰를 놓는다.
+        controller.release()
+        assertEquals(CapturePreviewState.Idle, controller.state)
+
+        // 수집이 끝난 뒤 다시 열 때 prepare가 Ready로 단락되지 않고 실제로 재개돼야 한다.
+        assertEquals(CapturePreviewState.Ready, controller.prepare())
+        assertEquals(2, runtime.startCount)
+    }
+
     private class FakePreviewRuntime(
         var failStart: Boolean = false,
     ) : PreviewRuntime {
         var started = false
         var released = false
         var recordingStarted = false
+        var startCount = 0
 
         override fun startPreview() {
             if (failStart) error("Camera preview configuration failed")
             started = true
+            startCount++
         }
 
         override fun releasePreview() {

@@ -195,6 +195,9 @@ fun CaptureScreen() {
     var objectName by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("") }
     var previewSurface by remember { mutableStateOf<Surface?>(null) }
+    // 수집 시작 시 ARCore가 고른 해상도로 버퍼를 다시 맞추려면 SurfaceTexture를 들고 있어야 한다.
+    var previewTexture by remember { mutableStateOf<SurfaceTexture?>(null) }
+    var previewBufferSize by remember { mutableStateOf(DEFAULT_PREVIEW_SIZE) }
     val previewController =
         remember {
             CameraPreviewController(context.applicationContext) { _ ->
@@ -338,6 +341,17 @@ fun CaptureScreen() {
                 }
             }
         }
+
+    // ARCore가 카메라를 놓은 뒤 유휴 Camera2 프리뷰를 되살린다.
+    // prepare()는 Ready 상태에서 즉시 반환하므로 먼저 Idle로 되돌려야 실제로 다시 연다.
+    fun restoreIdlePreview() {
+        if (previewSurface == null) return
+        capturePreviewController.release()
+        if (capturePreviewController.prepare() is CapturePreviewState.Failed) {
+            previewFailed = true
+            message = previewFailureMessage
+        }
+    }
     val cameraPermission =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (granted) {
@@ -360,32 +374,42 @@ fun CaptureScreen() {
                 scope.launch {
                     try {
                         val displayNumber = repository.nextDisplayNumber()
-                        runCatching { captureRuntime.start(displayNumber) }
-                            .onSuccess { bundle ->
-                                activeBundle = bundle
-                                recordingStartNs = SystemClock.elapsedRealtimeNanos()
-                                // Session 시작은 Episode를 만들지 않는다. Tracking 안정화 뒤 사용자가 따로 시작한다.
-                                coordinator.start(bundle.sessionId, bundle.displayNumber, bundle.directory.absolutePath)
-                                activeEpisode = null
-                                collecting = true
-                                active = false
-                                repository.save(
-                                    CaptureSession(
-                                        bundle.sessionId,
-                                        bundle.displayNumber,
-                                        RecordingState.INITIALIZING,
-                                        UploadState.LOCAL_ONLY,
-                                        recordingStartNs,
-                                        bundlePath = bundle.directory.absolutePath,
-                                        recordingStartEpochMs = System.currentTimeMillis(),
-                                    ),
-                                )
-                            }.onFailure { error ->
-                                message = "$arCoreSessionStartFailed: ${error.message.orEmpty()}"
-                                if (error is UnavailableArcoreNotInstalledException) {
-                                    context.openArCoreStore()
-                                }
+                        runCatching {
+                            // ARCore가 고른 해상도로 버퍼를 맞춰 프리뷰 화각을 저장 영상과 일치시킨다.
+                            // 이 람다는 Main dispatcher에서 실행되므로 Compose 상태를 직접 갱신해도 된다.
+                            // 프리뷰용 Camera2 세션은 onPlay에서 이미 닫혔으므로 버퍼 크기를 바꿔도 안전하다.
+                            captureRuntime.start(displayNumber) { width, height ->
+                                previewBufferSize = width to height
+                                previewTexture?.setDefaultBufferSize(width, height)
+                                previewSurface
                             }
+                        }.onSuccess { bundle ->
+                            activeBundle = bundle
+                            recordingStartNs = SystemClock.elapsedRealtimeNanos()
+                            // Session 시작은 Episode를 만들지 않는다. Tracking 안정화 뒤 사용자가 따로 시작한다.
+                            coordinator.start(bundle.sessionId, bundle.displayNumber, bundle.directory.absolutePath)
+                            activeEpisode = null
+                            collecting = true
+                            active = false
+                            repository.save(
+                                CaptureSession(
+                                    bundle.sessionId,
+                                    bundle.displayNumber,
+                                    RecordingState.INITIALIZING,
+                                    UploadState.LOCAL_ONLY,
+                                    recordingStartNs,
+                                    bundlePath = bundle.directory.absolutePath,
+                                    recordingStartEpochMs = System.currentTimeMillis(),
+                                ),
+                            )
+                        }.onFailure { error ->
+                            // ARCore가 카메라를 잡지 못했으므로 유휴 프리뷰를 되살린다.
+                            restoreIdlePreview()
+                            message = "$arCoreSessionStartFailed: ${error.message.orEmpty()}"
+                            if (error is UnavailableArcoreNotInstalledException) {
+                                context.openArCoreStore()
+                            }
+                        }
                     } catch (cancelled: CancellationException) {
                         throw cancelled
                     } catch (_: Exception) {
@@ -469,6 +493,10 @@ fun CaptureScreen() {
         collecting = false
         coordinator.release()
         trackingReady = false
+    }
+    // 백그라운드 전환으로 카메라를 놓고 돌아온 경우 TextureView는 살아 있지만 프레임이 끊긴 상태다.
+    LifecycleEventEffect(Lifecycle.Event.ON_START) {
+        if (destination == AppDestination.CaptureWorkspace && !collecting) restoreIdlePreview()
     }
 
     fun startUpload(sessionId: String) {
@@ -604,6 +632,9 @@ fun CaptureScreen() {
                 message = captureFinalizeFailed
             } finally {
                 finalizing = false
+                // 마감에 성공하면 업로드·상세 화면으로 이동해 TextureView가 사라지므로 되살릴 필요가 없다.
+                // 수집 화면에 그대로 남는 실패 경로에서만 유휴 프리뷰를 다시 연다.
+                if (destination == AppDestination.CaptureWorkspace) restoreIdlePreview()
             }
         }
     }
@@ -619,7 +650,8 @@ fun CaptureScreen() {
                                 width: Int,
                                 height: Int,
                             ) {
-                                surfaceTexture.setDefaultBufferSize(1920, 1080)
+                                surfaceTexture.setDefaultBufferSize(previewBufferSize.first, previewBufferSize.second)
+                                previewTexture = surfaceTexture
                                 previewSurface = Surface(surfaceTexture)
                                 when (val state = capturePreviewController.prepare()) {
                                     is CapturePreviewState.Failed -> {
@@ -640,6 +672,7 @@ fun CaptureScreen() {
                                 capturePreviewController.release()
                                 previewSurface?.release()
                                 previewSurface = null
+                                previewTexture = null
                                 previewReady = false
                                 return true
                             }
@@ -976,3 +1009,7 @@ internal fun UploadControls(
 
 // Tracking 판정 주기. 안정화(1초)와 유실(0.5초) 임계값보다 충분히 촘촘해야 마감 시점이 제때 발화한다.
 private const val TRACKING_TICK_MS = 100L
+
+// 수집 시작 전 프리뷰 버퍼 크기. 저장 영상과 화각을 맞추기 위해 ARCore 카메라 구성과 같은 4:3을 쓴다.
+// 수집이 시작되면 ARCore가 실제로 고른 해상도로 교체된다.
+private val DEFAULT_PREVIEW_SIZE = 640 to 480
