@@ -320,3 +320,57 @@ Sensor 방향 그대로 저장된다. 수집 상세 화면이 영상을 돌려�
 **측정 중 관측**: 정상 마감에서도 `SharedCamera.onCaptureSessionClosed` 크래시가 간헐적으로 났다.
 홈 버튼 중단에서만 나는 줄 알았으나 마감 경로에도 나타난다. S15P21A206-31의 종료 순서 수정이
 적용된 빌드에서는 재현되지 않았다. 두 변경을 함께 올린 빌드로 위 수치를 측정했다.
+
+---
+
+## 수집 종료 시 ARCore 종료 순서 (Phase 13) · 2026-09-15 · `SM-G973N`, Android 12
+
+`adb push` + `pm install`로 설치하고 설치 시각을 대조해 새 빌드임을 확인했다.
+
+### 재현 절차 (두 경로 모두)
+
+1. 수집 화면에서 Session START
+2. 홈 버튼으로 중단하거나, 수집 종료로 정상 마감한다
+3. `adb shell pidof com.ssafy.s15p21a206.tiger`로 프로세스 생존을 확인하고,
+   `adb logcat -d | grep 'FATAL EXCEPTION'`으로 크래시 여부를 본다
+
+### 수정 전
+
+홈 버튼 중단에서는 매번, 정상 마감에서는 간헐적으로 아래 스택으로 프로세스가 죽었다.
+
+```text
+FATAL EXCEPTION: TigerCamera
+java.lang.IllegalArgumentException
+  at com.google.ar.core.Session.throwExceptionFromArStatus(Session.java:15)
+  at com.google.ar.core.SharedCamera.nativeSharedCameraCaptureSessionClosed(Native Method)
+  at com.google.ar.core.SharedCamera.onCaptureSessionClosed(SharedCamera.java:1)
+```
+
+### 수정 후
+
+- 홈 버튼 중단 2회, 정상 마감 연속 4회 모두 PID가 그대로 유지되고 `FATAL EXCEPTION` 0건
+- 복귀 시 수집 화면이 `IDLE`로 정상 표시
+- 재실행 시 중단 Session이 `completed/`로 복구되고 `metadata.json`이 생성됨
+- 정상 마감과 업로드에 회귀 없음(`업로드 완료` 확인)
+- capture session 종료 대기가 한계(2초)에 걸린 경우 0건 — `onClosed`가 제때 도착한다
+
+### 참고
+
+이 결함은 프리뷰 작업과 무관하다. 프리뷰를 완전히 끈 빌드에서도 동일한 스택으로 재현되는 것을
+이분법으로 확인했다.
+
+### 함께 고친 기존 결함
+
+종료 순서만 고친 빌드로 검증하던 중 정상 마감 3회 중 1회 프로세스가 죽었다. 원인은 다른 결함이었다.
+
+```text
+FATAL EXCEPTION: TigerPreview
+java.lang.IllegalStateException: CameraDevice was already closed
+  at CameraPreviewController$prepare$1$onOpened$1.onConfigured(CameraPreviewController.kt:54)
+```
+
+유휴 프리뷰를 닫자마자 다시 열 때, 앞선 열기의 `onConfigured`가 이미 닫힌 `CameraDevice`에
+`setRepeatingRequest`를 부른다. `prepare()`의 가드가 열기 진행 중인 상태를 잡지 못했다.
+develop에 있던 기존 결함이므로 같은 브랜치에서 함께 고쳤다.
+
+두 수정을 함께 넣은 빌드로 위 수치를 측정했다. 한쪽만 고치면 수집을 끝낼 때 앱이 계속 죽는다.
