@@ -48,6 +48,9 @@ class AndroidCaptureRuntime(
     private var arSession: Session? = null
     private var poseThread: Thread? = null
 
+    /** capture session이 완전히 닫혔음을 알린다. ARCore Session을 닫기 전에 기다린다. */
+    @Volatile private var captureSessionClosedLatch: CountDownLatch? = null
+
     private val trackingState = MutableStateFlow(TrackingSample(false, 0L))
 
     /**
@@ -163,6 +166,7 @@ class AndroidCaptureRuntime(
         }
         val sharedCamera = session.sharedCamera
         val cameraId = session.cameraConfig.cameraId
+        val captureSessionClosed = CountDownLatch(1).also { captureSessionClosedLatch = it }
         val handler =
             Handler(
                 HandlerThread("TigerCamera")
@@ -219,6 +223,12 @@ class AndroidCaptureRuntime(
                                     override fun onConfigureFailed(failedSession: CameraCaptureSession) {
                                         failure = IllegalStateException("ARCore shared camera session configuration failed")
                                         ready.countDown()
+                                    }
+
+                                    override fun onClosed(closedSession: CameraCaptureSession) {
+                                        // ARCore가 이 콜백 안에서 native Session을 건드리므로,
+                                        // 여기까지 끝난 뒤에야 ARCore Session을 닫을 수 있다.
+                                        captureSessionClosed.countDown()
                                     }
                                 },
                                 handler,
@@ -320,15 +330,23 @@ class AndroidCaptureRuntime(
         poseCollectionRunning = false
         poseThread?.join(500)
         poseThread = null
+        // ARCore Session은 반드시 마지막에 닫는다. capture session이 닫힐 때 ARCore가
+        // onCaptureSessionClosed에서 native Session을 건드리는데, Session이 먼저 닫혀 있으면
+        // 콜백 스레드에서 잡히지 않는 예외가 나 프로세스가 죽는다.
         runCatching { arSession?.pause() }
-        arSession?.close()
-        arSession = null
-        captureSession?.close()
+        runCatching { captureSession?.close() }
         captureSession = null
-        cameraDevice?.close()
+        // close는 비동기다. onClosed가 끝난 것을 확인한 뒤 Session을 닫는다.
+        val closed = captureSessionClosedLatch?.await(CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS) ?: true
+        if (!closed) Log.w(TAG, "Capture session did not report closing in time")
+        captureSessionClosedLatch = null
+        runCatching { cameraDevice?.close() }
         cameraDevice = null
+        runCatching { arSession?.close() }
+        arSession = null
         mediaRecorder?.release()
         mediaRecorder = null
+        // 콜백이 모두 전달된 뒤에 핸들러 스레드를 정리한다.
         cameraThread?.quitSafely()
         cameraThread = null
         frameTimestamps = null
@@ -358,6 +376,9 @@ class AndroidCaptureRuntime(
 
     private companion object {
         const val TAG = "TigerCapture"
+
+        /** capture session 닫힘을 기다리는 한계. 넘기면 기다림을 포기하고 나머지 정리를 이어간다. */
+        const val CLOSE_TIMEOUT_SECONDS = 2L
     }
 }
 
