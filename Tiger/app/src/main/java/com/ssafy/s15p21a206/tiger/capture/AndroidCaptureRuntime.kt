@@ -474,8 +474,13 @@ class AndroidCaptureRuntime(
         /** ARCore frame 갱신이 실패했을 때 다음 시도까지 쉬는 시간. 실패가 이어져도 CPU를 태우지 않는다. */
         const val FRAME_RETRY_DELAY_MS = 20L
 
-        /** stopRepeating 뒤 진행 중인 프레임이 정리될 때까지 기다리는 시간. 30fps 기준 서너 프레임 분량이다. */
-        const val FRAME_DRAIN_DELAY_MS = 120L
+        /**
+         * stopRepeating 뒤 진행 중인 프레임이 정리될 때까지 기다리는 시간.
+         *
+         * 120 ms에서는 중단 경로의 차이가 3 frame으로 남았다. 중단은 `ON_STOP`에서 일어나 마감이
+         * 더 오래 걸린다. 220 ms에서 정상 마감과 중단 모두 1~2 frame으로 내려왔다.
+         */
+        const val FRAME_DRAIN_DELAY_MS = 220L
     }
 }
 
