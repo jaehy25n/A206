@@ -410,3 +410,48 @@ develop에 있던 기존 결함이므로 같은 브랜치에서 함께 고쳤다
 - **Tracking 게이트(SC-002·SC-003)**: 기기를 고정한 채 원격 조작해 ARCore가 시차를 얻지 못했고
   Tracking이 `INITIALIZING`을 벗어나지 않았다. 사람이 기기를 들고 움직이며 확인해야 한다.
 - 프리뷰와 저장 영상의 눈 대조. 방향이 같다는 것은 UV 측정으로만 확인했다.
+
+---
+
+## Tracking 게이트 실기기 검증 · 2026-09-15 · `SM-G973N`, Android 12
+
+기기를 들고 움직이며 수집하고, Episode 수행 중 렌즈를 가려 유실을 만들었다. Session `b0bacb36`.
+
+### 게이트 동작 (SC-002·SC-003)
+
+```text
+episode_id  task   object  outcome
+ef98ca48    테스트  ㅣ      COMPLETED
+fcc1235c    테스트  ㅣ      INVALID_TRACKING
+c17b6023    테스트  ㅣ      COMPLETED
+```
+
+유실로 Episode 하나가 자동 마감되고, 회복 뒤 다음 Episode를 시작해 정상 마감했다.
+`arcore_poses.csv`는 `TRACKING` 582행 / `PAUSED` 93행이며 유실 사유는 `INSUFFICIENT_LIGHT`다.
+
+### 데이터 품질
+
+| 항목 | 값 |
+|---|---|
+| CSV 행 수 대 MP4 frame 수 | 676 대 677 → 차이 1 (SC-009) |
+| `frame_number` 결번·역전 | 0건 (SC-005) |
+| 실효 FPS | 29.979 |
+| `metadata.json` | 640×480, intrinsic 7필드 (SC-006·SC-007) |
+
+### T047 · 유실 마감 시각의 편차
+
+`INVALID_TRACKING`의 `end_timestamp_ns`가 **첫 유실 pose + 0.5초와 67 ms 어긋난다.**
+
+```text
+첫 PAUSED pose     112458031800444
+2번째 PAUSED pose   112458065263944
+3번째 PAUSED pose   112458098734175   + 0.5초 = 112458598734175
+기록된 end                                    = 112458598734175   ← 정확히 일치
+```
+
+즉 첫 유실 pose가 아니라 **세 번째 pose** 기준으로 마감됐다. 화면의 tracking ticker가 100 ms 주기로
+`TrackingSample`을 읽는 사이 pose가 33 ms씩 두 프레임 더 진행한 값을 집어 간 것이다.
+편차의 상한은 한 tick(100 ms)이다.
+
+Phase 10 이전의 217 ms에서 67 ms로 줄었지만, `contracts/capture-state-machine.md`의
+`end = 첫 유실 + 0.5초`는 여전히 정확히 성립하지 않는다.
