@@ -9,3 +9,19 @@ val Pink80 = Color(0xFFEFB8C8)
 val Purple40 = Color(0xFF6650a4)
 val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
+
+/** 수집·작업 구간 시작을 알리는 강조색. 프리뷰 위 어두운 스크림에서도 읽히도록 밝게 잡았다. */
+val CaptureStart = Color(0xFF69F0AE)
+
+/** Session 종료처럼 되돌릴 수 없는 동작에 쓰는 붉은색. 같은 자리의 다른 버튼과 구분되어야 한다. */
+val CaptureDestructive = Color(0xFFFF5252)
+
+/**
+ * 프리뷰 위 오버레이의 배경. 뒤에 무엇이 오든 같은 밝기로 읽혀야 하므로 순검정이 아니라
+ * 중성 회색을 거의 불투명하게 깐다. 반투명 검정은 레터박스의 검은 띠 위에서 사라져
+ * 배지가 잘린 것처럼 보였다.
+ */
+val CaptureOverlayScrim = Color(0xF23A3A3C)
+
+/** 비활성 제어의 색. 의미색을 흐리기만 하면 여전히 그 색으로 읽히므로 색상을 빼고 중성으로 떨어뜨린다. */
+val CaptureControlDisabled = Color(0x61FFFFFF)
