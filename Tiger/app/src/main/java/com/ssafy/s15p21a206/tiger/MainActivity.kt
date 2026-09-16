@@ -33,6 +33,8 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -40,7 +42,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -66,6 +70,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
@@ -88,6 +93,7 @@ import com.ssafy.s15p21a206.tiger.capture.CapturePreviewState
 import com.ssafy.s15p21a206.tiger.capture.CaptureSessionCoordinator
 import com.ssafy.s15p21a206.tiger.capture.MonotonicClock
 import com.ssafy.s15p21a206.tiger.capture.PreviewRuntime
+import com.ssafy.s15p21a206.tiger.capture.RecordingResolutionStore
 import com.ssafy.s15p21a206.tiger.data.local.MIGRATION_2_3
 import com.ssafy.s15p21a206.tiger.data.local.MIGRATION_3_4
 import com.ssafy.s15p21a206.tiger.data.local.TigerDatabase
@@ -96,6 +102,8 @@ import com.ssafy.s15p21a206.tiger.episode.EpisodeMarker
 import com.ssafy.s15p21a206.tiger.episode.EpisodeState
 import com.ssafy.s15p21a206.tiger.episode.ExportState
 import com.ssafy.s15p21a206.tiger.episode.FinalizeResult
+import com.ssafy.s15p21a206.tiger.episode.RecordingInputValidator
+import com.ssafy.s15p21a206.tiger.episode.RecordingResolution
 import com.ssafy.s15p21a206.tiger.episode.RecordingState
 import com.ssafy.s15p21a206.tiger.episode.SafDocumentTreeGateway
 import com.ssafy.s15p21a206.tiger.episode.SessionBundle
@@ -110,6 +118,7 @@ import com.ssafy.s15p21a206.tiger.ui.capture.CaptureStopConfirmation
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceControlState
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceControls
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceExitControls
+import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceResolution
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceStatus
 import com.ssafy.s15p21a206.tiger.ui.session.SessionDetailPresentation
 import com.ssafy.s15p21a206.tiger.ui.session.SessionListScreen
@@ -215,11 +224,25 @@ fun CaptureScreen() {
     var active by remember { mutableStateOf(false) }
     var task by remember { mutableStateOf("") }
     var objectName by remember { mutableStateOf("") }
+    val resolutionStore = remember { RecordingResolutionStore(context.applicationContext) }
+
+    /**
+     * 유휴 프리뷰·수집 중 프리뷰·녹화가 함께 쓰는 해상도.
+     *
+     * 수집 전에는 사용자가 고른 값이고, 수집을 시작하면 ARCore가 실제로 고른 `textureSize`로
+     * 갱신된다. 후보 config가 없어 기본값으로 물러난 경우에도 세 경로가 같은 크기를 유지한다.
+     * 직전 선택은 여기가 아니라 [resolutionStore]가 들고 있으므로, 이 갱신이 다음 수집의
+     * 기본값을 바꾸지는 않는다.
+     */
+    var recordingResolution by remember { mutableStateOf(resolutionStore.load()) }
+
+    // 유휴 프리뷰 Camera2 session이 실제로 열려 있는 크기. Camera2는 session을 만들 때 stream
+    // 크기를 정하므로, 이 값이 recordingResolution과 어긋나면 session을 다시 열어야 반영된다.
+    var idlePreviewSize by remember { mutableStateOf(recordingResolution) }
     var message by remember { mutableStateOf("") }
     var previewSurface by remember { mutableStateOf<Surface?>(null) }
     // 수집 시작 시 ARCore가 고른 해상도로 버퍼를 다시 맞추려면 SurfaceTexture를 들고 있어야 한다.
     var previewTexture by remember { mutableStateOf<SurfaceTexture?>(null) }
-    var previewBufferSize by remember { mutableStateOf(DEFAULT_PREVIEW_SIZE) }
     val previewController =
         remember {
             CameraPreviewController(context.applicationContext) { _ ->
@@ -400,8 +423,12 @@ fun CaptureScreen() {
                             // ARCore가 고른 해상도로 버퍼를 맞춰 프리뷰 화각을 저장 영상과 일치시킨다.
                             // 이 람다는 Main dispatcher에서 실행되므로 Compose 상태를 직접 갱신해도 된다.
                             // 프리뷰용 Camera2 세션은 onPlay에서 이미 닫혔으므로 버퍼 크기를 바꿔도 안전하다.
-                            captureRuntime.start(displayNumber) { width, height ->
-                                previewBufferSize = width to height
+                            captureRuntime.start(displayNumber, recordingResolution) { width, height ->
+                                // ARCore가 실제로 고른 크기다. 후보 config가 없어 기본값으로 물러났으면
+                                // 고른 값과 다를 수 있으므로, 표시와 프리뷰를 여기에 맞춘다.
+                                val actual = RecordingResolution(width, height)
+                                recordingResolution = actual
+                                idlePreviewSize = actual
                                 previewTexture?.setDefaultBufferSize(width, height)
                                 previewSurface
                             }
@@ -540,6 +567,9 @@ fun CaptureScreen() {
                     showStopConfirmation = false
                     task = ""
                     objectName = ""
+                    recordingResolution = resolutionStore.load()
+                    // 새 TextureView가 이 크기로 버퍼를 잡는다. 직전 Session이 남긴 크기를 물려받지 않는다.
+                    idlePreviewSize = recordingResolution
                     message = ""
                     showCaptureMetadataDialog = true
                     destination = AppDestination.CaptureWorkspace
@@ -675,10 +705,10 @@ fun CaptureScreen() {
                                 width: Int,
                                 height: Int,
                             ) {
-                                surfaceTexture.setDefaultBufferSize(previewBufferSize.first, previewBufferSize.second)
+                                surfaceTexture.setDefaultBufferSize(idlePreviewSize.width, idlePreviewSize.height)
                                 previewTexture = surfaceTexture
                                 previewSurface = Surface(surfaceTexture)
-                                applyIdlePreviewTransform(this@apply, width, height, previewBufferSize.first, previewBufferSize.second)
+                                applyIdlePreviewTransform(this@apply, width, height, idlePreviewSize.width, idlePreviewSize.height)
                                 when (val state = capturePreviewController.prepare()) {
                                     is CapturePreviewState.Failed -> {
                                         previewFailed = true
@@ -692,7 +722,7 @@ fun CaptureScreen() {
                                 surfaceTexture: SurfaceTexture,
                                 width: Int,
                                 height: Int,
-                            ) = applyIdlePreviewTransform(this@apply, width, height, previewBufferSize.first, previewBufferSize.second)
+                            ) = applyIdlePreviewTransform(this@apply, width, height, idlePreviewSize.width, idlePreviewSize.height)
 
                             override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean {
                                 capturePreviewController.release()
@@ -715,7 +745,7 @@ fun CaptureScreen() {
                 if (collecting) {
                     view.setTransform(Matrix())
                 } else {
-                    applyIdlePreviewTransform(view, view.width, view.height, previewBufferSize.first, previewBufferSize.second)
+                    applyIdlePreviewTransform(view, view.width, view.height, idlePreviewSize.width, idlePreviewSize.height)
                 }
             },
             // 프리뷰는 가로 16:9다. 화면이 세로면 위아래에 검은 영역이 남고, 가로면 꽉 찬다.
@@ -727,10 +757,14 @@ fun CaptureScreen() {
             onExit = ::requestCaptureExit,
             modifier = Modifier.align(Alignment.TopEnd).padding(top = 20.dp, end = 20.dp),
         )
-        CaptureWorkspaceStatus(
-            state = controlPolicy().state,
+        Column(
             modifier = Modifier.align(Alignment.TopStart).padding(top = 20.dp, start = 20.dp),
-        )
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            CaptureWorkspaceStatus(state = controlPolicy().state)
+            // 어느 해상도로 찍는지 촬영 직전에 보여 준다. Session마다 달라질 수 있다.
+            CaptureWorkspaceResolution(resolution = recordingResolution)
+        }
         SnackbarHost(snackbarHostState, Modifier.align(Alignment.TopCenter).padding(top = 80.dp))
         if (!showCaptureMetadataDialog) {
             CaptureWorkspaceControls(
@@ -777,6 +811,18 @@ fun CaptureScreen() {
             showCaptureMetadataDialog = false
             destination = AppDestination.SessionList
         }
+        // 확정한 선택만 기억한다. 취소하고 나간 선택은 다음 수집의 기본값이 되지 않는다.
+        val confirmCaptureMetadata = {
+            resolutionStore.save(recordingResolution)
+            showCaptureMetadataDialog = false
+            // 유휴 프리뷰도 고른 해상도로 다시 연다. Camera2는 session을 만들 때 stream 크기를
+            // 정하므로, 버퍼 크기만 바꾸면 이미 열린 session에는 반영되지 않는다.
+            if (idlePreviewSize != recordingResolution) {
+                idlePreviewSize = recordingResolution
+                previewTexture?.setDefaultBufferSize(recordingResolution.width, recordingResolution.height)
+                restoreIdlePreview()
+            }
+        }
         // 키보드 입력이 필요한 다이얼로그는 Material 가이드라인상 전체화면으로 띄우고 확인·취소를
         // 상단 앱바에 둔다. 가운데 띄우는 다이얼로그는 가로 화면에서 키보드가 올라오면 아래쪽 버튼이
         // 가려져 닿을 방법이 없다. 앱바는 키보드와 겹치지 않으므로 방향과 무관하게 항상 누를 수 있다.
@@ -799,7 +845,7 @@ fun CaptureScreen() {
                         actions = {
                             TextButton(
                                 enabled = captureMetadataReady,
-                                onClick = { showCaptureMetadataDialog = false },
+                                onClick = confirmCaptureMetadata,
                             ) { Text(stringResource(R.string.capture_metadata_confirm)) }
                         },
                     )
@@ -832,10 +878,14 @@ fun CaptureScreen() {
                                     onDone = {
                                         if (captureMetadataReady) {
                                             focusManager.clearFocus()
-                                            showCaptureMetadataDialog = false
+                                            confirmCaptureMetadata()
                                         }
                                     },
                                 ),
+                        )
+                        RecordingResolutionPicker(
+                            selected = recordingResolution,
+                            onSelect = { recordingResolution = it },
                         )
                     }
                 }
@@ -850,6 +900,46 @@ fun CaptureScreen() {
             },
             onDismiss = { showStopConfirmation = false },
         )
+    }
+}
+
+/**
+ * 이번 Session으로 녹화할 해상도를 고른다.
+ *
+ * Session마다 다르게 갈 수 있으므로 Task·Object와 함께 매번 고른다. 후보는 실기기에서 확인한
+ * ARCore Camera config의 `textureSize`이며, 순서는 [RecordingInputValidator.supportedResolutions]를 따른다.
+ */
+@Suppress("FunctionName")
+@Composable
+private fun RecordingResolutionPicker(
+    selected: RecordingResolution,
+    onSelect: (RecordingResolution) -> Unit,
+) {
+    Column(modifier = Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = stringResource(R.string.capture_metadata_resolution),
+            style = MaterialTheme.typography.labelLarge,
+        )
+        RecordingInputValidator.supportedResolutions.forEach { option ->
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .selectable(
+                            selected = option == selected,
+                            role = Role.RadioButton,
+                            onClick = { onSelect(option) },
+                        ).padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // 선택은 Row가 받는다. RadioButton에 onClick을 주면 터치 영역이 둘로 갈린다.
+                RadioButton(selected = option == selected, onClick = null)
+                Text(
+                    text = stringResource(R.string.capture_resolution_option, option.width, option.height),
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+        }
     }
 }
 
@@ -1141,14 +1231,5 @@ internal fun UploadControls(
 // Tracking 판정 주기. 안정화(1초)와 유실(0.5초) 임계값보다 충분히 촘촘해야 마감 시점이 제때 발화한다.
 private const val TRACKING_TICK_MS = 100L
 
-// 수집 시작 전 프리뷰 버퍼 크기. 수집이 시작되면 ARCore Camera 텍스처 크기로 교체된다.
-
-/**
- * 수집 시작 전 유휴 프리뷰의 버퍼 크기. 수집이 시작되면 ARCore가 고른 크기로 다시 맞춘다.
- *
- * 녹화와 같은 16:9라 유휴 상태와 수집 중의 화각·비율이 이어진다.
- */
-private val DEFAULT_PREVIEW_SIZE = 1920 to 1080
-
-/** 프리뷰와 영상의 가로세로 비. 화면 비율과 다르면 레터박스로 채운다. */
+/** 프리뷰와 영상의 가로세로 비. 두 녹화 해상도 모두 16:9라 선택과 무관하게 같다. */
 private const val PREVIEW_ASPECT_RATIO = 16f / 9f
