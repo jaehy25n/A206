@@ -30,7 +30,7 @@ Android가 프리뷰를 자동으로 세워 주기 때문에 이 사실이 드�
 ## 2. `main_rgb.mp4`
 
 `MediaRecorder.setOrientationHint(90)`으로 회전 정보를 남긴다. **픽셀은 다시 인코딩하지 않는다.**
-저장된 프레임 자체는 여전히 가로(640×480)이고, 컨테이너의 track 행렬에 회전이 기록된다.
+저장된 프레임 자체는 여전히 가로(1920×1080)이고, 컨테이너의 track 행렬에 회전이 기록된다.
 
 ```text
 tkhd matrix:  0,  65536, 0
@@ -42,12 +42,12 @@ tkhd matrix:  0,  65536, 0
 
 | 도구 | 동작 | 디코딩 결과 |
 |---|---|---|
-| `ffmpeg` / `ffprobe` | 회전 행렬 반영 | **480×640** (세움) |
-| Android·Windows 기본 플레이어 | 반영 | 480×640 (세움) |
-| OpenCV `cv2.VideoCapture` | **무시** | 640×480 (누운 원본) |
+| `ffmpeg` / `ffprobe` | 회전 행렬 반영 | **1080×1920** (세움) |
+| Android·Windows 기본 플레이어 | 반영 | 1080×1920 (세움) |
+| OpenCV `cv2.VideoCapture` | **무시** | 1920×1080 (누운 원본) |
 | PyAV | 기본 무시, 옵션으로 반영 | 설정에 따름 |
 
-`metadata.json`의 Intrinsic은 **회전을 반영한 480×640 기준**이다. 회전을 무시하는 도구를 쓴다면
+`metadata.json`의 Intrinsic은 **회전을 반영한 1080×1920 기준**이다. 회전을 무시하는 도구를 쓴다면
 §5의 확인 절차를 반드시 거칠 것.
 
 ---
@@ -59,17 +59,17 @@ tkhd matrix:  0,  65536, 0
 ```json
 "camera": {
   "camera_id": "0",
-  "image_width": 480,
-  "image_height": 640,
-  "fx": 497.2151,
-  "fy": 497.29745,
-  "cx": 239.82605,
-  "cy": 324.0054,
+  "image_width": 1080,
+  "image_height": 1920,
+  "fx": 1491.6453,
+  "fy": 1491.8923,
+  "cx": 538.47815,
+  "cy": 973.0162,
   "video_rotation_degrees": 90
 }
 ```
 
-회전 전 값과의 대응은 다음과 같다. `W`, `H`는 회전 전 가로·세로(640, 480)다.
+회전 전 값과의 대응은 다음과 같다. `W`, `H`는 회전 전 가로·세로(1920, 1080)다.
 
 | 필드 | 회전 후 |
 |---|---|
@@ -122,7 +122,7 @@ def project(point_world, R_wc, t_wc):
 
 ### 방법 B. 영상을 되돌린다
 
-회전을 무시하고 640×480 원본으로 디코딩한 뒤, `video_rotation_degrees`를 역으로 적용해
+회전을 무시하고 1920×1080 원본으로 디코딩한 뒤, `video_rotation_degrees`를 역으로 적용해
 Intrinsic을 회전 전 값으로 되돌린다(§3 표의 역변환). 그러면 Pose와 Intrinsic이 모두 회전 전
 기준이 되어 추가 변환이 필요 없다. 기존 파이프라인을 바꾸고 싶지 않다면 이쪽이 간단하다.
 
@@ -187,6 +187,8 @@ Pose를 앱에서 미리 돌려 내보내는 선택지도 있다. 그러면 수�
 
 ## 부록: 실기기 확인값
 
+아래는 해상도를 올리기 전(640×480) 기록이다. 회전 규약 자체는 그대로이며 숫자만 달라졌다.
+
 `SM-G973N`, Android 12, 2026-09-15 수집분 `72e463a1`.
 
 ```text
@@ -199,3 +201,18 @@ metadata.camera   image_width 480, image_height 640,
 
 같은 번들의 `main_frame_timestamps.csv` 721행 대 MP4 722 frame(차이 1), `frame_number` 결번 0건으로
 회전이 frame 대응에 영향을 주지 않음을 확인했다.
+
+### 1920×1080 전환 후
+
+`SM-G973N`, Android 12, 2026-09-16 수집분. 6초 수집.
+
+```text
+track 해상도      1920 x 1080   (회전 전 픽셀. 회전을 반영하면 1080 x 1920)
+metadata.camera   image_width 1080, image_height 1920,
+                  fx 1491.6453, fy 1491.8923, cx 538.47815, cy 973.0162,
+                  video_rotation_degrees 90
+frame 수          179 frame / 5.991초 = 29.9 FPS
+```
+
+`fx`가 이전 값의 정확히 3배다. 가로 화각은 같고 세로가 잘렸다. 4:3 CPU 이미지 대신
+16:9 GPU 텍스처 스트림을 녹화 기준으로 삼았기 때문이다.

@@ -105,8 +105,14 @@ Session이 진행되는 동안 화면 프리뷰는 **ARCore가 채우는 Camera 
 프리뷰 Surface에 그려서** 채운다. 카메라 출력 stream은 ARCore의 것과 MediaRecorder surface뿐이며,
 프리뷰 때문에 늘어나지 않는다. 대상 기기가 프리뷰를 포함한 4 stream 조합을 거부하기 때문이다.
 
-프리뷰의 화각은 저장되는 영상과 같다. 프리뷰 버퍼 크기와 `setDisplayGeometry`를 모두
-`cameraConfig.imageSize`로 잡기 때문이다.
+프리뷰의 화각은 저장되는 영상과 같다. 프리뷰 버퍼 크기와 `setDisplayGeometry`, 그리고
+MediaRecorder 해상도를 모두 `cameraConfig.textureSize`로 잡기 때문이다. `metadata.json`의
+Intrinsic도 같은 stream 기준인 `textureIntrinsics`에서 읽는다.
+
+ARCore가 추적에 쓰는 CPU 이미지(`cameraConfig.imageSize`)는 640×480으로 남는다. 화면에도
+파일에도 나가지 않으며 추적 품질만 좌우한다. `imageSize`를 올리면 CPU 이미지 stream과 녹화
+stream이 함께 커지면서 대상 기기가 stream 조합을 거부한다(`Error configuring streams`).
+실기기에서 1280×720과 1920×1080 모두, textureSize를 낮춰도 실패했다.
 
 이 구성은 상태와 전이를 바꾸지 않는다. 프리뷰 Surface를 얻지 못한 Session(`null`)도 정상 Session이며,
 그리기 실패는 기록되되 pose 수집을 멈추지 않는다. 프레임 타임스탬프는 `SENSOR_TIMESTAMP` 기준

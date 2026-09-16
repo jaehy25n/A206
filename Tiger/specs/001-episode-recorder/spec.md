@@ -170,7 +170,8 @@
 
 ## 가정 및 범위
 
-- 지원 대상은 Galaxy S10이며 main-only baseline은 30 FPS로 검증한다. 해상도는 기기 호환성을 위해 720p에서 먼저 검증한 뒤 1080p를 적용할 수 있다.
+- 지원 대상은 Galaxy S10이며 main-only baseline은 30 FPS로 검증한다. 30 FPS는 기기 상한이기도 하다. 후면 Camera가 알리는 AE target FPS 범위의 최댓값이 30이며, 60 이상은 고속 촬영 전용 stream으로만 열 수 있어 ARCore 공유 카메라와 양립하지 않는다.
+- 녹화 해상도는 1920×1080이며 ARCore GPU 텍스처 stream 기준이다. ARCore가 추적에 쓰는 CPU 이미지 stream은 640×480으로 남는다. 둘을 함께 키우면 대상 기기가 stream 조합을 거부한다. 자세한 근거는 `specs/003-session-episode-tracking-gate/contracts/capture-state-machine.md`에 있다.
 - ARCore pose의 canonical join key는 Android camera timestamp이며, 다른 ARCore frame timestamp는 선택적 진단 정보일 뿐이다.
 - 서버의 ORB-SLAM3 처리, camera-to-end-effector 외부 보정, dataset 학습 선정 및 server-side video/frame correspondence 최종 검증은 범위 밖이다.
 - 서버는 HTTP Session upload endpoint와 Session idempotency receipt를 제공한다. 모바일 앱은 서버 내부 저장·후처리 상태를 조회하지 않는다.
