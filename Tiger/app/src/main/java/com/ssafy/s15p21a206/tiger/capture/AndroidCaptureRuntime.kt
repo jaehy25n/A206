@@ -462,13 +462,14 @@ class AndroidCaptureRuntime(
         const val TAG = "TigerCapture"
 
         /**
-         * ARCore에 알리는 표시 회전.
+         * ARCore에 알리는 표시 회전. Sensor 방향과 같은 값을 주면 (Sensor 방향 - 표시 회전)이 0이
+         * 되어 이미지를 돌리지 않는다. 센서가 내보내는 가로 프레임이 그대로 그려져 녹화본과 방향이
+         * 같고, 표시 기하의 비율도 텍스처와 같으므로 ARCore가 잘라내지 않는다.
          *
-         * 실기기에서 `ROTATION_90`을 주면 프리뷰가 반시계 방향 90도로 누웠다. `ROTATION_0`을 주면
-         * ARCore가 (Sensor 방향 - 표시 회전)만큼, 즉 90도를 돌려 녹화본과 같은 방향으로 그린다.
-         * 수집 화면을 가로로 고정해 두므로 이 값은 Session 중에 바뀌지 않는다.
+         * 돌리게 하면 세로 모양이 된 이미지를 가로 표시 기하에 맞추느라 크게 잘라내고 확대해,
+         * 비율이 어긋나고 화질이 떨어진다. 수집 화면을 가로로 고정해 두므로 값이 바뀌지 않는다.
          */
-        val SENSOR_DISPLAY_ROTATION = Surface.ROTATION_0
+        val SENSOR_DISPLAY_ROTATION = Surface.ROTATION_90
 
         /** capture session 닫힘을 기다리는 한계. 넘기면 기다림을 포기하고 나머지 정리를 이어간다. */
         const val CLOSE_TIMEOUT_SECONDS = 2L

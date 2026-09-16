@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.graphics.Matrix
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
@@ -706,6 +707,15 @@ fun CaptureScreen() {
                                 if (!previewFailed) previewReady = true
                             }
                         }
+                }
+            },
+            // 변환은 유휴 프리뷰에만 건다. 수집이 시작되면 ARCore가 같은 Surface에 표시 기하를
+            // 반영해 직접 그리므로, TextureView 변환이 남아 있으면 그 위에 한 번 더 돌아간다.
+            update = { view ->
+                if (collecting) {
+                    view.setTransform(Matrix())
+                } else {
+                    applyIdlePreviewTransform(view, view.width, view.height, previewBufferSize.first, previewBufferSize.second)
                 }
             },
             // 프리뷰는 가로 16:9다. 화면이 세로면 위아래에 검은 영역이 남고, 가로면 꽉 찬다.
