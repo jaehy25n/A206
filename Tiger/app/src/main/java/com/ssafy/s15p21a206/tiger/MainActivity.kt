@@ -5,7 +5,11 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
+import android.content.pm.ActivityInfo
+import android.graphics.Matrix
 import android.graphics.SurfaceTexture
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
@@ -18,21 +22,31 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -45,14 +59,20 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -61,6 +81,7 @@ import com.google.ar.core.ArCoreApk
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException
 import com.ssafy.s15p21a206.tiger.capture.AndroidCaptureRuntime
 import com.ssafy.s15p21a206.tiger.capture.CameraPreviewController
+import com.ssafy.s15p21a206.tiger.capture.CameraPreviewTransform
 import com.ssafy.s15p21a206.tiger.capture.CapturePreviewController
 import com.ssafy.s15p21a206.tiger.capture.CapturePreviewPreflight
 import com.ssafy.s15p21a206.tiger.capture.CapturePreviewState
@@ -137,6 +158,7 @@ private sealed interface AppDestination {
     ) : AppDestination
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Suppress("FunctionName")
 @Composable
 fun CaptureScreen() {
@@ -639,7 +661,10 @@ fun CaptureScreen() {
         }
     }
 
-    Box(Modifier.fillMaxSize()) {
+    // 수집 화면은 가로로 고정한다. Camera 센서가 90도 눕혀 장착돼 있어 세로 화면에서는
+    // 프리뷰가 옆으로 누운 채 비율까지 어긋나 보인다. 저장되는 영상도 가로다.
+    LockLandscapeWhileVisible(fixed = true)
+    Box(Modifier.fillMaxSize().background(Color.Black)) {
         AndroidView(
             factory = { viewContext ->
                 TextureView(viewContext).apply {
@@ -653,6 +678,7 @@ fun CaptureScreen() {
                                 surfaceTexture.setDefaultBufferSize(previewBufferSize.first, previewBufferSize.second)
                                 previewTexture = surfaceTexture
                                 previewSurface = Surface(surfaceTexture)
+                                applyIdlePreviewTransform(this@apply, width, height, previewBufferSize.first, previewBufferSize.second)
                                 when (val state = capturePreviewController.prepare()) {
                                     is CapturePreviewState.Failed -> {
                                         previewFailed = true
@@ -666,7 +692,7 @@ fun CaptureScreen() {
                                 surfaceTexture: SurfaceTexture,
                                 width: Int,
                                 height: Int,
-                            ) = Unit
+                            ) = applyIdlePreviewTransform(this@apply, width, height, previewBufferSize.first, previewBufferSize.second)
 
                             override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean {
                                 capturePreviewController.release()
@@ -683,7 +709,18 @@ fun CaptureScreen() {
                         }
                 }
             },
-            modifier = Modifier.fillMaxSize(),
+            // 변환은 유휴 프리뷰에만 건다. 수집이 시작되면 ARCore가 같은 Surface에 표시 기하를
+            // 반영해 직접 그리므로, TextureView 변환이 남아 있으면 그 위에 한 번 더 돌아간다.
+            update = { view ->
+                if (collecting) {
+                    view.setTransform(Matrix())
+                } else {
+                    applyIdlePreviewTransform(view, view.width, view.height, previewBufferSize.first, previewBufferSize.second)
+                }
+            },
+            // 프리뷰는 가로 16:9다. 화면이 세로면 위아래에 검은 영역이 남고, 가로면 꽉 찬다.
+            // 늘이거나 잘라내지 않아야 저장되는 영상과 화각이 같다.
+            modifier = Modifier.align(Alignment.Center).aspectRatio(PREVIEW_ASPECT_RATIO),
         )
         CaptureWorkspaceExitControls(
             policy = controlPolicy(),
@@ -733,41 +770,77 @@ fun CaptureScreen() {
         }
     }
     if (showCaptureMetadataDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                showCaptureMetadataDialog = false
-                destination = AppDestination.SessionList
-            },
-            title = { Text(stringResource(R.string.capture_metadata_title)) },
-            text = {
-                Column {
-                    OutlinedTextField(
-                        value = task,
-                        onValueChange = { task = it },
-                        label = { Text(stringResource(R.string.capture_metadata_task)) },
+        val focusManager = LocalFocusManager.current
+        val objectFieldFocus = remember { FocusRequester() }
+        val captureMetadataReady = task.isNotBlank() && objectName.isNotBlank()
+        val cancelCaptureMetadata = {
+            showCaptureMetadataDialog = false
+            destination = AppDestination.SessionList
+        }
+        // 키보드 입력이 필요한 다이얼로그는 Material 가이드라인상 전체화면으로 띄우고 확인·취소를
+        // 상단 앱바에 둔다. 가운데 띄우는 다이얼로그는 가로 화면에서 키보드가 올라오면 아래쪽 버튼이
+        // 가려져 닿을 방법이 없다. 앱바는 키보드와 겹치지 않으므로 방향과 무관하게 항상 누를 수 있다.
+        Dialog(
+            onDismissRequest = cancelCaptureMetadata,
+            properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+        ) {
+            Surface(modifier = Modifier.fillMaxSize()) {
+                Column(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
+                    TopAppBar(
+                        title = { Text(stringResource(R.string.capture_metadata_title)) },
+                        navigationIcon = {
+                            IconButton(onClick = cancelCaptureMetadata) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_navigation_back),
+                                    contentDescription = stringResource(R.string.action_cancel),
+                                )
+                            }
+                        },
+                        actions = {
+                            TextButton(
+                                enabled = captureMetadataReady,
+                                onClick = { showCaptureMetadataDialog = false },
+                            ) { Text(stringResource(R.string.capture_metadata_confirm)) }
+                        },
                     )
-                    OutlinedTextField(
-                        value = objectName,
-                        onValueChange = { objectName = it },
-                        label = { Text(stringResource(R.string.capture_metadata_object)) },
-                    )
+                    Column(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                                .imePadding()
+                                .padding(horizontal = 24.dp, vertical = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        OutlinedTextField(
+                            value = task,
+                            onValueChange = { task = it },
+                            label = { Text(stringResource(R.string.capture_metadata_task)) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                            keyboardActions = KeyboardActions(onNext = { objectFieldFocus.requestFocus() }),
+                        )
+                        OutlinedTextField(
+                            value = objectName,
+                            onValueChange = { objectName = it },
+                            label = { Text(stringResource(R.string.capture_metadata_object)) },
+                            modifier = Modifier.focusRequester(objectFieldFocus),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions =
+                                KeyboardActions(
+                                    onDone = {
+                                        if (captureMetadataReady) {
+                                            focusManager.clearFocus()
+                                            showCaptureMetadataDialog = false
+                                        }
+                                    },
+                                ),
+                        )
+                    }
                 }
-            },
-            confirmButton = {
-                Button(
-                    enabled = task.isNotBlank() && objectName.isNotBlank(),
-                    onClick = { showCaptureMetadataDialog = false },
-                ) { Text(stringResource(R.string.capture_metadata_confirm)) }
-            },
-            dismissButton = {
-                Button(
-                    onClick = {
-                        showCaptureMetadataDialog = false
-                        destination = AppDestination.SessionList
-                    },
-                ) { Text(stringResource(R.string.action_cancel)) }
-            },
-        )
+            }
+        }
     }
     if (showStopConfirmation) {
         CaptureStopConfirmation(
@@ -880,6 +953,7 @@ private fun FullScreenVideoScreen(
     onBack: () -> Unit,
 ) {
     val videoFile = bundlePath?.let { File(it, SessionBundle.MAIN_VIDEO_FILE) }
+    LockLandscapeWhileVisible()
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         if (videoFile?.isFile == true && videoFile.length() > 0L) {
             VideoPlayer(videoFile, Modifier.fillMaxSize())
@@ -900,6 +974,29 @@ private fun FullScreenVideoScreen(
                 tint = Color.White,
             )
         }
+    }
+}
+
+/**
+ * 화면이 보이는 동안 가로로 고정하고, 벗어나면 원래 설정으로 되돌린다.
+ *
+ * @param fixed 한쪽 가로로만 고정할지 여부. 수집 화면은 `true`여야 한다. Camera 파이프라인이
+ *   가로 기준이고 ARCore에 알리는 표시 회전도 고정값이라, 수집 중에 방향이 바뀌면 프리뷰가
+ *   돌아간다. 재생 화면은 어느 쪽 가로든 상관없으므로 `false`로 둔다.
+ */
+@Composable
+@Suppress("FunctionName")
+private fun LockLandscapeWhileVisible(fixed: Boolean = false) {
+    val activity = LocalContext.current.findActivity() ?: return
+    DisposableEffect(activity, fixed) {
+        val previous = activity.requestedOrientation
+        activity.requestedOrientation =
+            if (fixed) {
+                ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            } else {
+                ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            }
+        onDispose { activity.requestedOrientation = previous }
     }
 }
 
@@ -939,6 +1036,40 @@ private fun NavigationHeader(
         }
         Text(title)
     }
+}
+
+/**
+ * 유휴 프리뷰의 회전을 맞춘다.
+ *
+ * Camera2는 SurfaceTexture에 센서 방향 그대로 프레임을 넣고 TextureView는 회전을 반영하지 않는다.
+ * 수집 중 프리뷰는 ARCore가 처리하지만 이 경로는 앱이 직접 걸어야 한다.
+ */
+private fun applyIdlePreviewTransform(
+    view: TextureView,
+    viewWidth: Int,
+    viewHeight: Int,
+    bufferWidth: Int,
+    bufferHeight: Int,
+) {
+    val activity = view.context.findActivity() ?: return
+    val manager = view.context.getSystemService(CameraManager::class.java) ?: return
+    val rotation =
+        runCatching {
+            val cameraId =
+                manager.cameraIdList.first {
+                    manager.getCameraCharacteristics(it).get(CameraCharacteristics.LENS_FACING) ==
+                        CameraCharacteristics.LENS_FACING_BACK
+                }
+            val sensorOrientation =
+                manager.getCameraCharacteristics(cameraId).get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 0
+
+            @Suppress("DEPRECATION")
+            val displayRotation = activity.windowManager.defaultDisplay.rotation
+            CameraPreviewTransform.rotationDegrees(sensorOrientation, displayRotation)
+        }.getOrNull() ?: return
+    view.setTransform(
+        CameraPreviewTransform.matrix(viewWidth, viewHeight, bufferWidth, bufferHeight, rotation),
+    )
 }
 
 private fun Context.findActivity(): Activity? =
@@ -1012,4 +1143,12 @@ private const val TRACKING_TICK_MS = 100L
 
 // 수집 시작 전 프리뷰 버퍼 크기. 수집이 시작되면 ARCore Camera 텍스처 크기로 교체된다.
 
-private val DEFAULT_PREVIEW_SIZE = 640 to 480
+/**
+ * 수집 시작 전 유휴 프리뷰의 버퍼 크기. 수집이 시작되면 ARCore가 고른 크기로 다시 맞춘다.
+ *
+ * 녹화와 같은 16:9라 유휴 상태와 수집 중의 화각·비율이 이어진다.
+ */
+private val DEFAULT_PREVIEW_SIZE = 1920 to 1080
+
+/** 프리뷰와 영상의 가로세로 비. 화면 비율과 다르면 레터박스로 채운다. */
+private const val PREVIEW_ASPECT_RATIO = 16f / 9f
