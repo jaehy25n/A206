@@ -65,9 +65,15 @@ data class CaptureLogEntity(
 
 @Dao
 interface CaptureSessionDao {
-    @Query("SELECT * FROM sessions WHERE recordingState = 'COMPLETED' ORDER BY recordingStartNs DESC")
+    /**
+     * 목록 정렬은 절대 시각인 [CaptureSessionEntity.recordingStartEpochMs]를 기준으로 한다.
+     * `recordingStartNs`는 부팅 이후 경과 시간이라 재부팅하면 0으로 돌아가므로,
+     * 재부팅 경계를 걸친 Session끼리 순서가 뒤섞인다. 화면에 표시하는 수집 시각과 같은 값이어야 한다.
+     */
+    @Query("SELECT * FROM sessions WHERE recordingState = 'COMPLETED' ORDER BY recordingStartEpochMs DESC")
     fun observeCompleted(): Flow<List<CaptureSessionEntity>>
 
+    /** 정렬 기준은 [observeCompleted]와 같다. */
     @Query(
         """
         SELECT sessions.sessionId, sessions.displayNumber, sessions.uploadState,
@@ -79,7 +85,7 @@ interface CaptureSessionDao {
         LEFT JOIN episode_markers ON episode_markers.sessionId = sessions.sessionId
         WHERE sessions.recordingState = 'COMPLETED'
         GROUP BY sessions.sessionId
-        ORDER BY sessions.recordingStartNs DESC
+        ORDER BY sessions.recordingStartEpochMs DESC
         """,
     )
     fun observeCompletedSummaries(): Flow<List<SessionSummaryEntity>>
