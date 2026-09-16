@@ -24,7 +24,8 @@ Session 번들의 `metadata.json`이 수신 측에 제공하는 형식. 이번 �
     "focal_length_mm": 4.32,
     "sensor_width_mm": 5.645,
     "sensor_height_mm": 4.234,
-    "distortion_coefficients": [0.1234, -0.2345, 0.0012, 0.0009, 0.0456]
+    "distortion_coefficients": [0.1234, -0.2345, 0.0012, 0.0009, 0.0456],
+    "video_rotation_degrees": 90
   },
   "files": [
     { "path": "accelerometer.csv", "sizeBytes": 184320, "sha256": "…" },

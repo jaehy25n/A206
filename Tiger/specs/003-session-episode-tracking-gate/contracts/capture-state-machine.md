@@ -105,9 +105,10 @@ Session이 진행되는 동안 화면 프리뷰는 **ARCore가 채우는 Camera 
 프리뷰 Surface에 그려서** 채운다. 카메라 출력 stream은 ARCore의 것과 MediaRecorder surface뿐이며,
 프리뷰 때문에 늘어나지 않는다. 대상 기기가 프리뷰를 포함한 4 stream 조합을 거부하기 때문이다.
 
-프리뷰의 화각은 저장되는 영상과 같다. 프리뷰 버퍼 크기와 `setDisplayGeometry`, 그리고
-MediaRecorder 해상도를 모두 `cameraConfig.textureSize`로 잡기 때문이다. `metadata.json`의
-Intrinsic도 같은 stream 기준인 `textureIntrinsics`에서 읽는다.
+프리뷰 버퍼 크기와 `setDisplayGeometry`, MediaRecorder 해상도를 모두 `cameraConfig.textureSize`로
+잡는다. `metadata.json`의 Intrinsic도 같은 stream 기준인 `textureIntrinsics`에서 읽는다.
+세 값이 같은 크기·비율이므로 프리뷰의 화각은 저장되는 영상과 같다. 화각이 갈리는 것은 비율이
+다를 때이며, 종전에는 프리뷰가 16:9 텍스처, 녹화가 4:3 CPU 이미지 기준이라 어긋나 있었다.
 
 ARCore가 추적에 쓰는 CPU 이미지(`cameraConfig.imageSize`)는 640×480으로 남는다. 화면에도
 파일에도 나가지 않으며 추적 품질만 좌우한다. `imageSize`를 올리면 CPU 이미지 stream과 녹화
