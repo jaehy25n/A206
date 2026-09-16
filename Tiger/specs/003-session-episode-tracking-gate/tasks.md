@@ -510,7 +510,11 @@ Phase 11의 구제 경로가 있어 데이터는 다음 실행에서 복구되�
 
 ---
 
-## Phase 14: 영상 회전과 좌표계 정합
+## Phase 14: 영상 회전과 좌표계 정합 (Phase 15로 철회됨)
+
+> **이 Phase의 결과는 더 이상 유효하지 않다.** 가로 촬영으로 정리하면서 회전을 되돌렸다.
+> 아래 기록은 그 시기의 이력으로만 읽는다. 현재 계약은 Phase 15와
+> [session-metadata.md](contracts/session-metadata.md)에 있다.
 
 Camera 센서가 90도 눕혀 장착돼 있어 `main_rgb.mp4`가 90도 돌아간 채 저장됐다. 수집 화면에서는
 Android가 프리뷰를 자동으로 세워 주기 때문에 드러나지 않았고, Phase 12에서 프리뷰를 저장본 기준으로
@@ -519,8 +523,8 @@ Android가 프리뷰를 자동으로 세워 주기 때문에 드러나지 않았
 - [X] T065 `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/AndroidCaptureRuntime.kt`가 `MediaRecorder.setOrientationHint(90)`로 회전 정보를 남기고, 수집 중 프리뷰도 같은 방향으로 세워 그리게 한다 per FR-036
 - [X] T066 `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/EpisodeModels.kt`의 `CameraMetadata`에 `rotatedClockwise()`와 `video_rotation_degrees`를 추가해, Intrinsic이 회전 후 기하를 담게 한다 per FR-037
 - [X] T067 `app/src/test/java/com/ssafy/s15p21a206/tiger/episode/CameraMetadataRotationTest.kt`에 90·180·270도 변환, 네 번 회전 시 원복, 각도 정규화 테스트를 추가한다 per FR-037
-- [X] T068 `specs/003-session-episode-tracking-gate/contracts/video-orientation.md`에 수신 측 전달 문서를 작성한다. 도구별 회전 처리 차이, Pose와 함께 쓸 때의 변환, 이전 수집분 구분 방법을 포함한다 per FR-038
-- [ ] T069 수신 측에 [video-orientation.md](contracts/video-orientation.md)를 전달하고, 영상 디코딩 도구가 회전 행렬을 반영하는지와 Pose 변환 적용 여부를 확인받는다
+- [X] ~~T068 `contracts/video-orientation.md`에 수신 측 전달 문서를 작성한다~~ — Phase 15 T072에서 문서를 삭제했다
+- [X] ~~T069 수신 측에 `video-orientation.md`를 전달하고, 영상 디코딩 도구가 회전 행렬을 반영하는지 확인받는다~~ — 회전이 없어져 전달할 내용이 사라졌다. Phase 15 T072로 대체
 
 ### Phase 14 완료 증거 (2026-09-15)
 
@@ -545,5 +549,64 @@ metadata.camera   image_width 480, image_height 640,
 자동 측정으로는 판정할 수 없는 항목이라 사람 확인으로 대체했다.
 
 **Pose는 회전하지 않았다**: `arcore_poses.csv`는 ARCore 원본 기록을 유지한다. 앱에서 미리 돌리면
-원본 기록이 아니게 되고 검산할 기준이 없어서다. 수신 측이 적용할 변환은 `video-orientation.md` §4에
-있다. 수신 측이 Pose까지 회전된 상태를 원하면 그때 다시 판단한다.
+원본 기록이 아니게 되고 검산할 기준이 없어서다. 이 결정은 Phase 15 이후에도 그대로다.
+
+---
+
+## Phase 15: 녹화 해상도 선택과 회전 계약 정리
+
+녹화 해상도가 `1920×1080`으로 고정돼 있어 Session마다 바꿀 수 없었다. 함께, 가로 촬영으로 영상
+회전이 없어지면서(`fix(ui)` 계열 변경) 쓸모를 잃은 회전 계약 문서를 정리한다. 그 문서가 develop에
+남아 있으면 수신 측이 그대로 읽고 90도 어긋난 결과를 얻는다.
+
+- [X] T070 `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/RecordingCameraConfigSelector.kt`와 `RecordingResolutionStore.kt`를 추가해, `imageSize` 640×480과 고른 `textureSize`를 가진 ARCore Camera config를 고르고 직전 선택을 `SharedPreferences`에 남긴다 per FR-039
+- [X] T071 `AndroidCaptureRuntime.start`가 고른 해상도로 `setCameraConfig()`를 호출하고, 수집 정보 입력 화면에서 해상도를 고르며, 수집 화면이 고른 해상도를 표시하게 한다 per FR-039, FR-040
+- [X] T072 `contracts/video-orientation.md`를 삭제하고, 이 문서를 가리키는 참조와 남은 회전 전제 서술을 `session-metadata.md`·`capture-state-machine.md`·`spec.md`에서 실제 동작에 맞춘다
+- [X] T073 실기기에서 `1280×720` 수집을 마치고 30 FPS 유지와 `metadata.json`의 `image_width`·`image_height` 일치를 확인한다 per SC-014
+- [X] T074 `MainActivity.kt`의 `DEFAULT_PREVIEW_SIZE` 하드코딩을 없애고, 유휴 프리뷰·수집 중 프리뷰·녹화가 해상도 하나를 공유하게 한다. 수집을 시작하면 ARCore가 실제로 고른 `textureSize`로 그 값을 갱신한다 per FR-040
+
+### Phase 15 완료 증거 (2026-09-16)
+
+- 구현: `RecordingCameraConfigSelector.select`가 `imageSize == 640×480`이고 `textureSize`가 고른 해상도인 후보만 고른다. 후보가 없으면 `null`을 돌려주고 기본 config로 수집을 이어가며 선택 결과를 로그에 남긴다. `RecordingResolutionStore`가 직전 선택을 `capture_preferences`에 남기고, 지원 목록에 없는 값이면 기본값으로 되돌린다. 저장은 다이얼로그를 확정할 때만 한다.
+- production 호출 경로: `CaptureScreen`의 `RecordingResolutionPicker` → `recordingResolution` → `AndroidCaptureRuntime.start(displayNumber, resolution)` → `applyRecordingResolution` → `session.cameraConfig` → `MediaRecorder.setVideoSize(textureSize)`·`camera.textureIntrinsics` → `SessionFinalizer.finalize(camera = ...)` → `metadata.json`. 표시는 `CaptureWorkspaceResolution`.
+- 자동 검증: `RecordingCameraConfigSelectorTest` 3건. `.\gradlew.bat ktlintCheck testDebugUnitTest lintDebug assembleDebug` → `BUILD SUCCESSFUL`.
+- 문서: `contracts/video-orientation.md` 삭제. 참조가 남지 않음을 `grep -rn "video-orientation" .`로 확인했다. `session-metadata.md`에 해상도 가변 규약과 `video_rotation_degrees` 설명을, `capture-state-machine.md`에 config 선택 절차를 옮겼다.
+#### 실기기 검증 · `SM-G973N`, Android 12 (2026-09-16)
+
+| 고른 해상도 | Session | `metadata.json` | MP4 track | frame / 구간 | FPS |
+|---|---|---|---|---|---|
+| 1280×720 | `c863cba1` | `image_width` 1280, `image_height` 720 | 1280×720 | 1977 / 65.883초 | 30.01 |
+| 1920×1080 | `059d7929` | `image_width` 1920, `image_height` 1080 | — | 689 / 22.989초 | 29.97 |
+
+```text
+1280x720  metadata.camera  fx 990.50214, fy 994.0984, cx 632.33966, cy 360.58044
+1920x1080 metadata.camera  fx 1485.7532, fy 1491.1476, cx 948.7595, cy 541.12067
+tkhd matrix (1280x720)     65536, 0, 0 / 0, 65536, 0 / 0, 0, 1073741824   (항등, 회전 없음)
+```
+
+두 Session 모두 `TigerCapture` 경고와 `FATAL EXCEPTION` 0건이다. 경고가 없다는 것은
+`applyRecordingResolution`이 두 해상도 모두에서 후보 config를 찾았다는 뜻이다(못 찾으면 경고를 남긴다).
+
+**직전 선택 기억**: `1280×720`으로 수집한 뒤 `shared_prefs/capture_preferences.xml`에
+`recording_resolution_width=1280`, `height=720`이 남았고, `am force-stop` 후 새로 띄운 프로세스에서
+수집 정보 입력 화면의 기본값이 `1280×720`으로 떴다.
+
+**표시 확인**: 수집 화면 좌상단에 고른 해상도 칩이 IDLE·INITIALIZING 구간 모두 표시되는 것을
+스크린샷으로 확인했다.
+
+#### T074 실기기 검증 · 세 경로 해상도 일치 (2026-09-16)
+
+`adb shell dumpsys media.camera`의 stream 구성으로 측정했다. `SurfaceTexture-…`가 프리뷰,
+`GraphicBufferSource`가 `MediaRecorder`, `ImageReader-640x480…`가 ARCore 추적용 CPU 이미지다.
+
+| 고른 해상도 | 유휴 프리뷰 | 수집 중 프리뷰 | 녹화 | CPU 이미지 | `metadata.json` |
+|---|---|---|---|---|---|
+| 1280×720 | 1280×720 | 1280×720 | 1280×720 | 640×480 | 1280 × 720 |
+| 1920×1080 | 1920×1080 | 1920×1080 | 1920×1080 | 640×480 | 1920 × 1080 |
+
+고치기 전에는 유휴 프리뷰만 `DEFAULT_PREVIEW_SIZE` 때문에 선택과 무관하게 1920×1080이었다.
+선택을 `1280×720`에서 `1920×1080`으로 바꿔 확정하는 경로도 측정해, 유휴 프리뷰 stream이
+1280×720 → 1920×1080으로 다시 열리는 것을 확인했다.
+
+1280×720 Session `bd5a9bf8`에서 566 frame / 18.864초 = 30.00 FPS, `TigerCapture` 경고와
+`FATAL EXCEPTION` 0건이다.

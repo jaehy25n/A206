@@ -252,16 +252,27 @@ frame 수의 차이가 프리뷰 없는 대조군과 같은 수준을 유지한�
 동작한다.
 
 
-## 추가 요구사항: 영상 회전과 좌표계 정합
+## 추가 요구사항: 좌표계 정합 (2026-09-16 갱신)
 
-Camera 센서가 90도 눕혀 장착돼 있어 저장된 영상이 90도 돌아간 채였다. 수집 화면에서는 Android가
-프리뷰를 자동으로 세워 주기 때문에 드러나지 않았다.
+폰을 가로로 눕혀 촬영한다. 센서가 내보내는 가로 프레임이 곧 똑바로 선 장면이므로 영상을 돌리지
+않는다. 한때 시계 방향 90도 회전을 적용했으나, 가로 촬영으로 정리하면서 되돌렸다.
 
-- **FR-036**: 시스템은 `main_rgb.mp4`에 Camera 센서 방향을 보정하는 회전 정보를 남겨야 한다.
-- **FR-037**: `metadata.json`의 Camera Intrinsic은 FR-036의 회전을 반영한 기하여야 하며, 적용한
-  회전 각도를 함께 기록해 수신 측이 회전 이전 수집분과 구분할 수 있어야 한다.
-- **FR-038**: `arcore_poses.csv`는 ARCore 원본 기록을 유지한다. Pose와 Intrinsic을 함께 쓰는 데
-  필요한 변환은 수신 측 계약 문서로 전달한다.
+- **FR-036**: 시스템은 `main_rgb.mp4`에 회전을 적용하지 않아야 한다. 영상·Intrinsic·Pose가 모두
+  같은 가로 기준이어야 한다.
+- **FR-037**: `metadata.json`의 Camera Intrinsic은 저장된 영상과 같은 기하여야 하며, 적용한 회전
+  각도(`video_rotation_degrees`, 현재 항상 `0`)를 함께 기록해 수신 측이 회전 규약이 있던 시기의
+  수집분과 구분할 수 있어야 한다.
+- **FR-038**: `arcore_poses.csv`는 ARCore 원본 기록을 유지한다.
 
 **SC-013**: 수신 측이 `metadata.json`의 `video_rotation_degrees`만으로 회전 적용 여부를 판별할 수
-있고, 회전이 `main_frame_timestamps.csv`와 MP4 frame 수의 대응을 바꾸지 않는다.
+있고, `main_frame_timestamps.csv`와 MP4 frame 수의 대응이 유지된다.
+
+## 추가 요구사항: 녹화 해상도 선택
+
+- **FR-039**: 수집자는 Session을 시작하기 전에 녹화 해상도를 `1920×1080`과 `1280×720` 중에서 골라야
+  한다. 기본값은 `1920×1080`이며, 직전 선택이 다음 수집의 기본값이 된다.
+- **FR-040**: `metadata.json`의 `image_width`·`image_height`와 Intrinsic은 고른 해상도를 따라야 하며,
+  수집 화면은 촬영 전에 어느 해상도로 찍는지 보여야 한다.
+
+**SC-014**: 두 해상도 모두에서 30 FPS가 유지되고, `main_rgb.mp4`의 해상도가 `metadata.json`의
+`image_width` × `image_height`와 일치한다.

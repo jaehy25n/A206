@@ -15,17 +15,17 @@ Session 번들의 `metadata.json`이 수신 측에 제공하는 형식. 이번 �
   },
   "camera": {
     "camera_id": "0",
-    "image_width": 1080,
-    "image_height": 1920,
-    "fx": 1491.645,
-    "fy": 1491.892,
-    "cx": 538.478,
-    "cy": 973.016,
+    "image_width": 1920,
+    "image_height": 1080,
+    "fx": 1485.753,
+    "fy": 1491.148,
+    "cx": 948.760,
+    "cy": 541.121,
     "focal_length_mm": 4.32,
     "sensor_width_mm": 5.645,
     "sensor_height_mm": 4.234,
     "distortion_coefficients": [0.1234, -0.2345, 0.0012, 0.0009, 0.0456],
-    "video_rotation_degrees": 90
+    "video_rotation_degrees": 0
   },
   "files": [
     { "path": "accelerometer.csv", "sizeBytes": 184320, "sha256": "…" },
@@ -49,8 +49,8 @@ Session 번들의 `metadata.json`이 수신 측에 제공하는 형식. 이번 �
 | 키 | 타입 | 필수 | 비고 |
 |---|---|---|---|
 | `camera_id` | string | 예 | ARCore가 실제로 연 Camera의 ID |
-| `image_width` | int | 예 | `main_rgb.mp4`의 가로 해상도와 일치 |
-| `image_height` | int | 예 | `main_rgb.mp4`의 세로 해상도와 일치 |
+| `image_width` | int | 예 | `main_rgb.mp4`의 가로 해상도와 일치. Session마다 다를 수 있다 |
+| `image_height` | int | 예 | `main_rgb.mp4`의 세로 해상도와 일치. Session마다 다를 수 있다 |
 | `fx` | number | 예 | 위 해상도 기준 초점 거리 (픽셀) |
 | `fy` | number | 예 | 위 해상도 기준 초점 거리 (픽셀) |
 | `cx` | number | 예 | 위 해상도 기준 주점 (픽셀) |
@@ -59,6 +59,7 @@ Session 번들의 `metadata.json`이 수신 측에 제공하는 형식. 이번 �
 | `sensor_width_mm` | number | 아니오 | 기기 미제공 시 키 생략 |
 | `sensor_height_mm` | number | 아니오 | 기기 미제공 시 키 생략 |
 | `distortion_coefficients` | number[] | 아니오 | 기기 미제공 시 키 생략. 순서는 Camera2 `LENS_DISTORTION` 정의를 따른다 |
+| `video_rotation_degrees` | int | 아니오 | `main_rgb.mp4`에 적용된 시계 방향 회전. 기본 `0`. 아래 [영상 회전](#영상-회전-2026-09-16-갱신) 참고 |
 
 ## 불변식
 
@@ -74,14 +75,27 @@ Session 번들의 `metadata.json`이 수신 측에 제공하는 형식. 이번 �
 
 `camera` 키가 없는 과거 Session도 계속 유효하다. 수신 측은 키 부재를 "해당 Session에 Camera 정보 없음"으로 해석한다.
 
-## 영상 회전 (2026-09-15 추가)
+## 녹화 해상도 (2026-09-16 갱신)
 
-`camera` 객체에 `video_rotation_degrees`(int, 기본 0)가 추가됐다. `main_rgb.mp4`에 적용한 시계 방향
-회전이며, `image_width`·`image_height`·`fx`·`fy`·`cx`·`cy`는 **이 회전을 반영한 기하**다.
+`main_rgb.mp4`의 해상도는 Session마다 다를 수 있다. 수집자가 수집 정보 입력 화면에서
+`1920×1080` 또는 `1280×720`을 고르며, 기본값은 `1920×1080`이다.
 
-따라서 위 "`image_width` × `image_height`는 `main_rgb.mp4` 해상도와 일치한다"는 규칙은
-**회전을 반영해 디코딩했을 때** 성립한다. 컨테이너에 저장된 track 해상도는 회전 전 값 그대로다.
+`image_width` × `image_height`는 언제나 그 Session이 실제로 녹화한 해상도이고, `fx`·`fy`·`cx`·`cy`도
+같은 해상도 기준이다. 수신 측은 해상도를 고정값으로 가정하지 말고 이 두 키에서 읽는다.
 
-값이 없거나 `0`이면 회전 이전 수집분이며, 예전 규칙이 그대로 적용된다.
+## 영상 회전 (2026-09-16 갱신)
 
-Pose와 함께 쓸 때 필요한 변환은 [video-orientation.md](video-orientation.md)에 있다.
+**`main_rgb.mp4`에는 회전이 적용되지 않는다.** 폰을 가로로 눕혀 촬영하므로 센서가 내보내는 가로
+프레임이 곧 똑바로 선 장면이다. 컨테이너의 회전 행렬은 항등이고 `metadata.json`의 Intrinsic도
+같은 가로 기준이다. `arcore_poses.csv`의 Camera 좌표계도 같은 기준이라 추가 변환 없이 함께 쓴다.
+
+`camera` 객체의 `video_rotation_degrees`(int, 기본 `0`)는 그 Session의 `main_rgb.mp4`에 적용된
+시계 방향 회전이며, 지금은 항상 `0`이다. 값이 `90`인 번들은 2026-09-15~16 사이 회전 규약이 있던
+시기의 수집분이다. 그 수집분만 다음이 성립한다.
+
+- `image_width`·`image_height`·`fx`·`fy`·`cx`·`cy`가 **회전 후** 기하다. 컨테이너에 저장된 track
+  해상도는 회전 전 값이므로, 회전을 무시하는 도구(`cv2.VideoCapture` 등)로 열면 둘이 어긋난다.
+- `arcore_poses.csv`의 Pose는 회전 전 기준이다. Intrinsic과 함께 쓰려면 Camera 좌표를 광축 기준
+  시계 방향 90도로 한 번 돌리거나, Intrinsic을 회전 전 값으로 되돌려야 한다.
+
+한 학습 세트에 두 종류가 섞이면 이 값을 보고 전처리에서 통일한다.
