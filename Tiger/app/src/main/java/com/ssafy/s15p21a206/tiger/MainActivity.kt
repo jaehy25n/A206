@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.graphics.SurfaceTexture
 import android.net.Uri
 import android.os.Bundle
@@ -639,7 +640,7 @@ fun CaptureScreen() {
         }
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().background(Color.Black)) {
         AndroidView(
             factory = { viewContext ->
                 TextureView(viewContext).apply {
@@ -683,7 +684,9 @@ fun CaptureScreen() {
                         }
                 }
             },
-            modifier = Modifier.fillMaxSize(),
+            // 프리뷰는 가로 16:9다. 화면이 세로면 위아래에 검은 영역이 남고, 가로면 꽉 찬다.
+            // 늘이거나 잘라내지 않아야 저장되는 영상과 화각이 같다.
+            modifier = Modifier.align(Alignment.Center).aspectRatio(PREVIEW_ASPECT_RATIO),
         )
         CaptureWorkspaceExitControls(
             policy = controlPolicy(),
@@ -880,6 +883,7 @@ private fun FullScreenVideoScreen(
     onBack: () -> Unit,
 ) {
     val videoFile = bundlePath?.let { File(it, SessionBundle.MAIN_VIDEO_FILE) }
+    LockLandscapeWhileVisible()
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         if (videoFile?.isFile == true && videoFile.length() > 0L) {
             VideoPlayer(videoFile, Modifier.fillMaxSize())
@@ -900,6 +904,22 @@ private fun FullScreenVideoScreen(
                 tint = Color.White,
             )
         }
+    }
+}
+
+/**
+ * 화면이 보이는 동안 가로로 고정하고, 벗어나면 원래 설정으로 되돌린다.
+ *
+ * 영상이 가로 16:9이므로 세로 화면에서는 작게 표시된다. 전체화면으로 열 때는 화면을 돌려 준다.
+ */
+@Composable
+@Suppress("FunctionName")
+private fun LockLandscapeWhileVisible() {
+    val activity = LocalContext.current.findActivity() ?: return
+    DisposableEffect(activity) {
+        val previous = activity.requestedOrientation
+        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        onDispose { activity.requestedOrientation = previous }
     }
 }
 
@@ -1012,4 +1032,12 @@ private const val TRACKING_TICK_MS = 100L
 
 // 수집 시작 전 프리뷰 버퍼 크기. 수집이 시작되면 ARCore Camera 텍스처 크기로 교체된다.
 
-private val DEFAULT_PREVIEW_SIZE = 640 to 480
+/**
+ * 수집 시작 전 유휴 프리뷰의 버퍼 크기. 수집이 시작되면 ARCore가 고른 크기로 다시 맞춘다.
+ *
+ * 녹화와 같은 16:9라 유휴 상태와 수집 중의 화각·비율이 이어진다.
+ */
+private val DEFAULT_PREVIEW_SIZE = 1920 to 1080
+
+/** 프리뷰와 영상의 가로세로 비. 화면 비율과 다르면 레터박스로 채운다. */
+private const val PREVIEW_ASPECT_RATIO = 16f / 9f
