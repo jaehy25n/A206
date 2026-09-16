@@ -26,6 +26,10 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -46,12 +50,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
@@ -739,6 +747,9 @@ fun CaptureScreen() {
         }
     }
     if (showCaptureMetadataDialog) {
+        val focusManager = LocalFocusManager.current
+        val objectFieldFocus = remember { FocusRequester() }
+        val captureMetadataReady = task.isNotBlank() && objectName.isNotBlank()
         AlertDialog(
             onDismissRequest = {
                 showCaptureMetadataDialog = false
@@ -746,22 +757,39 @@ fun CaptureScreen() {
             },
             title = { Text(stringResource(R.string.capture_metadata_title)) },
             text = {
-                Column {
+                // 가로 화면에서는 키보드가 올라오면 남는 높이가 얼마 안 된다. 입력란을 스크롤할 수
+                // 있게 두고, 마지막 칸에서 키보드의 완료 키로 바로 확정할 수 있게 한다.
+                Column(Modifier.verticalScroll(rememberScrollState())) {
                     OutlinedTextField(
                         value = task,
                         onValueChange = { task = it },
                         label = { Text(stringResource(R.string.capture_metadata_task)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(onNext = { objectFieldFocus.requestFocus() }),
                     )
                     OutlinedTextField(
                         value = objectName,
                         onValueChange = { objectName = it },
                         label = { Text(stringResource(R.string.capture_metadata_object)) },
+                        modifier = Modifier.focusRequester(objectFieldFocus),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions =
+                            KeyboardActions(
+                                onDone = {
+                                    if (captureMetadataReady) {
+                                        focusManager.clearFocus()
+                                        showCaptureMetadataDialog = false
+                                    }
+                                },
+                            ),
                     )
                 }
             },
             confirmButton = {
                 Button(
-                    enabled = task.isNotBlank() && objectName.isNotBlank(),
+                    enabled = captureMetadataReady,
                     onClick = { showCaptureMetadataDialog = false },
                 ) { Text(stringResource(R.string.capture_metadata_confirm)) }
             },
