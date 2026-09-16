@@ -1,6 +1,7 @@
 package com.ssafy.s15p21a206.tiger.capture
 
 import android.graphics.Matrix
+import android.graphics.RectF
 import android.view.Surface
 
 /**
@@ -38,24 +39,35 @@ object CameraPreviewTransform {
     }
 
     /**
-     * 뷰 가운데를 축으로 [rotation]만큼 돌리는 행렬. 90·270도에서는 회전 뒤 가로세로가 뒤바뀌므로,
-     * 비율을 지킨 채 뷰 안에 들어오도록 함께 줄인다. 잘라내지 않는다.
+     * 뷰 가운데를 축으로 [rotation]만큼 돌리는 행렬.
+     *
+     * 90·270도에서는 버퍼의 가로세로가 뒤바뀐 채 놓이므로 회전만 걸면 비율이 반대로 보인다.
+     * 가로세로를 바꾼 버퍼 사각형을 뷰에 맞춘 뒤 다시 키우고 돌려, 원래 비율로 뷰를 채운다.
+     * `Camera2Basic` 샘플의 `configureTransform`과 같은 방식이다.
      */
     fun matrix(
         viewWidth: Int,
         viewHeight: Int,
+        bufferWidth: Int,
+        bufferHeight: Int,
         rotation: Int,
     ): Matrix {
         val matrix = Matrix()
-        if (rotation == 0 || viewWidth <= 0 || viewHeight <= 0) return matrix
+        if (viewWidth <= 0 || viewHeight <= 0 || bufferWidth <= 0 || bufferHeight <= 0) return matrix
+        if (rotation != 90 && rotation != 270) {
+            if (rotation == 180) matrix.postRotate(180f, viewWidth / 2f, viewHeight / 2f)
+            return matrix
+        }
         val centerX = viewWidth / 2f
         val centerY = viewHeight / 2f
+        val viewRect = RectF(0f, 0f, viewWidth.toFloat(), viewHeight.toFloat())
+        // 회전 뒤 버퍼가 놓일 모양이므로 가로세로를 바꿔 잡는다.
+        val bufferRect = RectF(0f, 0f, bufferHeight.toFloat(), bufferWidth.toFloat())
+        bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY())
+        matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL)
+        val scale = maxOf(viewHeight.toFloat() / bufferHeight, viewWidth.toFloat() / bufferWidth)
+        matrix.postScale(scale, scale, centerX, centerY)
         matrix.postRotate(rotation.toFloat(), centerX, centerY)
-        if (rotation == 90 || rotation == 270) {
-            // 회전하면 뷰의 가로가 세로 자리에, 세로가 가로 자리에 놓인다. 둘 다 넘치지 않는 배율을 쓴다.
-            val scale = minOf(viewWidth.toFloat() / viewHeight, viewHeight.toFloat() / viewWidth)
-            matrix.postScale(scale, scale, centerX, centerY)
-        }
         return matrix
     }
 

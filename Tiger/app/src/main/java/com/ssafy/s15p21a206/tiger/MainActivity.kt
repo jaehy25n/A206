@@ -677,7 +677,7 @@ fun CaptureScreen() {
                                 surfaceTexture.setDefaultBufferSize(previewBufferSize.first, previewBufferSize.second)
                                 previewTexture = surfaceTexture
                                 previewSurface = Surface(surfaceTexture)
-                                applyIdlePreviewTransform(this@apply, width, height)
+                                applyIdlePreviewTransform(this@apply, width, height, previewBufferSize.first, previewBufferSize.second)
                                 when (val state = capturePreviewController.prepare()) {
                                     is CapturePreviewState.Failed -> {
                                         previewFailed = true
@@ -691,7 +691,7 @@ fun CaptureScreen() {
                                 surfaceTexture: SurfaceTexture,
                                 width: Int,
                                 height: Int,
-                            ) = applyIdlePreviewTransform(this@apply, width, height)
+                            ) = applyIdlePreviewTransform(this@apply, width, height, previewBufferSize.first, previewBufferSize.second)
 
                             override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean {
                                 capturePreviewController.release()
@@ -1038,6 +1038,8 @@ private fun applyIdlePreviewTransform(
     view: TextureView,
     viewWidth: Int,
     viewHeight: Int,
+    bufferWidth: Int,
+    bufferHeight: Int,
 ) {
     val activity = view.context.findActivity() ?: return
     val manager = view.context.getSystemService(CameraManager::class.java) ?: return
@@ -1055,7 +1057,9 @@ private fun applyIdlePreviewTransform(
             val displayRotation = activity.windowManager.defaultDisplay.rotation
             CameraPreviewTransform.rotationDegrees(sensorOrientation, displayRotation)
         }.getOrNull() ?: return
-    view.setTransform(CameraPreviewTransform.matrix(viewWidth, viewHeight, rotation))
+    view.setTransform(
+        CameraPreviewTransform.matrix(viewWidth, viewHeight, bufferWidth, bufferHeight, rotation),
+    )
 }
 
 private fun Context.findActivity(): Activity? =
