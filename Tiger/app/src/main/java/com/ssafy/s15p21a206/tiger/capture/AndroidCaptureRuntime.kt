@@ -88,7 +88,7 @@ class AndroidCaptureRuntime(
                     setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
                     setVideoEncoder(MediaRecorder.VideoEncoder.H264)
                     setVideoFrameRate(30)
-                    setVideoSize(session.cameraConfig.imageSize.width, session.cameraConfig.imageSize.height)
+                    setVideoSize(session.cameraConfig.textureSize.width, session.cameraConfig.textureSize.height)
                     setOutputFile(next.mainVideo.absolutePath)
                     // Camera 센서가 90도 눕혀 장착돼 있어 인코더에는 가로로 누운 프레임이 들어간다.
                     // 재생 시 시계 방향 90도로 세우도록 회전 정보를 남긴다. 픽셀은 그대로다.
@@ -382,7 +382,7 @@ class AndroidCaptureRuntime(
     /**
      * 첫 유효 프레임에서 촬영 Camera의 Intrinsic을 1회 확보한다.
      *
-     * ARCore의 이미지 스트림 기준 값이며, MediaRecorder 해상도를 같은 `cameraConfig.imageSize`로
+     * ARCore의 GPU 텍스처 스트림 기준 값이며, MediaRecorder 해상도를 같은 `cameraConfig.textureSize`로
      * 설정하므로 녹화 해상도와 대응이 보장된다. 실패하면 null을 돌려주고 수집은 그대로 이어간다.
      */
     private fun readCameraMetadata(
@@ -390,7 +390,7 @@ class AndroidCaptureRuntime(
         camera: com.google.ar.core.Camera,
     ): CameraMetadata? =
         runCatching {
-            val intrinsics = camera.imageIntrinsics
+            val intrinsics = camera.textureIntrinsics
             val focalLength = intrinsics.focalLength
             val principalPoint = intrinsics.principalPoint
             val dimensions = intrinsics.imageDimensions
