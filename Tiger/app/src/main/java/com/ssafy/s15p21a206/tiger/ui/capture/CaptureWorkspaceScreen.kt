@@ -12,12 +12,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
@@ -34,6 +37,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ssafy.s15p21a206.tiger.R
 import com.ssafy.s15p21a206.tiger.episode.RecordingResolution
+import com.ssafy.s15p21a206.tiger.ui.theme.CaptureControlDisabled
+import com.ssafy.s15p21a206.tiger.ui.theme.CaptureDestructive
+import com.ssafy.s15p21a206.tiger.ui.theme.CaptureOverlayScrim
+import com.ssafy.s15p21a206.tiger.ui.theme.CaptureStart
 
 @Composable
 @Suppress("FunctionName")
@@ -49,7 +56,7 @@ fun CaptureWorkspaceControls(
     val policy = CaptureControlPolicy(state, ready, busy)
     Row(
         modifier = modifier.navigationBarsPadding().padding(bottom = 36.dp),
-        horizontalArrangement = Arrangement.spacedBy(20.dp),
+        horizontalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         when (state) {
             CaptureWorkspaceControlState.Idle ->
@@ -58,6 +65,7 @@ fun CaptureWorkspaceControls(
                     contentDescriptionRes = R.string.capture_control_start,
                     onClick = onPlay,
                     enabled = policy.canPlay,
+                    tint = CaptureStart,
                 )
             CaptureWorkspaceControlState.EpisodeActive -> {
                 CaptureControlIcon(
@@ -71,6 +79,7 @@ fun CaptureWorkspaceControls(
                     contentDescriptionRes = R.string.capture_control_stop,
                     onClick = onStop,
                     enabled = policy.canStop,
+                    tint = CaptureDestructive,
                 )
             }
             CaptureWorkspaceControlState.Initializing,
@@ -82,12 +91,14 @@ fun CaptureWorkspaceControls(
                     contentDescriptionRes = R.string.capture_control_resume,
                     onClick = onPlay,
                     enabled = policy.canPlay,
+                    tint = CaptureStart,
                 )
                 CaptureControlIcon(
                     iconRes = R.drawable.ic_capture_stop,
                     contentDescriptionRes = R.string.capture_control_stop,
                     onClick = onStop,
                     enabled = policy.canStop,
+                    tint = CaptureDestructive,
                 )
             }
         }
@@ -117,11 +128,11 @@ fun CaptureWorkspaceStatus(
     Text(
         text = label,
         color = Color.White,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 14.sp,
+        fontWeight = FontWeight.Medium,
+        fontSize = 13.sp,
         modifier =
             modifier
-                .background(Color.Black.copy(alpha = 0.45f), CircleShape)
+                .background(CaptureOverlayScrim, CircleShape)
                 .padding(horizontal = 16.dp, vertical = 8.dp)
                 .semantics { contentDescription = label },
     )
@@ -134,17 +145,18 @@ private fun CaptureControlIcon(
     @StringRes contentDescriptionRes: Int,
     onClick: () -> Unit,
     enabled: Boolean,
+    tint: Color = Color.White,
 ) {
     CaptureTooltip(contentDescriptionRes) {
         IconButton(
             onClick = onClick,
             enabled = enabled,
-            modifier = Modifier.size(56.dp).background(Color.Black.copy(alpha = 0.45f), CircleShape),
+            modifier = Modifier.size(56.dp).background(CaptureOverlayScrim, CircleShape),
         ) {
             Icon(
                 painter = painterResource(iconRes),
                 contentDescription = stringResource(contentDescriptionRes),
-                tint = Color.White.copy(alpha = if (enabled) 1f else 0.38f),
+                tint = if (enabled) tint else CaptureControlDisabled,
                 modifier = Modifier.size(28.dp),
             )
         }
@@ -178,8 +190,17 @@ fun CaptureStopConfirmation(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.capture_stop_title)) },
         text = { Text(stringResource(R.string.capture_stop_message)) },
-        confirmButton = { Button(onClick = onConfirm) { Text(stringResource(R.string.capture_stop_confirm)) } },
-        dismissButton = { Button(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
+            ) { Text(stringResource(R.string.capture_stop_confirm)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -197,11 +218,16 @@ fun CaptureWorkspaceExitControls(
         IconButton(
             onClick = onExit,
             enabled = enabled,
-            modifier = Modifier.size(48.dp).semantics { contentDescription = description },
+            // 배경 없는 글리프는 영상과 레터박스 경계에 걸쳐 떠 보인다. 다른 오버레이와 같은 판에 올린다.
+            modifier =
+                Modifier
+                    .size(48.dp)
+                    .background(CaptureOverlayScrim, CircleShape)
+                    .semantics { contentDescription = description },
         ) {
             Text(
                 text = stringResource(R.string.control_close),
-                color = Color.White.copy(alpha = if (enabled) 1f else 0.38f),
+                color = if (enabled) Color.White else CaptureControlDisabled,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
             )
@@ -225,11 +251,11 @@ fun CaptureWorkspaceResolution(
     Text(
         text = label,
         color = Color.White,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 14.sp,
+        fontWeight = FontWeight.Medium,
+        fontSize = 13.sp,
         modifier =
             modifier
-                .background(Color.Black.copy(alpha = 0.45f), CircleShape)
+                .background(CaptureOverlayScrim, CircleShape)
                 .padding(horizontal = 16.dp, vertical = 8.dp)
                 .semantics { contentDescription = description },
     )

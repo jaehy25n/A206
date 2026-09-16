@@ -752,18 +752,33 @@ fun CaptureScreen() {
             // 늘이거나 잘라내지 않아야 저장되는 영상과 화각이 같다.
             modifier = Modifier.align(Alignment.Center).aspectRatio(PREVIEW_ASPECT_RATIO),
         )
-        CaptureWorkspaceExitControls(
-            policy = controlPolicy(),
-            onExit = ::requestCaptureExit,
-            modifier = Modifier.align(Alignment.TopEnd).padding(top = 20.dp, end = 20.dp),
-        )
-        Column(
-            modifier = Modifier.align(Alignment.TopStart).padding(top = 20.dp, start = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+        // 상태 배지와 닫기 버튼을 한 Row에 담아 어떤 화면 비율에서도 겹치지 않게 한다.
+        // 서로 다른 align으로 두면 배지 폭이 길어질 때 닫기 버튼 아래로 파고든다.
+        // 기준은 프리뷰가 아니라 화면이다. 하단 컨트롤과 좌표계를 맞추고, 레터박스가 생기는
+        // 기기에서는 검은 띠 위에 얹혀 영상을 가리지 않는다.
+        Row(
+            modifier =
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .safeDrawingPadding()
+                    .padding(top = 20.dp, start = 20.dp, end = 20.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top,
         ) {
-            CaptureWorkspaceStatus(state = controlPolicy().state)
-            // 어느 해상도로 찍는지 촬영 직전에 보여 준다. Session마다 달라질 수 있다.
-            CaptureWorkspaceResolution(resolution = recordingResolution)
+            Column(
+                // fill = false라야 배지가 제 너비만 쓰고, 길어져도 닫기 버튼 자리를 침범하지 않는다.
+                modifier = Modifier.weight(1f, fill = false),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                CaptureWorkspaceStatus(state = controlPolicy().state)
+                // 어느 해상도로 찍는지 촬영 직전에 보여 준다. Session마다 달라질 수 있다.
+                CaptureWorkspaceResolution(resolution = recordingResolution)
+            }
+            CaptureWorkspaceExitControls(
+                policy = controlPolicy(),
+                onExit = ::requestCaptureExit,
+            )
         }
         SnackbarHost(snackbarHostState, Modifier.align(Alignment.TopCenter).padding(top = 80.dp))
         if (!showCaptureMetadataDialog) {
