@@ -15,16 +15,17 @@ Session 번들의 `metadata.json`이 수신 측에 제공하는 형식. 이번 �
   },
   "camera": {
     "camera_id": "0",
-    "image_width": 640,
-    "image_height": 480,
-    "fx": 501.234,
-    "fy": 501.198,
-    "cx": 319.874,
-    "cy": 239.512,
+    "image_width": 1080,
+    "image_height": 1920,
+    "fx": 1491.645,
+    "fy": 1491.892,
+    "cx": 538.478,
+    "cy": 973.016,
     "focal_length_mm": 4.32,
     "sensor_width_mm": 5.645,
     "sensor_height_mm": 4.234,
-    "distortion_coefficients": [0.1234, -0.2345, 0.0012, 0.0009, 0.0456]
+    "distortion_coefficients": [0.1234, -0.2345, 0.0012, 0.0009, 0.0456],
+    "video_rotation_degrees": 90
   },
   "files": [
     { "path": "accelerometer.csv", "sizeBytes": 184320, "sha256": "…" },
