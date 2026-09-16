@@ -19,25 +19,31 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -62,6 +68,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -146,6 +154,7 @@ private sealed interface AppDestination {
     ) : AppDestination
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Suppress("FunctionName")
 @Composable
 fun CaptureScreen() {
@@ -750,58 +759,74 @@ fun CaptureScreen() {
         val focusManager = LocalFocusManager.current
         val objectFieldFocus = remember { FocusRequester() }
         val captureMetadataReady = task.isNotBlank() && objectName.isNotBlank()
-        AlertDialog(
-            onDismissRequest = {
-                showCaptureMetadataDialog = false
-                destination = AppDestination.SessionList
-            },
-            title = { Text(stringResource(R.string.capture_metadata_title)) },
-            text = {
-                // 가로 화면에서는 키보드가 올라오면 남는 높이가 얼마 안 된다. 입력란을 스크롤할 수
-                // 있게 두고, 마지막 칸에서 키보드의 완료 키로 바로 확정할 수 있게 한다.
-                Column(Modifier.verticalScroll(rememberScrollState())) {
-                    OutlinedTextField(
-                        value = task,
-                        onValueChange = { task = it },
-                        label = { Text(stringResource(R.string.capture_metadata_task)) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                        keyboardActions = KeyboardActions(onNext = { objectFieldFocus.requestFocus() }),
+        val cancelCaptureMetadata = {
+            showCaptureMetadataDialog = false
+            destination = AppDestination.SessionList
+        }
+        // 키보드 입력이 필요한 다이얼로그는 Material 가이드라인상 전체화면으로 띄우고 확인·취소를
+        // 상단 앱바에 둔다. 가운데 띄우는 다이얼로그는 가로 화면에서 키보드가 올라오면 아래쪽 버튼이
+        // 가려져 닿을 방법이 없다. 앱바는 키보드와 겹치지 않으므로 방향과 무관하게 항상 누를 수 있다.
+        Dialog(
+            onDismissRequest = cancelCaptureMetadata,
+            properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+        ) {
+            Surface(modifier = Modifier.fillMaxSize()) {
+                Column(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
+                    TopAppBar(
+                        title = { Text(stringResource(R.string.capture_metadata_title)) },
+                        navigationIcon = {
+                            IconButton(onClick = cancelCaptureMetadata) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_navigation_back),
+                                    contentDescription = stringResource(R.string.action_cancel),
+                                )
+                            }
+                        },
+                        actions = {
+                            TextButton(
+                                enabled = captureMetadataReady,
+                                onClick = { showCaptureMetadataDialog = false },
+                            ) { Text(stringResource(R.string.capture_metadata_confirm)) }
+                        },
                     )
-                    OutlinedTextField(
-                        value = objectName,
-                        onValueChange = { objectName = it },
-                        label = { Text(stringResource(R.string.capture_metadata_object)) },
-                        modifier = Modifier.focusRequester(objectFieldFocus),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions =
-                            KeyboardActions(
-                                onDone = {
-                                    if (captureMetadataReady) {
-                                        focusManager.clearFocus()
-                                        showCaptureMetadataDialog = false
-                                    }
-                                },
-                            ),
-                    )
+                    Column(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                                .imePadding()
+                                .padding(horizontal = 24.dp, vertical = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        OutlinedTextField(
+                            value = task,
+                            onValueChange = { task = it },
+                            label = { Text(stringResource(R.string.capture_metadata_task)) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                            keyboardActions = KeyboardActions(onNext = { objectFieldFocus.requestFocus() }),
+                        )
+                        OutlinedTextField(
+                            value = objectName,
+                            onValueChange = { objectName = it },
+                            label = { Text(stringResource(R.string.capture_metadata_object)) },
+                            modifier = Modifier.focusRequester(objectFieldFocus),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions =
+                                KeyboardActions(
+                                    onDone = {
+                                        if (captureMetadataReady) {
+                                            focusManager.clearFocus()
+                                            showCaptureMetadataDialog = false
+                                        }
+                                    },
+                                ),
+                        )
+                    }
                 }
-            },
-            confirmButton = {
-                Button(
-                    enabled = captureMetadataReady,
-                    onClick = { showCaptureMetadataDialog = false },
-                ) { Text(stringResource(R.string.capture_metadata_confirm)) }
-            },
-            dismissButton = {
-                Button(
-                    onClick = {
-                        showCaptureMetadataDialog = false
-                        destination = AppDestination.SessionList
-                    },
-                ) { Text(stringResource(R.string.action_cancel)) }
-            },
-        )
+            }
+        }
     }
     if (showStopConfirmation) {
         CaptureStopConfirmation(
