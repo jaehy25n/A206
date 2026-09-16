@@ -80,7 +80,10 @@
     <string name="capture_metadata_title">수집 정보 입력</string>
     <string name="capture_metadata_task">Task</string>
     <string name="capture_metadata_object">Object</string>
+    <string name="capture_metadata_resolution">녹화 해상도</string>
     <string name="capture_metadata_confirm">준비 완료</string>
+    <string name="capture_resolution_option">%1$d×%2$d</string>
+    <string name="capture_resolution_content_description">녹화 해상도 %1$d×%2$d</string>
     <string name="capture_control_start">수집 시작</string>
     <string name="capture_control_resume">작업 구간 시작</string>
     <string name="capture_control_pause">작업 구간 일시 정지</string>

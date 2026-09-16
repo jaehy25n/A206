@@ -20,10 +20,13 @@ import android.os.HandlerThread
 import android.util.Log
 import android.view.Surface
 import androidx.core.content.ContextCompat
+import com.google.ar.core.CameraConfigFilter
 import com.google.ar.core.Session
 import com.ssafy.s15p21a206.tiger.episode.CameraMetadata
 import com.ssafy.s15p21a206.tiger.episode.EpisodeMarker
 import com.ssafy.s15p21a206.tiger.episode.FinalizeResult
+import com.ssafy.s15p21a206.tiger.episode.RecordingInputValidator
+import com.ssafy.s15p21a206.tiger.episode.RecordingResolution
 import com.ssafy.s15p21a206.tiger.episode.SessionBundle
 import com.ssafy.s15p21a206.tiger.episode.SessionBundleStore
 import com.ssafy.s15p21a206.tiger.episode.SessionFinalizer
@@ -75,6 +78,7 @@ class AndroidCaptureRuntime(
 
     fun start(
         displayNumber: Int,
+        resolution: RecordingResolution = RecordingInputValidator.DEFAULT_RESOLUTION,
         previewSurfaces: PreviewSurfaceProvider = PreviewSurfaceProvider { _, _ -> null },
     ): SessionBundle {
         check(bundle == null) { "Capture is already running" }
@@ -82,6 +86,7 @@ class AndroidCaptureRuntime(
         writeHeaders(next)
         try {
             val session = Session(appContext, EnumSet.of(Session.Feature.SHARED_CAMERA))
+            applyRecordingResolution(session, resolution)
             val recorder =
                 MediaRecorder().apply {
                     setVideoSource(MediaRecorder.VideoSource.SURFACE)
@@ -377,6 +382,34 @@ class AndroidCaptureRuntime(
                 name = "TigerArPose"
                 start()
             }
+    }
+
+    /**
+     * 고른 녹화 해상도를 가진 Camera config를 세션에 지정한다.
+     *
+     * 녹화·프리뷰·Intrinsic이 모두 `cameraConfig.textureSize`를 따르므로, 여기서 config를 바꾸면
+     * 나머지가 자동으로 같은 해상도를 쓴다. 후보가 없으면 기본 config 그대로 수집을 이어간다.
+     * 해상도 하나 때문에 수집 자체를 막지 않는다.
+     */
+    private fun applyRecordingResolution(
+        session: Session,
+        resolution: RecordingResolution,
+    ) {
+        val selected =
+            runCatching {
+                RecordingCameraConfigSelector.select(
+                    candidates = session.getSupportedCameraConfigs(CameraConfigFilter(session)),
+                    imageSizeOf = { RecordingResolution(it.imageSize.width, it.imageSize.height) },
+                    textureSizeOf = { RecordingResolution(it.textureSize.width, it.textureSize.height) },
+                    target = resolution,
+                )
+            }.onFailure { Log.w(TAG, "Could not read the supported camera configs", it) }.getOrNull()
+        if (selected == null) {
+            Log.w(TAG, "No camera config matches ${resolution.width}x${resolution.height}; keeping the default config")
+            return
+        }
+        runCatching { session.cameraConfig = selected }
+            .onFailure { Log.w(TAG, "Could not apply the selected camera config", it) }
     }
 
     /**

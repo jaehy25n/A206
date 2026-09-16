@@ -115,6 +115,27 @@ ARCore가 추적에 쓰는 CPU 이미지(`cameraConfig.imageSize`)는 640×480�
 stream이 함께 커지면서 대상 기기가 stream 조합을 거부한다(`Error configuring streams`).
 실기기에서 1280×720과 1920×1080 모두, textureSize를 낮춰도 실패했다.
 
+### 녹화 해상도 선택
+
+`textureSize`는 Session마다 다를 수 있다. 수집자가 수집 정보 입력 화면에서 `1920×1080` 또는
+`1280×720`을 고르면, `INITIALIZING`으로 들어가기 전에 그 `textureSize`와 `imageSize` 640×480을
+함께 가진 ARCore Camera config를 골라 `setCameraConfig()`로 지정한다. 위 문단대로 `imageSize`는
+항상 640×480으로 남긴다.
+
+고른 해상도를 가진 후보가 없으면 기본 config로 수집을 이어가고 선택 결과만 로그에 남긴다.
+해상도 하나 때문에 Session 시작을 막지 않는다. 두 해상도 모두 16:9라 프리뷰 레이아웃은 같다.
+
+**세 경로가 한 값을 쓴다**: 수집 전 유휴 프리뷰, 수집 중 프리뷰, 녹화가 모두 같은 해상도 하나를
+따른다. 수집 전에는 사용자가 고른 값이고, 수집을 시작하면 ARCore가 실제로 고른 `textureSize`로
+갱신된다. 위 폴백으로 기본 config에 머문 Session에서도 프리뷰와 저장본이 어긋나지 않는다.
+
+유휴 프리뷰는 Camera2 경로라 stream 크기가 capture session을 만들 때 정해진다. 수집 정보 입력을
+확정할 때 고른 해상도가 직전과 다르면 `SurfaceTexture` 버퍼를 바꾼 뒤 session을 다시 연다.
+버퍼만 바꾸면 이미 열린 session에는 반영되지 않는다.
+
+이 선택은 상태와 전이를 바꾸지 않는다. `metadata.json`의 `image_width`·`image_height`가 고른
+해상도를 따라가며, Intrinsic도 같은 stream 기준인 `textureIntrinsics`에서 읽으므로 함께 따라간다.
+
 이 구성은 상태와 전이를 바꾸지 않는다. 프리뷰 Surface를 얻지 못한 Session(`null`)도 정상 Session이며,
 그리기 실패는 기록되되 pose 수집을 멈추지 않는다. 프레임 타임스탬프는 `SENSOR_TIMESTAMP` 기준
 중복 제거로 기록되므로 프리뷰 표시 여부와 무관하다.
