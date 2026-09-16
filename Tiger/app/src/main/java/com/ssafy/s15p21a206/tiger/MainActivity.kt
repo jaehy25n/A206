@@ -7,6 +7,8 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.graphics.SurfaceTexture
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
@@ -78,6 +80,7 @@ import com.google.ar.core.ArCoreApk
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException
 import com.ssafy.s15p21a206.tiger.capture.AndroidCaptureRuntime
 import com.ssafy.s15p21a206.tiger.capture.CameraPreviewController
+import com.ssafy.s15p21a206.tiger.capture.CameraPreviewTransform
 import com.ssafy.s15p21a206.tiger.capture.CapturePreviewController
 import com.ssafy.s15p21a206.tiger.capture.CapturePreviewPreflight
 import com.ssafy.s15p21a206.tiger.capture.CapturePreviewState
@@ -674,6 +677,7 @@ fun CaptureScreen() {
                                 surfaceTexture.setDefaultBufferSize(previewBufferSize.first, previewBufferSize.second)
                                 previewTexture = surfaceTexture
                                 previewSurface = Surface(surfaceTexture)
+                                applyIdlePreviewTransform(this@apply, width, height)
                                 when (val state = capturePreviewController.prepare()) {
                                     is CapturePreviewState.Failed -> {
                                         previewFailed = true
@@ -687,7 +691,7 @@ fun CaptureScreen() {
                                 surfaceTexture: SurfaceTexture,
                                 width: Int,
                                 height: Int,
-                            ) = Unit
+                            ) = applyIdlePreviewTransform(this@apply, width, height)
 
                             override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean {
                                 capturePreviewController.release()
@@ -1022,6 +1026,36 @@ private fun NavigationHeader(
         }
         Text(title)
     }
+}
+
+/**
+ * 유휴 프리뷰의 회전을 맞춘다.
+ *
+ * Camera2는 SurfaceTexture에 센서 방향 그대로 프레임을 넣고 TextureView는 회전을 반영하지 않는다.
+ * 수집 중 프리뷰는 ARCore가 처리하지만 이 경로는 앱이 직접 걸어야 한다.
+ */
+private fun applyIdlePreviewTransform(
+    view: TextureView,
+    viewWidth: Int,
+    viewHeight: Int,
+) {
+    val activity = view.context.findActivity() ?: return
+    val manager = view.context.getSystemService(CameraManager::class.java) ?: return
+    val rotation =
+        runCatching {
+            val cameraId =
+                manager.cameraIdList.first {
+                    manager.getCameraCharacteristics(it).get(CameraCharacteristics.LENS_FACING) ==
+                        CameraCharacteristics.LENS_FACING_BACK
+                }
+            val sensorOrientation =
+                manager.getCameraCharacteristics(cameraId).get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 0
+
+            @Suppress("DEPRECATION")
+            val displayRotation = activity.windowManager.defaultDisplay.rotation
+            CameraPreviewTransform.rotationDegrees(sensorOrientation, displayRotation)
+        }.getOrNull() ?: return
+    view.setTransform(CameraPreviewTransform.matrix(viewWidth, viewHeight, rotation))
 }
 
 private fun Context.findActivity(): Activity? =
