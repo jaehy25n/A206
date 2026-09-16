@@ -640,6 +640,9 @@ fun CaptureScreen() {
         }
     }
 
+    // 수집 화면은 가로로 고정한다. Camera 센서가 90도 눕혀 장착돼 있어 세로 화면에서는
+    // 프리뷰가 옆으로 누운 채 비율까지 어긋나 보인다. 저장되는 영상도 가로다.
+    LockLandscapeWhileVisible(fixed = true)
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         AndroidView(
             factory = { viewContext ->
@@ -910,15 +913,22 @@ private fun FullScreenVideoScreen(
 /**
  * 화면이 보이는 동안 가로로 고정하고, 벗어나면 원래 설정으로 되돌린다.
  *
- * 영상이 가로 16:9이므로 세로 화면에서는 작게 표시된다. 전체화면으로 열 때는 화면을 돌려 준다.
+ * @param fixed 한쪽 가로로만 고정할지 여부. 수집 화면은 `true`여야 한다. Camera 파이프라인이
+ *   가로 기준이고 ARCore에 알리는 표시 회전도 고정값이라, 수집 중에 방향이 바뀌면 프리뷰가
+ *   돌아간다. 재생 화면은 어느 쪽 가로든 상관없으므로 `false`로 둔다.
  */
 @Composable
 @Suppress("FunctionName")
-private fun LockLandscapeWhileVisible() {
+private fun LockLandscapeWhileVisible(fixed: Boolean = false) {
     val activity = LocalContext.current.findActivity() ?: return
-    DisposableEffect(activity) {
+    DisposableEffect(activity, fixed) {
         val previous = activity.requestedOrientation
-        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        activity.requestedOrientation =
+            if (fixed) {
+                ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            } else {
+                ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            }
         onDispose { activity.requestedOrientation = previous }
     }
 }
