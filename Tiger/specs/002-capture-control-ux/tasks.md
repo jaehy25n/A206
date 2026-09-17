@@ -286,14 +286,17 @@ T014·T015·T016·T028의 완료 증거는 `AppDestination` sealed 목적지와 
   - 남은 항목: **업로드가 실제 진행 중인 상태에서의 뒤로 가기 취소 확인**. 이 경로는 확인되지
     않았다. `BuildConfig.UPLOAD_BASE_URL`과 도달 가능한 ingestion server가 필요하다.
   - 남은 항목: 프로세스 재생성 후 화면 복원. 개발자 옵션의 "활동 유지 안 함"으로 확인한다.
-- [ ] T039 [S15P21A206-40] `app/src/androidTest/java/com/ssafy/s15p21a206/tiger/ui/upload/UploadStatusBackNavigationTest.kt`로
+- [X] T039 [S15P21A206-40] `app/src/androidTest/java/com/ssafy/s15p21a206/tiger/ui/upload/UploadStatusBackNavigationTest.kt`로
   업로드 상태 화면의 `BackHandler`가 `NavHost`의 백스택 pop보다 우선하는지 고정한다.
   - 구현: `UploadStatusScreen`을 다른 목적지 위에 쌓은 `NavHost`에 넣고, `UPLOADING`에서 뒤로 가기가
     취소 확인을 띄우며 목적지를 벗어나지 않는지, 중단 확인이 이전 목적지로 돌아가는지, 종료 상태에서는
     확인 없이 돌아가는지 검사한다. 세 테스트 모두 `OnBackPressedDispatcher.onBackPressed()`를 직접
     호출한다.
-  - 자동 검증: **아직 실행하지 않았다.** `.\gradlew.bat ktlintCheck compileDebugAndroidTestKotlin`은
-    통과했으나(2026-09-17), instrumentation 실행에는 연결된 기기가 필요하고 작성 시점에 기기가
-    분리되어 있었다. `.\gradlew.bat connectedDebugAndroidTest`로 실행한 뒤 결과를 여기에 기록한다.
+  - 자동 검증: `UploadStatusBackNavigationTest.uploading_back_press_confirms_instead_of_leaving_the_destination`,
+    `confirming_cancellation_cancels_the_upload_and_returns_to_the_previous_destination`,
+    `terminal_state_back_press_returns_without_confirmation`;
+    `.\gradlew.bat connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.ssafy.s15p21a206.tiger.ui.upload.UploadStatusBackNavigationTest`
+    성공 (2026-09-18, `SM-G973N`, Android 12). 3 tests, 0 failures, 0 errors.
+    목적지 안의 `BackHandler`가 `NavHost`의 pop보다 우선한다는 가정이 실기기에서 확인되었다.
   - 범위 한계: 프레임워크 동작만 고정한다. `MainActivity`의 배선을 검증하지 않으므로 T038의 실기기
     확인을 대신하지 않는다.
