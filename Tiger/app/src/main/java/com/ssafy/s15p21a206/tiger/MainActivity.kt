@@ -987,7 +987,13 @@ private fun SessionDetailScreen(
     sharedPlayer: SharedVideoPlayer,
     onOpenFullscreenVideo: () -> Unit,
 ) {
-    Column(Modifier.fillMaxSize()) {
+    // 재생 영역 높이와 전송·내보내기 상태에 따라 내용이 화면을 넘는다. 스크롤이 없으면 잘린다.
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+    ) {
         NavigationHeader(
             title = stringResource(R.string.session_detail_title),
             onBack = onBack,
