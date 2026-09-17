@@ -1,0 +1,43 @@
+#!/usr/bin/env sh
+#
+# 커밋 제목이 AGENTS.md의 Conventional Commits 규격을 따르는지 검사한다.
+#
+#   <type>(<scope>): <한국어 요약>
+
+set -eu
+
+msg_file="$1"
+
+# 주석과 빈 줄을 걷어낸 첫 줄이 제목이다. Windows 체크아웃의 CR도 함께 제거한다.
+subject=$(tr -d '\r' < "$msg_file" | grep -v '^#' | grep -v '^[[:space:]]*$' | head -n 1)
+
+if [ -z "$subject" ]; then
+    echo "commit-msg: 커밋 메시지가 비어 있습니다." >&2
+    exit 1
+fi
+
+# 병합·되돌리기·rebase 보조 커밋의 제목은 git이 만들므로 검사하지 않는다.
+case "$subject" in
+    "Merge "*|"Revert "*|fixup!*|squash!*|amend!*)
+        exit 0
+        ;;
+esac
+
+if printf '%s' "$subject" | grep -Eq '^(feat|fix|test|refactor|docs|build|chore)\([a-z0-9._-]+\): .+'; then
+    exit 0
+fi
+
+cat >&2 <<'USAGE'
+commit-msg: 커밋 제목이 규격에 맞지 않습니다.
+
+  형식: <type>(<scope>): <한국어 요약>
+  타입: feat, fix, test, refactor, docs, build, chore
+  scope: 소문자, 숫자, `.` `_` `-` 조합이며 생략할 수 없습니다.
+
+  예: feat(capture): 프레임별 타임스탬프 저장
+      fix(imu): 나노초 타임스탬프 보존
+
+자세한 규칙은 AGENTS.md의 Git 절에 있습니다.
+USAGE
+echo "  받은 제목: $subject" >&2
+exit 1

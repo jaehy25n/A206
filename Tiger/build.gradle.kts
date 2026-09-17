@@ -11,7 +11,7 @@ plugins {
 
 tasks.register<Exec>("installGitHooks") {
     group = "verification"
-    description = "Git pre-commit hook으로 저장소의 .githooks 디렉터리를 사용합니다."
+    description = "Git hook으로 저장소의 .githooks 디렉터리를 사용합니다."
     workingDir = rootDir
     commandLine("git", "config", "core.hooksPath", file(".githooks").absolutePath)
 }
