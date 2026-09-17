@@ -67,7 +67,7 @@ app/
     └── ui/
 ```
 
-**구조 결정**: 기존 단일 Android 앱 모듈을 유지한다. 새로운 navigation 의존성을 추가하지 않고, 상위로 hoisting한 sealed 화면 목적지와 명시적 콜백으로 목록·작업 공간·상세·업로드 상태를 전환한다.
+**구조 결정**: 기존 단일 Android 앱 모듈을 유지한다. 조회 흐름(목록·Task Session 목록·상세·전체 화면 동영상·업로드 상태)은 `androidx.navigation:navigation-compose`의 `NavHost`와 type-safe route로 전환하고, 이탈은 `popBackStack()`으로 통일한다. 수집 작업 공간은 목적지가 아니라 `NavHost` 위에 얹는 모달이며 boolean 상태로 관리한다. 2026-09-17에 S15P21A206-40으로 갱신했다. 이전 결정과 뒤집는 이유는 `research.md`에 있다.
 
 ## 조사 결정
 
