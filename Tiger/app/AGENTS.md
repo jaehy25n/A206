@@ -5,6 +5,7 @@
 ## 코드 규칙
 
 - Composable과 클래스는 `PascalCase`, 함수·프로퍼티·파라미터는 `camelCase`를 사용한다.
+- ktlint의 `standard:function-naming`은 Composable의 `PascalCase`를 허용하지 않는다. 테스트 소스까지 포함해 Composable 선언에는 `@Suppress("FunctionName")`을 붙인다.
 - 사용자에게 보이는 문자열은 `res/values/strings.xml`에 두며, Composable에 하드코딩하지 않는다.
 - 부모가 소유하는 Compose 상태는 hoisting하고, Composable은 렌더링과 사용자 이벤트 처리로 한정한다.
 
