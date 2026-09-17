@@ -1,0 +1,5 @@
+# git hook은 LF로 체크아웃한다.
+#
+# core.autocrlf=true인 Windows 클론에서는 셸 스크립트가 CRLF로 풀린다. Git for Windows의
+# sh는 `#!/usr/bin/env sh\r`를 견디지만 Linux·macOS에서는 hook이 실행되지 않는다.
+.githooks/** text eol=lf
