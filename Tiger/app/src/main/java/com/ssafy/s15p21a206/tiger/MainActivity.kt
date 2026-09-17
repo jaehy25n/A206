@@ -15,8 +15,7 @@ import android.os.Bundle
 import android.os.SystemClock
 import android.view.Surface
 import android.view.TextureView
-import android.widget.MediaController
-import android.widget.VideoView
+import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -35,6 +34,7 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -56,10 +56,12 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,6 +83,12 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.common.VideoSize
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
 import androidx.room.Room
 import com.google.ar.core.ArCoreApk
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException
@@ -557,6 +565,13 @@ fun CaptureScreen() {
         destination = AppDestination.UploadStatus(sessionId)
         uploadJob = scope.launch { service.upload(sessionId) }
     }
+    val sharedVideoPlayer = rememberSharedVideoPlayer()
+    // 재생 화면을 벗어나면 decoder를 계속 물고 있지 않도록 재생기를 놓는다.
+    LaunchedEffect(destination) {
+        if (destination !is AppDestination.SessionDetail && destination !is AppDestination.SessionVideo) {
+            sharedVideoPlayer.release()
+        }
+    }
     when (val currentDestination = destination) {
         AppDestination.SessionList -> {
             SessionListScreen(
@@ -599,6 +614,7 @@ fun CaptureScreen() {
                     pendingSessionId = currentDestination.sessionId
                     treePicker.launch(null)
                 },
+                sharedPlayer = sharedVideoPlayer,
                 onOpenFullscreenVideo = { destination = AppDestination.SessionVideo(currentDestination.sessionId) },
             )
             return
@@ -607,6 +623,7 @@ fun CaptureScreen() {
             val summary = completedSummaries.firstOrNull { it.sessionId == currentDestination.sessionId }
             FullScreenVideoScreen(
                 bundlePath = summary?.bundlePath,
+                sharedPlayer = sharedVideoPlayer,
                 onBack = { destination = AppDestination.SessionDetail(currentDestination.sessionId) },
             )
             return
@@ -693,7 +710,7 @@ fun CaptureScreen() {
 
     // 수집 화면은 가로로 고정한다. Camera 센서가 90도 눕혀 장착돼 있어 세로 화면에서는
     // 프리뷰가 옆으로 누운 채 비율까지 어긋나 보인다. 저장되는 영상도 가로다.
-    LockLandscapeWhileVisible(fixed = true)
+    LockLandscapeWhileVisible()
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         AndroidView(
             factory = { viewContext ->
@@ -967,6 +984,7 @@ private fun SessionDetailScreen(
     exportState: ExportState,
     exportMessage: String?,
     onExport: () -> Unit,
+    sharedPlayer: SharedVideoPlayer,
     onOpenFullscreenVideo: () -> Unit,
 ) {
     Column(Modifier.fillMaxSize()) {
@@ -978,7 +996,7 @@ private fun SessionDetailScreen(
             Text(stringResource(R.string.session_detail_unavailable))
         } else {
             val presentation = SessionDetailPresentation.from(summary)
-            SessionVideoPreview(summary.bundlePath, onOpenFullscreenVideo)
+            SessionVideoPreview(summary.bundlePath, sharedPlayer, onOpenFullscreenVideo)
             Text(
                 stringResource(
                     R.string.session_list_capture_time,
@@ -1024,6 +1042,7 @@ private fun SessionDetailScreen(
 @Suppress("FunctionName")
 private fun SessionVideoPreview(
     bundlePath: String,
+    sharedPlayer: SharedVideoPlayer,
     onOpenFullscreenVideo: () -> Unit,
 ) {
     val videoFile = remember(bundlePath) { File(bundlePath, SessionBundle.MAIN_VIDEO_FILE) }
@@ -1032,36 +1051,41 @@ private fun SessionVideoPreview(
         Text(stringResource(R.string.session_detail_video_unavailable))
         return
     }
-    Box(
+    val player = sharedPlayer.playerFor(videoFile)
+    VideoPlayer(
+        player = player,
+        fullscreen = false,
+        onFullscreenClick = onOpenFullscreenVideo,
         modifier =
             Modifier
                 .fillMaxWidth()
-                .aspectRatio(16f / 9f),
-    ) {
-        VideoPlayer(videoFile, Modifier.fillMaxSize().semantics { contentDescription = videoDescription })
-        IconButton(
-            onClick = onOpenFullscreenVideo,
-            modifier = Modifier.align(Alignment.TopEnd),
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_fullscreen),
-                contentDescription = stringResource(R.string.session_detail_open_fullscreen),
-            )
-        }
-    }
+                .aspectRatio(rememberVideoAspectRatio(player))
+                .semantics { contentDescription = videoDescription },
+    )
 }
 
 @Composable
 @Suppress("FunctionName")
 private fun FullScreenVideoScreen(
     bundlePath: String?,
+    sharedPlayer: SharedVideoPlayer,
     onBack: () -> Unit,
 ) {
     val videoFile = bundlePath?.let { File(it, SessionBundle.MAIN_VIDEO_FILE) }
-    LockLandscapeWhileVisible()
+    val playable = videoFile?.isFile == true && videoFile.length() > 0L
+    var landscapeLocked by remember { mutableStateOf(false) }
+    // 재생할 영상이 없으면 컨트롤이 뜨지 않으므로, 뒤로 가기가 사라지지 않게 처음부터 보이게 둔다.
+    var controlsVisible by remember { mutableStateOf(true) }
+    LockLandscapeWhilePlaying(landscapeLocked)
     Box(Modifier.fillMaxSize().background(Color.Black)) {
-        if (videoFile?.isFile == true && videoFile.length() > 0L) {
-            VideoPlayer(videoFile, Modifier.fillMaxSize())
+        if (playable) {
+            VideoPlayer(
+                player = sharedPlayer.playerFor(videoFile),
+                fullscreen = true,
+                onFullscreenClick = onBack,
+                modifier = Modifier.fillMaxSize(),
+                onControlsVisibilityChanged = { controlsVisible = it },
+            )
         } else {
             Text(
                 text = stringResource(R.string.session_detail_video_unavailable),
@@ -1069,58 +1093,202 @@ private fun FullScreenVideoScreen(
                 modifier = Modifier.align(Alignment.Center),
             )
         }
-        IconButton(
-            onClick = onBack,
-            modifier = Modifier.align(Alignment.TopStart),
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_navigation_back),
-                contentDescription = stringResource(R.string.navigation_back),
-                tint = Color.White,
-            )
+        if (controlsVisible) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier.align(Alignment.TopStart),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_navigation_back),
+                    contentDescription = stringResource(R.string.navigation_back),
+                    tint = Color.White,
+                )
+            }
+            if (playable) {
+                LandscapeLockButton(
+                    landscapeLocked = landscapeLocked,
+                    onToggle = { landscapeLocked = !landscapeLocked },
+                    modifier = Modifier.align(Alignment.TopEnd),
+                )
+            }
         }
     }
 }
 
 /**
- * 화면이 보이는 동안 가로로 고정하고, 벗어나면 원래 설정으로 되돌린다.
- *
- * @param fixed 한쪽 가로로만 고정할지 여부. 수집 화면은 `true`여야 한다. Camera 파이프라인이
- *   가로 기준이고 ARCore에 알리는 표시 회전도 고정값이라, 수집 중에 방향이 바뀌면 프리뷰가
- *   돌아간다. 재생 화면은 어느 쪽 가로든 상관없으므로 `false`로 둔다.
+ * 가로 고정을 켜고 끄는 플레이어 컨트롤이다. Media3는 회전 버튼을 제공하지 않아 직접 만든다.
  */
 @Composable
 @Suppress("FunctionName")
-private fun LockLandscapeWhileVisible(fixed: Boolean = false) {
+private fun LandscapeLockButton(
+    landscapeLocked: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier,
+) {
+    IconButton(
+        onClick = onToggle,
+        modifier =
+            modifier.background(
+                color = if (landscapeLocked) Color.White.copy(alpha = 0.24f) else Color.Transparent,
+                shape = CircleShape,
+            ),
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_screen_rotation),
+            contentDescription =
+                stringResource(
+                    if (landscapeLocked) {
+                        R.string.session_video_unlock_landscape
+                    } else {
+                        R.string.session_video_lock_landscape
+                    },
+                ),
+            tint = Color.White,
+        )
+    }
+}
+
+/**
+ * 수집 화면이 보이는 동안 한쪽 가로로 고정하고, 벗어나면 원래 설정으로 되돌린다.
+ *
+ * Camera 파이프라인이 가로 기준이고 ARCore에 알리는 표시 회전도 고정값이라, 수집 중에 방향이
+ * 바뀌면 프리뷰가 돌아간다.
+ */
+@Composable
+@Suppress("FunctionName")
+private fun LockLandscapeWhileVisible() {
     val activity = LocalContext.current.findActivity() ?: return
-    DisposableEffect(activity, fixed) {
+    DisposableEffect(activity) {
         val previous = activity.requestedOrientation
-        activity.requestedOrientation =
-            if (fixed) {
-                ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-            } else {
-                ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            }
+        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
         onDispose { activity.requestedOrientation = previous }
     }
 }
 
+/**
+ * 전체화면 재생의 방향 정책을 반영한다.
+ *
+ * 앱은 manifest에서 세로로 묶여 있으므로 기기를 눕혀도 화면이 돌지 않는다. 사용자가 회전 버튼으로
+ * 가로 고정을 켤 때만 가로로 묶고, 끄면 진입 시점 설정으로 돌아간다. 화면을 벗어날 때도 같다.
+ */
+@Composable
+@Suppress("FunctionName")
+private fun LockLandscapeWhilePlaying(landscapeLocked: Boolean) {
+    val activity = LocalContext.current.findActivity() ?: return
+    val entryOrientation = remember(activity) { activity.requestedOrientation }
+    DisposableEffect(activity, entryOrientation) {
+        onDispose { activity.requestedOrientation = entryOrientation }
+    }
+    LaunchedEffect(activity, landscapeLocked, entryOrientation) {
+        activity.requestedOrientation =
+            if (landscapeLocked) {
+                ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            } else {
+                entryOrientation
+            }
+    }
+}
+
+// PlayerView는 Media3의 unstable API다. 앱이 직접 쓰는 유일한 지점이라 여기서만 opt-in한다.
+@androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 @Suppress("FunctionName")
 private fun VideoPlayer(
-    videoFile: File,
+    player: ExoPlayer,
+    fullscreen: Boolean,
+    onFullscreenClick: () -> Unit,
     modifier: Modifier,
+    onControlsVisibilityChanged: (Boolean) -> Unit = {},
 ) {
+    // listener를 factory에서 한 번만 걸기 때문에, 콜백은 최신 값을 따라가게 감싼다.
+    val currentFullscreenClick by rememberUpdatedState(onFullscreenClick)
+    val currentControlsVisibilityChanged by rememberUpdatedState(onControlsVisibilityChanged)
     AndroidView(
         factory = { viewContext ->
-            VideoView(viewContext).apply {
-                setMediaController(MediaController(viewContext).also { it.setAnchorView(this) })
-                setVideoURI(Uri.fromFile(videoFile))
-                setOnPreparedListener { seekTo(1) }
+            PlayerView(viewContext).apply {
+                // 버튼 상태를 먼저 맞추고 listener를 건다. `setFullscreenButtonState`는 상태만
+                // 바꾸지 않고 listener까지 호출하므로, 순서를 바꾸면 전체화면에 들어가자마자
+                // 콜백이 불려 곧바로 상세 화면으로 되돌아간다.
+                setFullscreenButtonState(fullscreen)
+                // 전체화면 버튼과 콜백만 Media3가 주고, 화면 전환은 앱이 한다.
+                setFullscreenButtonClickListener { currentFullscreenClick() }
+                setControllerVisibilityListener(
+                    PlayerView.ControllerVisibilityListener { visibility ->
+                        currentControlsVisibilityChanged(visibility == View.VISIBLE)
+                    },
+                )
             }
         },
+        update = { view -> view.player = player },
+        onRelease = { view -> view.player = null },
         modifier = modifier,
     )
+}
+
+/**
+ * 영상의 가로세로 비율을 따라간다. 회전 metadata가 적용된 크기를 쓰므로, `video_rotation_degrees`가
+ * 90인 기존 수집분은 세로 비율로 나온다.
+ */
+@Composable
+private fun rememberVideoAspectRatio(player: ExoPlayer): Float {
+    var aspectRatio by remember(player) { mutableFloatStateOf(DEFAULT_VIDEO_ASPECT_RATIO) }
+    DisposableEffect(player) {
+        fun apply(videoSize: VideoSize) {
+            if (videoSize.width > 0 && videoSize.height > 0) {
+                aspectRatio = videoSize.width * videoSize.pixelWidthHeightRatio / videoSize.height
+            }
+        }
+        apply(player.videoSize)
+        val listener =
+            object : Player.Listener {
+                override fun onVideoSizeChanged(videoSize: VideoSize) = apply(videoSize)
+            }
+        player.addListener(listener)
+        onDispose { player.removeListener(listener) }
+    }
+    return aspectRatio
+}
+
+/** 영상 크기를 아직 모를 때 쓰는 비율. 크기를 알게 되면 즉시 교체된다. */
+private const val DEFAULT_VIDEO_ASPECT_RATIO = 16f / 9f
+
+/**
+ * 상세 화면과 전체화면이 같은 ExoPlayer를 쓰게 한다.
+ *
+ * 두 화면은 서로 다른 destination이라 Composable이 새로 만들어지지만, 재생기는 이 객체가 들고
+ * 있으므로 화면을 오갈 때도 재생 위치가 유지된다.
+ */
+private class SharedVideoPlayer(
+    private val context: Context,
+) {
+    private var player: ExoPlayer? = null
+    private var preparedPath: String? = null
+
+    /** 같은 파일이면 쓰던 재생기를 그대로 준다. 다른 파일이면 그 파일로 다시 적재한다. */
+    fun playerFor(videoFile: File): ExoPlayer {
+        val current = player ?: ExoPlayer.Builder(context).build().also { player = it }
+        val path = videoFile.absolutePath
+        if (preparedPath != path) {
+            current.setMediaItem(MediaItem.fromUri(Uri.fromFile(videoFile)))
+            current.prepare()
+            preparedPath = path
+        }
+        return current
+    }
+
+    fun release() {
+        player?.release()
+        player = null
+        preparedPath = null
+    }
+}
+
+@Composable
+private fun rememberSharedVideoPlayer(): SharedVideoPlayer {
+    val context = LocalContext.current.applicationContext
+    val sharedPlayer = remember(context) { SharedVideoPlayer(context) }
+    DisposableEffect(sharedPlayer) { onDispose(sharedPlayer::release) }
+    return sharedPlayer
 }
 
 @Composable
