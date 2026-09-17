@@ -20,6 +20,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -89,6 +91,12 @@ import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import androidx.room.Room
 import com.google.ar.core.ArCoreApk
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException
@@ -143,6 +151,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import okhttp3.OkHttpClient
 import java.io.File
 
@@ -153,27 +162,35 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private sealed interface AppDestination {
-    data object SessionList : AppDestination
+// 조회 흐름의 목적지다. 인자는 Navigation Compose의 type-safe route로 전달한다. Task 이름은
+// 사용자가 자유롭게 입력하는 문자열이라 `/`나 공백이 들어올 수 있는데, route 문자열을 직접
+// 조립하면 그 값이 경로를 깨뜨린다.
+//
+// 수집 작업 공간은 목적지가 아니다. 진입 경로가 하나뿐이고, 뒤로 가기가 "이전 화면으로"가 아니라
+// "종료할까요?"이며, 안에 또 모달을 품는다. 백스택 pop이 아닌 해제 가드이므로 CaptureScreen의
+// boolean 상태로 두고 NavHost 위에 모달로 얹는다.
+@Serializable
+private data object SessionListRoute
 
-    data object CaptureWorkspace : AppDestination
+@Serializable
+private data class TaskSessionsRoute(
+    val taskName: String,
+)
 
-    data class TaskSessions(
-        val taskName: String,
-    ) : AppDestination
+@Serializable
+private data class SessionDetailRoute(
+    val sessionId: String,
+)
 
-    data class SessionDetail(
-        val sessionId: String,
-    ) : AppDestination
+@Serializable
+private data class SessionVideoRoute(
+    val sessionId: String,
+)
 
-    data class SessionVideo(
-        val sessionId: String,
-    ) : AppDestination
-
-    data class UploadStatus(
-        val sessionId: String,
-    ) : AppDestination
-}
+@Serializable
+private data class UploadStatusRoute(
+    val sessionId: String,
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Suppress("FunctionName")
@@ -290,7 +307,17 @@ fun CaptureScreen() {
     var recordingStartNs by remember { mutableLongStateOf(0L) }
     var activeEpisode by remember { mutableStateOf<EpisodeMarker?>(null) }
     var arCoreInstallRequested by remember { mutableStateOf(false) }
-    var destination by remember { mutableStateOf<AppDestination>(AppDestination.SessionList) }
+    val navController = rememberNavController()
+    val currentEntry by navController.currentBackStackEntryAsState()
+
+    /**
+     * 수집 작업 공간을 띄우고 있는지 여부다.
+     *
+     * 프로세스가 재생성되면 복원하지 않는다. `ON_STOP`에서 진행 중인 Session을 `INTERRUPTED`로
+     * 마감하므로, 되살려도 수집 상태가 없는 빈 작업 공간이 된다. 조회 흐름의 백스택은 NavHost가
+     * 저장 상태로 복원한다. 화면 회전은 manifest의 `configChanges`가 받으므로 이 상태도 유지된다.
+     */
+    var capturing by remember { mutableStateOf(false) }
     var uploadJob by remember { mutableStateOf<Job?>(null) }
     var showStopConfirmation by remember { mutableStateOf(false) }
     var showCaptureMetadataDialog by remember { mutableStateOf(false) }
@@ -333,9 +360,10 @@ fun CaptureScreen() {
         when (controlPolicy().exitAction) {
             CaptureExitAction.Ignore -> Unit
             CaptureExitAction.Confirm -> showStopConfirmation = true
+            // 녹화 전에는 Session을 만들지 않고 작업 공간만 닫는다. 아래에 목록이 그대로 남아 있다.
             CaptureExitAction.Leave -> {
                 showCaptureMetadataDialog = false
-                destination = AppDestination.SessionList
+                capturing = false
             }
         }
     }
@@ -494,8 +522,8 @@ fun CaptureScreen() {
                 message = previewFailureMessage
             }
         }
-    LaunchedEffect(destination) {
-        if (destination == AppDestination.CaptureWorkspace) {
+    LaunchedEffect(capturing) {
+        if (capturing) {
             previewPermission.launch(Manifest.permission.CAMERA)
         }
     }
@@ -516,15 +544,15 @@ fun CaptureScreen() {
             delay(TRACKING_TICK_MS)
         }
     }
-    LaunchedEffect(message, destination) {
-        if (destination == AppDestination.CaptureWorkspace && message.isNotBlank()) {
+    LaunchedEffect(message, capturing) {
+        if (capturing && message.isNotBlank()) {
             val notice = message
             message = ""
             scope.launch { snackbarHostState.showSnackbar(notice) }
         }
     }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
-        if (cancelUploadOnStop(destination is AppDestination.UploadStatus)) {
+        if (cancelUploadOnStop(currentEntry?.destination?.hasRoute<UploadStatusRoute>() == true)) {
             uploadJob?.cancel()
         }
         if (finalizing) return@LifecycleEventEffect
@@ -553,7 +581,7 @@ fun CaptureScreen() {
     }
     // 백그라운드 전환으로 카메라를 놓고 돌아온 경우 TextureView는 살아 있지만 프레임이 끊긴 상태다.
     LifecycleEventEffect(Lifecycle.Event.ON_START) {
-        if (destination == AppDestination.CaptureWorkspace && !collecting) restoreIdlePreview()
+        if (capturing && !collecting) restoreIdlePreview()
     }
 
     fun startUpload(sessionId: String) {
@@ -562,91 +590,22 @@ fun CaptureScreen() {
             message = uploadEndpointMissing
             return
         }
-        destination = AppDestination.UploadStatus(sessionId)
+        // 업로드 상태 화면으로 넘어가므로 작업 공간을 닫는다. 남겨 두면 NavHost를 계속 덮는다.
+        capturing = false
+        // 계약상 업로드 상태에서 뒤로 가면 Detail로 돌아간다. 수집 마감처럼 Detail을 거치지 않고
+        // 들어오는 경로에서는 Detail을 먼저 쌓아 백스택이 그 순서를 갖게 한다.
+        if (currentEntry?.destination?.hasRoute<SessionDetailRoute>() != true) {
+            navController.navigate(SessionDetailRoute(sessionId))
+        }
+        navController.navigate(UploadStatusRoute(sessionId))
         uploadJob = scope.launch { service.upload(sessionId) }
     }
     val sharedVideoPlayer = rememberSharedVideoPlayer()
     // 재생 화면을 벗어나면 decoder를 계속 물고 있지 않도록 재생기를 놓는다.
-    LaunchedEffect(destination) {
-        if (destination !is AppDestination.SessionDetail && destination !is AppDestination.SessionVideo) {
-            sharedVideoPlayer.release()
-        }
-    }
-    when (val currentDestination = destination) {
-        AppDestination.SessionList -> {
-            SessionListScreen(
-                sessions = completedSummaries,
-                onStartCapture = {
-                    previewReady = false
-                    previewFailed = false
-                    showStopConfirmation = false
-                    task = ""
-                    objectName = ""
-                    recordingResolution = resolutionStore.load()
-                    // 새 TextureView가 이 크기로 버퍼를 잡는다. 직전 Session이 남긴 크기를 물려받지 않는다.
-                    idlePreviewSize = recordingResolution
-                    message = ""
-                    showCaptureMetadataDialog = true
-                    destination = AppDestination.CaptureWorkspace
-                },
-                onOpenTask = { taskName -> destination = AppDestination.TaskSessions(taskName) },
-            )
-            return
-        }
-        is AppDestination.TaskSessions -> {
-            TaskSessionListScreen(
-                taskName = currentDestination.taskName,
-                sessions = completedSummaries.filter { it.taskName.trim() == currentDestination.taskName },
-                onBack = { destination = AppDestination.SessionList },
-                onOpenSession = { sessionId -> destination = AppDestination.SessionDetail(sessionId) },
-            )
-            return
-        }
-        is AppDestination.SessionDetail -> {
-            val summary = completedSummaries.firstOrNull { it.sessionId == currentDestination.sessionId }
-            SessionDetailScreen(
-                summary = summary,
-                onBack = { destination = AppDestination.TaskSessions(summary?.taskName.orEmpty()) },
-                onUpload = { startUpload(currentDestination.sessionId) },
-                exportState = exportState,
-                exportMessage = exportMessage,
-                onExport = {
-                    pendingSessionId = currentDestination.sessionId
-                    treePicker.launch(null)
-                },
-                sharedPlayer = sharedVideoPlayer,
-                onOpenFullscreenVideo = { destination = AppDestination.SessionVideo(currentDestination.sessionId) },
-            )
-            return
-        }
-        is AppDestination.SessionVideo -> {
-            val summary = completedSummaries.firstOrNull { it.sessionId == currentDestination.sessionId }
-            FullScreenVideoScreen(
-                bundlePath = summary?.bundlePath,
-                sharedPlayer = sharedVideoPlayer,
-                onBack = { destination = AppDestination.SessionDetail(currentDestination.sessionId) },
-            )
-            return
-        }
-        is AppDestination.UploadStatus -> {
-            val state = completedSessions.firstOrNull { it.sessionId == currentDestination.sessionId }?.uploadState
-            UploadStatusScreen(
-                uploadState = state,
-                onBack = {
-                    destination = AppDestination.SessionDetail(currentDestination.sessionId)
-                },
-                onCancelUpload = {
-                    uploadJob?.cancel()
-                    destination = AppDestination.SessionDetail(currentDestination.sessionId)
-                },
-            )
-            return
-        }
-        AppDestination.CaptureWorkspace -> Unit
-    }
-
-    DisposableEffect(capturePreviewController) {
-        onDispose(capturePreviewController::release)
+    LaunchedEffect(currentEntry) {
+        val onPlaybackRoute =
+            currentEntry?.destination?.let { it.hasRoute<SessionDetailRoute>() || it.hasRoute<SessionVideoRoute>() } == true
+        if (!onPlaybackRoute) sharedVideoPlayer.release()
     }
 
     fun finalizeCapture() {
@@ -684,7 +643,8 @@ fun CaptureScreen() {
                                 startUpload(bundle.sessionId)
                             } else {
                                 repository.save(completedSession.copy(uploadState = UploadState.FAILED))
-                                destination = AppDestination.SessionDetail(bundle.sessionId)
+                                capturing = false
+                                navController.navigate(SessionDetailRoute(bundle.sessionId))
                             }
                         }
                     }
@@ -703,236 +663,347 @@ fun CaptureScreen() {
                 finalizing = false
                 // 마감에 성공하면 업로드·상세 화면으로 이동해 TextureView가 사라지므로 되살릴 필요가 없다.
                 // 수집 화면에 그대로 남는 실패 경로에서만 유휴 프리뷰를 다시 연다.
-                if (destination == AppDestination.CaptureWorkspace) restoreIdlePreview()
+                if (capturing) restoreIdlePreview()
             }
         }
     }
 
-    // 수집 화면은 가로로 고정한다. Camera 센서가 90도 눕혀 장착돼 있어 세로 화면에서는
-    // 프리뷰가 옆으로 누운 채 비율까지 어긋나 보인다. 저장되는 영상도 가로다.
-    LockLandscapeWhileVisible()
-    Box(Modifier.fillMaxSize().background(Color.Black)) {
-        AndroidView(
-            factory = { viewContext ->
-                TextureView(viewContext).apply {
-                    surfaceTextureListener =
-                        object : TextureView.SurfaceTextureListener {
-                            override fun onSurfaceTextureAvailable(
-                                surfaceTexture: SurfaceTexture,
-                                width: Int,
-                                height: Int,
-                            ) {
-                                surfaceTexture.setDefaultBufferSize(idlePreviewSize.width, idlePreviewSize.height)
-                                previewTexture = surfaceTexture
-                                previewSurface = Surface(surfaceTexture)
-                                applyIdlePreviewTransform(this@apply, width, height, idlePreviewSize.width, idlePreviewSize.height)
-                                when (val state = capturePreviewController.prepare()) {
-                                    is CapturePreviewState.Failed -> {
-                                        previewFailed = true
-                                        message = previewFailureMessage
-                                    }
-                                    else -> Unit
-                                }
-                            }
-
-                            override fun onSurfaceTextureSizeChanged(
-                                surfaceTexture: SurfaceTexture,
-                                width: Int,
-                                height: Int,
-                            ) = applyIdlePreviewTransform(this@apply, width, height, idlePreviewSize.width, idlePreviewSize.height)
-
-                            override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean {
-                                capturePreviewController.release()
-                                previewSurface?.release()
-                                previewSurface = null
-                                previewTexture = null
-                                previewReady = false
-                                return true
-                            }
-
-                            override fun onSurfaceTextureUpdated(surfaceTexture: SurfaceTexture) {
-                                if (!previewFailed) previewReady = true
-                            }
-                        }
-                }
-            },
-            // 변환은 유휴 프리뷰에만 건다. 수집이 시작되면 ARCore가 같은 Surface에 표시 기하를
-            // 반영해 직접 그리므로, TextureView 변환이 남아 있으면 그 위에 한 번 더 돌아간다.
-            update = { view ->
-                if (collecting) {
-                    view.setTransform(Matrix())
-                } else {
-                    applyIdlePreviewTransform(view, view.width, view.height, idlePreviewSize.width, idlePreviewSize.height)
-                }
-            },
-            // 프리뷰는 가로 16:9다. 화면이 세로면 위아래에 검은 영역이 남고, 가로면 꽉 찬다.
-            // 늘이거나 잘라내지 않아야 저장되는 영상과 화각이 같다.
-            modifier = Modifier.align(Alignment.Center).aspectRatio(PREVIEW_ASPECT_RATIO),
-        )
-        // 상태 배지와 닫기 버튼을 한 Row에 담아 어떤 화면 비율에서도 겹치지 않게 한다.
-        // 서로 다른 align으로 두면 배지 폭이 길어질 때 닫기 버튼 아래로 파고든다.
-        // 기준은 프리뷰가 아니라 화면이다. 하단 컨트롤과 좌표계를 맞추고, 레터박스가 생기는
-        // 기기에서는 검은 띠 위에 얹혀 영상을 가리지 않는다.
-        Row(
-            modifier =
-                Modifier
-                    .align(Alignment.TopCenter)
-                    .fillMaxWidth()
-                    .safeDrawingPadding()
-                    .padding(top = 20.dp, start = 20.dp, end = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top,
+    // 조회 흐름은 NavHost가, 수집 작업 공간은 그 위의 모달이 담당한다. 작업 공간이 NavHost
+    // 바깥에 있으므로 수집 상태가 백스택 조작과 무관하게 남고, ARCore·프리뷰 Surface·업로드 Job의
+    // 수명주기를 건드리지 않는다.
+    Box(modifier = Modifier.fillMaxSize()) {
+        NavHost(
+            navController = navController,
+            startDestination = SessionListRoute,
+            modifier = Modifier.fillMaxSize(),
+            // NavHost의 기본 전환은 좌우 슬라이드다. 이관 전에는 화면이 즉시 바뀌었고, 이 앱에는
+            // 전환 애니메이션을 도입할 이유가 없다. 수집 마감 경로는 Detail과 업로드 상태를 한
+            // 프레임에 연달아 쌓으므로 애니메이션이 있으면 슬라이드가 두 번 겹쳐 보인다.
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None },
+            popEnterTransition = { EnterTransition.None },
+            popExitTransition = { ExitTransition.None },
         ) {
-            Column(
-                // fill = false라야 배지가 제 너비만 쓰고, 길어져도 닫기 버튼 자리를 침범하지 않는다.
-                modifier = Modifier.weight(1f, fill = false),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                CaptureWorkspaceStatus(state = controlPolicy().state)
-                // 어느 해상도로 찍는지 촬영 직전에 보여 준다. Session마다 달라질 수 있다.
-                CaptureWorkspaceResolution(resolution = recordingResolution)
-            }
-            CaptureWorkspaceExitControls(
-                policy = controlPolicy(),
-                onExit = ::requestCaptureExit,
-            )
-        }
-        SnackbarHost(snackbarHostState, Modifier.align(Alignment.TopCenter).padding(top = 80.dp))
-        if (!showCaptureMetadataDialog) {
-            CaptureWorkspaceControls(
-                state = controlPolicy().state,
-                ready = controlPolicy().ready,
-                busy = controlBusy,
-                onPlay = play@{
-                    if (!controlPolicy().canPlay) return@play
-                    if (!collecting) {
-                        controlBusy = true
-                        previewReady = false
-                        capturePreviewController.release()
-                        cameraPermission.launch(Manifest.permission.CAMERA)
-                    } else {
-                        // Episode 시작은 Coordinator가 Tracking 안정화 여부를 확인한 뒤에만 허용한다.
-                        runCatching { coordinator.startEpisode(task, objectName) }
-                            .onSuccess {
-                                activeEpisode = it
-                                active = true
-                            }.onFailure { message = trackingNotReadyMessage }
-                    }
-                },
-                onPause = pause@{
-                    if (!controlPolicy().canPause) return@pause
-                    controlBusy = true
-                    // 기록은 coordinator의 onEpisodeClosed가 담당한다.
-                    runCatching { coordinator.endEpisode() }
-                        .onSuccess {
-                            activeEpisode = null
-                            active = false
-                        }.onFailure { message = operationFailureMessage }
-                    controlBusy = false
-                },
-                onStop = { if (controlPolicy().canStop) requestCaptureExit() },
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
-        }
-    }
-    if (showCaptureMetadataDialog) {
-        val focusManager = LocalFocusManager.current
-        val objectFieldFocus = remember { FocusRequester() }
-        val captureMetadataReady = task.isNotBlank() && objectName.isNotBlank()
-        val cancelCaptureMetadata = {
-            showCaptureMetadataDialog = false
-            destination = AppDestination.SessionList
-        }
-        // 확정한 선택만 기억한다. 취소하고 나간 선택은 다음 수집의 기본값이 되지 않는다.
-        val confirmCaptureMetadata = {
-            resolutionStore.save(recordingResolution)
-            showCaptureMetadataDialog = false
-            // 유휴 프리뷰도 고른 해상도로 다시 연다. Camera2는 session을 만들 때 stream 크기를
-            // 정하므로, 버퍼 크기만 바꾸면 이미 열린 session에는 반영되지 않는다.
-            if (idlePreviewSize != recordingResolution) {
-                idlePreviewSize = recordingResolution
-                previewTexture?.setDefaultBufferSize(recordingResolution.width, recordingResolution.height)
-                restoreIdlePreview()
-            }
-        }
-        // 키보드 입력이 필요한 다이얼로그는 Material 가이드라인상 전체화면으로 띄우고 확인·취소를
-        // 상단 앱바에 둔다. 가운데 띄우는 다이얼로그는 가로 화면에서 키보드가 올라오면 아래쪽 버튼이
-        // 가려져 닿을 방법이 없다. 앱바는 키보드와 겹치지 않으므로 방향과 무관하게 항상 누를 수 있다.
-        Dialog(
-            onDismissRequest = cancelCaptureMetadata,
-            properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
-        ) {
-            Surface(modifier = Modifier.fillMaxSize()) {
-                Column(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
-                    TopAppBar(
-                        title = { Text(stringResource(R.string.capture_metadata_title)) },
-                        navigationIcon = {
-                            IconButton(onClick = cancelCaptureMetadata) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_navigation_back),
-                                    contentDescription = stringResource(R.string.action_cancel),
-                                )
-                            }
+            composable<SessionListRoute> {
+                DestinationSurface {
+                    SessionListScreen(
+                        sessions = completedSummaries,
+                        onStartCapture = {
+                            previewReady = false
+                            previewFailed = false
+                            showStopConfirmation = false
+                            task = ""
+                            objectName = ""
+                            recordingResolution = resolutionStore.load()
+                            // 새 TextureView가 이 크기로 버퍼를 잡는다. 직전 Session이 남긴 크기를 물려받지 않는다.
+                            idlePreviewSize = recordingResolution
+                            message = ""
+                            showCaptureMetadataDialog = true
+                            capturing = true
                         },
-                        actions = {
-                            TextButton(
-                                enabled = captureMetadataReady,
-                                onClick = confirmCaptureMetadata,
-                            ) { Text(stringResource(R.string.capture_metadata_confirm)) }
+                        onOpenTask = { taskName -> navController.navigate(TaskSessionsRoute(taskName)) },
+                    )
+                }
+            }
+            composable<TaskSessionsRoute> { entry ->
+                val route = entry.toRoute<TaskSessionsRoute>()
+                DestinationSurface {
+                    TaskSessionListScreen(
+                        taskName = route.taskName,
+                        sessions = completedSummaries.filter { it.taskName.trim() == route.taskName },
+                        onBack = navController::popBackStack,
+                        onOpenSession = { sessionId -> navController.navigate(SessionDetailRoute(sessionId)) },
+                    )
+                }
+            }
+            composable<SessionDetailRoute> { entry ->
+                val route = entry.toRoute<SessionDetailRoute>()
+                DestinationSurface {
+                    SessionDetailScreen(
+                        summary = completedSummaries.firstOrNull { it.sessionId == route.sessionId },
+                        onBack = navController::popBackStack,
+                        onUpload = { startUpload(route.sessionId) },
+                        exportState = exportState,
+                        exportMessage = exportMessage,
+                        onExport = {
+                            pendingSessionId = route.sessionId
+                            treePicker.launch(null)
+                        },
+                        sharedPlayer = sharedVideoPlayer,
+                        onOpenFullscreenVideo = { navController.navigate(SessionVideoRoute(route.sessionId)) },
+                    )
+                }
+            }
+            composable<SessionVideoRoute> { entry ->
+                val route = entry.toRoute<SessionVideoRoute>()
+                // 전체화면은 스스로 검은 배경을 꽉 채우므로 판을 따로 깔지 않는다.
+                FullScreenVideoScreen(
+                    bundlePath = completedSummaries.firstOrNull { it.sessionId == route.sessionId }?.bundlePath,
+                    sharedPlayer = sharedVideoPlayer,
+                    onBack = navController::popBackStack,
+                )
+            }
+            composable<UploadStatusRoute> { entry ->
+                val route = entry.toRoute<UploadStatusRoute>()
+                DestinationSurface {
+                    UploadStatusScreen(
+                        uploadState = completedSessions.firstOrNull { it.sessionId == route.sessionId }?.uploadState,
+                        onBack = navController::popBackStack,
+                        onCancelUpload = {
+                            uploadJob?.cancel()
+                            navController.popBackStack()
                         },
                     )
-                    Column(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .verticalScroll(rememberScrollState())
-                                .imePadding()
-                                .padding(horizontal = 24.dp, vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        OutlinedTextField(
-                            value = task,
-                            onValueChange = { task = it },
-                            label = { Text(stringResource(R.string.capture_metadata_task)) },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                            keyboardActions = KeyboardActions(onNext = { objectFieldFocus.requestFocus() }),
-                        )
-                        OutlinedTextField(
-                            value = objectName,
-                            onValueChange = { objectName = it },
-                            label = { Text(stringResource(R.string.capture_metadata_object)) },
-                            modifier = Modifier.focusRequester(objectFieldFocus),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                            keyboardActions =
-                                KeyboardActions(
-                                    onDone = {
-                                        if (captureMetadataReady) {
-                                            focusManager.clearFocus()
-                                            confirmCaptureMetadata()
-                                        }
-                                    },
-                                ),
-                        )
-                        RecordingResolutionPicker(
-                            selected = recordingResolution,
-                            onSelect = { recordingResolution = it },
-                        )
-                    }
                 }
             }
         }
+        if (capturing) {
+            // 작업 공간을 벗어나면 유휴 프리뷰 Camera2 session을 놓는다. 조회 화면이 카메라를
+            // 붙잡고 있을 이유가 없고, 다음 수집은 새 Surface로 다시 연다.
+            DisposableEffect(capturePreviewController) {
+                onDispose(capturePreviewController::release)
+            }
+            // 수집 화면은 가로로 고정한다. Camera 센서가 90도 눕혀 장착돼 있어 세로 화면에서는
+            // 프리뷰가 옆으로 누운 채 비율까지 어긋나 보인다. 저장되는 영상도 가로다.
+            LockLandscapeWhileVisible()
+            Box(Modifier.fillMaxSize().background(Color.Black)) {
+                AndroidView(
+                    factory = { viewContext ->
+                        TextureView(viewContext).apply {
+                            surfaceTextureListener =
+                                object : TextureView.SurfaceTextureListener {
+                                    override fun onSurfaceTextureAvailable(
+                                        surfaceTexture: SurfaceTexture,
+                                        width: Int,
+                                        height: Int,
+                                    ) {
+                                        surfaceTexture.setDefaultBufferSize(idlePreviewSize.width, idlePreviewSize.height)
+                                        previewTexture = surfaceTexture
+                                        previewSurface = Surface(surfaceTexture)
+                                        applyIdlePreviewTransform(this@apply, width, height, idlePreviewSize.width, idlePreviewSize.height)
+                                        when (val state = capturePreviewController.prepare()) {
+                                            is CapturePreviewState.Failed -> {
+                                                previewFailed = true
+                                                message = previewFailureMessage
+                                            }
+                                            else -> Unit
+                                        }
+                                    }
+
+                                    override fun onSurfaceTextureSizeChanged(
+                                        surfaceTexture: SurfaceTexture,
+                                        width: Int,
+                                        height: Int,
+                                    ) = applyIdlePreviewTransform(this@apply, width, height, idlePreviewSize.width, idlePreviewSize.height)
+
+                                    override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean {
+                                        capturePreviewController.release()
+                                        previewSurface?.release()
+                                        previewSurface = null
+                                        previewTexture = null
+                                        previewReady = false
+                                        return true
+                                    }
+
+                                    override fun onSurfaceTextureUpdated(surfaceTexture: SurfaceTexture) {
+                                        if (!previewFailed) previewReady = true
+                                    }
+                                }
+                        }
+                    },
+                    // 변환은 유휴 프리뷰에만 건다. 수집이 시작되면 ARCore가 같은 Surface에 표시 기하를
+                    // 반영해 직접 그리므로, TextureView 변환이 남아 있으면 그 위에 한 번 더 돌아간다.
+                    update = { view ->
+                        if (collecting) {
+                            view.setTransform(Matrix())
+                        } else {
+                            applyIdlePreviewTransform(view, view.width, view.height, idlePreviewSize.width, idlePreviewSize.height)
+                        }
+                    },
+                    // 프리뷰는 가로 16:9다. 화면이 세로면 위아래에 검은 영역이 남고, 가로면 꽉 찬다.
+                    // 늘이거나 잘라내지 않아야 저장되는 영상과 화각이 같다.
+                    modifier = Modifier.align(Alignment.Center).aspectRatio(PREVIEW_ASPECT_RATIO),
+                )
+                // 상태 배지와 닫기 버튼을 한 Row에 담아 어떤 화면 비율에서도 겹치지 않게 한다.
+                // 서로 다른 align으로 두면 배지 폭이 길어질 때 닫기 버튼 아래로 파고든다.
+                // 기준은 프리뷰가 아니라 화면이다. 하단 컨트롤과 좌표계를 맞추고, 레터박스가 생기는
+                // 기기에서는 검은 띠 위에 얹혀 영상을 가리지 않는다.
+                Row(
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopCenter)
+                            .fillMaxWidth()
+                            .safeDrawingPadding()
+                            .padding(top = 20.dp, start = 20.dp, end = 20.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top,
+                ) {
+                    Column(
+                        // fill = false라야 배지가 제 너비만 쓰고, 길어져도 닫기 버튼 자리를 침범하지 않는다.
+                        modifier = Modifier.weight(1f, fill = false),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        CaptureWorkspaceStatus(state = controlPolicy().state)
+                        // 어느 해상도로 찍는지 촬영 직전에 보여 준다. Session마다 달라질 수 있다.
+                        CaptureWorkspaceResolution(resolution = recordingResolution)
+                    }
+                    CaptureWorkspaceExitControls(
+                        policy = controlPolicy(),
+                        onExit = ::requestCaptureExit,
+                    )
+                }
+                SnackbarHost(snackbarHostState, Modifier.align(Alignment.TopCenter).padding(top = 80.dp))
+                if (!showCaptureMetadataDialog) {
+                    CaptureWorkspaceControls(
+                        state = controlPolicy().state,
+                        ready = controlPolicy().ready,
+                        busy = controlBusy,
+                        onPlay = play@{
+                            if (!controlPolicy().canPlay) return@play
+                            if (!collecting) {
+                                controlBusy = true
+                                previewReady = false
+                                capturePreviewController.release()
+                                cameraPermission.launch(Manifest.permission.CAMERA)
+                            } else {
+                                // Episode 시작은 Coordinator가 Tracking 안정화 여부를 확인한 뒤에만 허용한다.
+                                runCatching { coordinator.startEpisode(task, objectName) }
+                                    .onSuccess {
+                                        activeEpisode = it
+                                        active = true
+                                    }.onFailure { message = trackingNotReadyMessage }
+                            }
+                        },
+                        onPause = pause@{
+                            if (!controlPolicy().canPause) return@pause
+                            controlBusy = true
+                            // 기록은 coordinator의 onEpisodeClosed가 담당한다.
+                            runCatching { coordinator.endEpisode() }
+                                .onSuccess {
+                                    activeEpisode = null
+                                    active = false
+                                }.onFailure { message = operationFailureMessage }
+                            controlBusy = false
+                        },
+                        onStop = { if (controlPolicy().canStop) requestCaptureExit() },
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                    )
+                }
+            }
+            if (showCaptureMetadataDialog) {
+                val focusManager = LocalFocusManager.current
+                val objectFieldFocus = remember { FocusRequester() }
+                val captureMetadataReady = task.isNotBlank() && objectName.isNotBlank()
+                val cancelCaptureMetadata = {
+                    showCaptureMetadataDialog = false
+                    capturing = false
+                }
+                // 확정한 선택만 기억한다. 취소하고 나간 선택은 다음 수집의 기본값이 되지 않는다.
+                val confirmCaptureMetadata = {
+                    resolutionStore.save(recordingResolution)
+                    showCaptureMetadataDialog = false
+                    // 유휴 프리뷰도 고른 해상도로 다시 연다. Camera2는 session을 만들 때 stream 크기를
+                    // 정하므로, 버퍼 크기만 바꾸면 이미 열린 session에는 반영되지 않는다.
+                    if (idlePreviewSize != recordingResolution) {
+                        idlePreviewSize = recordingResolution
+                        previewTexture?.setDefaultBufferSize(recordingResolution.width, recordingResolution.height)
+                        restoreIdlePreview()
+                    }
+                }
+                // 키보드 입력이 필요한 다이얼로그는 Material 가이드라인상 전체화면으로 띄우고 확인·취소를
+                // 상단 앱바에 둔다. 가운데 띄우는 다이얼로그는 가로 화면에서 키보드가 올라오면 아래쪽 버튼이
+                // 가려져 닿을 방법이 없다. 앱바는 키보드와 겹치지 않으므로 방향과 무관하게 항상 누를 수 있다.
+                Dialog(
+                    onDismissRequest = cancelCaptureMetadata,
+                    properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+                ) {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        Column(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
+                            TopAppBar(
+                                title = { Text(stringResource(R.string.capture_metadata_title)) },
+                                navigationIcon = {
+                                    IconButton(onClick = cancelCaptureMetadata) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.ic_navigation_back),
+                                            contentDescription = stringResource(R.string.action_cancel),
+                                        )
+                                    }
+                                },
+                                actions = {
+                                    TextButton(
+                                        enabled = captureMetadataReady,
+                                        onClick = confirmCaptureMetadata,
+                                    ) { Text(stringResource(R.string.capture_metadata_confirm)) }
+                                },
+                            )
+                            Column(
+                                modifier =
+                                    Modifier
+                                        .fillMaxSize()
+                                        .verticalScroll(rememberScrollState())
+                                        .imePadding()
+                                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                OutlinedTextField(
+                                    value = task,
+                                    onValueChange = { task = it },
+                                    label = { Text(stringResource(R.string.capture_metadata_task)) },
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                                    keyboardActions = KeyboardActions(onNext = { objectFieldFocus.requestFocus() }),
+                                )
+                                OutlinedTextField(
+                                    value = objectName,
+                                    onValueChange = { objectName = it },
+                                    label = { Text(stringResource(R.string.capture_metadata_object)) },
+                                    modifier = Modifier.focusRequester(objectFieldFocus),
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                    keyboardActions =
+                                        KeyboardActions(
+                                            onDone = {
+                                                if (captureMetadataReady) {
+                                                    focusManager.clearFocus()
+                                                    confirmCaptureMetadata()
+                                                }
+                                            },
+                                        ),
+                                )
+                                RecordingResolutionPicker(
+                                    selected = recordingResolution,
+                                    onSelect = { recordingResolution = it },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            if (showStopConfirmation) {
+                CaptureStopConfirmation(
+                    onConfirm = {
+                        showStopConfirmation = false
+                        finalizeCapture()
+                    },
+                    onDismiss = { showStopConfirmation = false },
+                )
+            }
+        }
     }
-    if (showStopConfirmation) {
-        CaptureStopConfirmation(
-            onConfirm = {
-                showStopConfirmation = false
-                finalizeCapture()
-            },
-            onDismiss = { showStopConfirmation = false },
-        )
-    }
+}
+
+/**
+ * 목적지 내용을 불투명한 판 위에 올린다.
+ *
+ * `NavHost`는 `AnimatedContent`로 목적지를 교체한다. 전환 애니메이션을 껐더라도 나가는 목적지가
+ * 한 프레임 더 composition에 남으므로, 배경을 그리지 않으면 그 프레임에 두 화면의 내용이 같은
+ * 창 배경 위에 겹쳐 그려져 이전 화면이 비쳐 보인다. `TigerTheme`에는 `Surface`가 없고 각 화면도
+ * 배경을 그리지 않아, 판은 목적지마다 깔아야 한다.
+ */
+@Suppress("FunctionName")
+@Composable
+private fun DestinationSurface(content: @Composable () -> Unit) {
+    Surface(modifier = Modifier.fillMaxSize(), content = content)
 }
 
 /**

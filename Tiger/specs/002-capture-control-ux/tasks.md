@@ -256,3 +256,28 @@ T021이 요구한 동작(정지가 열린 Episode를 완료하고 finalize 성�
 
 `CaptureSessionCoordinator`는 003 기능의 T009에서 `MainActivity`에 연결되었다. 이 시점부터 Session과
 Episode 상태의 단일 판단 주체는 Coordinator다.
+
+---
+
+## 정합화 기록 (2026-09-17, S15P21A206-40)
+
+T014·T015·T016·T028의 완료 증거는 `AppDestination` sealed 목적지와 `CaptureScreen`의 destination
+`when` 분기를 production 호출 경로로 기록했다. S15P21A206-40에서 조회 흐름을 Navigation Compose로
+이관해 그 구조가 없어졌다. 현재 호출 경로는 `CaptureScreen`의 `NavHost`와 목적지별 `composable`
+블록이며, 각 화면의 이탈은 `navController.popBackStack()`이다. 수집 작업 공간은 목적지에서 빠지고
+`capturing` boolean이 제어하는 `NavHost` 위의 모달이 되었다.
+
+각 task가 요구한 동작(시작 화면, Task 그룹·Session 요약·Detail 전환, 목록에서 Detail로의 이동, 좌측
+상단 뒤로가기 아이콘)은 그대로 충족되므로 완료 판정은 유지한다. 구조 변경 사실만 여기에 기록한다.
+
+이관으로 새로 충족된 범위는 다음과 같다.
+
+- 모든 조회 화면에서 시스템 뒤로 가기가 직전 화면으로 이동한다. 이전에는 `BackHandler`가 있는 수집
+  작업 공간과 업로드 상태를 뺀 화면에서 앱이 종료됐다.
+- Session Detail의 이탈 대상 하드코딩(`TaskSessions(summary?.taskName.orEmpty())`)을 제거했다.
+- 프로세스 재생성 시 조회 흐름의 백스택을 복원한다.
+
+아직 남은 검증: 실기기에서의 뒤로 가기 동작 확인. 아래 별도 task로 둔다.
+
+- [ ] T038 [S15P21A206-40] 실기기에서 조회 화면별 시스템 뒤로 가기, Task 홈에서의 앱 종료, 수집 작업
+  공간의 종료 확인, 업로드 중 취소 확인, 프로세스 재생성 후 화면 복원을 확인한다.
