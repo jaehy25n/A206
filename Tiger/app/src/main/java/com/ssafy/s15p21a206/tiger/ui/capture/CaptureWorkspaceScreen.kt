@@ -46,6 +46,7 @@ import com.ssafy.s15p21a206.tiger.ui.theme.CaptureControlDisabled
 import com.ssafy.s15p21a206.tiger.ui.theme.CaptureDestructive
 import com.ssafy.s15p21a206.tiger.ui.theme.CaptureFullScreenScrim
 import com.ssafy.s15p21a206.tiger.ui.theme.CaptureOverlayScrim
+import com.ssafy.s15p21a206.tiger.ui.theme.CaptureOverlaySupporting
 import com.ssafy.s15p21a206.tiger.ui.theme.CaptureStart
 
 @Composable
@@ -152,7 +153,7 @@ fun CaptureFinalizingOverlay(
             Text(text = finalizing, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
             Text(
                 text = stringResource(R.string.capture_finalizing_warning),
-                color = CaptureControlDisabled,
+                color = CaptureOverlaySupporting,
                 fontSize = 14.sp,
             )
         } else {
