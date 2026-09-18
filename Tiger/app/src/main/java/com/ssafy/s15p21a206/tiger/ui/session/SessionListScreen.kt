@@ -25,6 +25,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.ssafy.s15p21a206.tiger.R
 import com.ssafy.s15p21a206.tiger.episode.SessionSummary
@@ -108,6 +110,7 @@ private fun NewSessionFab(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val label = stringResource(R.string.session_list_new_capture)
     ExtendedFloatingActionButton(
         onClick = onClick,
         icon = {
@@ -116,7 +119,7 @@ private fun NewSessionFab(
                 contentDescription = null,
             )
         },
-        text = { Text(stringResource(R.string.session_list_new_capture)) },
+        text = { Text(label) },
         // 기본값인 primaryContainer는 연한 판이라 목록 위에서 흐릿하게 뜬다. 짙은 primary를
         // 써야 주 동작으로 읽힌다. 그림자도 기본 6dp는 과해서 떠 있는 정도만 남긴다.
         containerColor = MaterialTheme.colorScheme.primary,
@@ -129,7 +132,17 @@ private fun NewSessionFab(
                 hoveredElevation = 3.dp,
             ),
         // 카드와 같은 16dp에 맞춰 오른쪽 끝을 하나로 정렬한다.
-        modifier = modifier.padding(16.dp),
+        //
+        // 이름은 글자가 아니라 여기에 둔다. M3의 Extended FAB는 글자를 접었다 펴는 칸으로 다루고
+        // 그 칸을 `clearAndSetSemantics`로 감싼다. 접히면 사라질 글자가 이름 노릇을 하면 이름도
+        // 함께 사라지기 때문이다. 그래서 글자의 semantics는 merged 트리에서 통째로 지워지고,
+        // 글자만 두면 보조 기술에는 이름 없는 버튼으로 읽힌다. merged 트리가 곧 접근성 트리이므로
+        // 이름은 FAB 노드 자신이 가져야 한다. 눈에 보이는 문구를 그대로 써야 음성 조작이 들은
+        // 대로 부를 수 있다.
+        modifier =
+            modifier
+                .padding(16.dp)
+                .semantics { text = AnnotatedString(label) },
     )
 }
 
