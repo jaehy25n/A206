@@ -43,10 +43,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -1170,40 +1173,16 @@ private fun SessionDetailScreen(
                 .verticalScroll(rememberScrollState()),
     ) {
         NavigationHeader(
-            // 어느 세션인지는 본문의 이름표가 말한다. 헤더에는 뒤로 가기와 정보만 남긴다.
+            // 어느 세션인지는 본문의 이름표가 말한다. 헤더에는 뒤로 가기와 메뉴만 남긴다.
             title = "",
             onBack = onBack,
         ) {
-            // 사진 앱이 크기·형식·촬영 설정을 ⓘ 뒤 시트로 미뤄 두는 자리다. 뒤로 가기와 같은 급으로
-            // 보이지 않도록 글리프를 작게, 색은 옅게 둔다.
             if (summary != null) {
-                IconButton(onClick = { showSessionInfo = true }) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_session_info),
-                        contentDescription = stringResource(R.string.session_info_title),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(SESSION_INFO_ICON_SIZE),
-                    )
-                }
-                // 삭제는 이 화면의 주 동작이 아니다. 업로드 버튼이 본문에서 주 동작을 맡고 있고,
-                // 삭제는 그 옆에 같은 크기로 둘 만한 것이 아니라 필요할 때 찾아가는 동작이다.
-                // 업로드가 진행 중인 동안은 번들을 읽고 있으므로 누를 수 없게 둔다.
-                val deleteAction = presentation?.deleteAction
-                IconButton(
-                    onClick = { pendingDelete = deleteAction },
-                    enabled = deleteAction != null,
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_session_delete),
-                        contentDescription = stringResource(R.string.session_delete),
-                        // 색을 직접 주므로 비활성 색도 직접 맞춘다. 누를 수 없는 동안 같은 명도로
-                        // 남으면 눌리지 않는 이유를 화면이 말하지 못한다.
-                        tint =
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                                .copy(alpha = if (deleteAction != null) 1f else DISABLED_ICON_ALPHA),
-                        modifier = Modifier.size(SESSION_INFO_ICON_SIZE),
-                    )
-                }
+                SessionDetailMenu(
+                    deleteAction = presentation?.deleteAction,
+                    onOpenSessionInfo = { showSessionInfo = true },
+                    onRequestDelete = { pendingDelete = it },
+                )
             }
         }
         if (summary == null) {
@@ -1295,11 +1274,61 @@ private fun SessionDetailScreen(
 }
 
 /**
+ * 세션 정보와 삭제를 담는 헤더 메뉴다.
+ *
+ * 둘 다 이 화면의 주 동작이 아니다. 본문의 전송 버튼이 주 동작을 맡고 있고, 이쪽은 확인하거나
+ * 정리하러 들어왔을 때만 찾는다. 제목이 없는 헤더에 흐린 글리프를 나란히 세우면 둘 다 무엇인지
+ * 추측해야 하는 표가 된다. 메뉴로 접으면 글자로 이름이 붙고 헤더에는 뒤로 가기만 남는다.
+ *
+ * 삭제는 되돌릴 수 없으므로 메뉴를 여는 한 단계가 더 있는 편이 낫다. 업로드가 번들을 읽고 있는
+ * 동안은 누를 수 없으며, 흐린 아이콘과 달리 흐린 글자는 무엇이 막혔는지를 스스로 말한다.
+ */
+@Composable
+@Suppress("FunctionName")
+private fun SessionDetailMenu(
+    deleteAction: SessionDetailPresentation.DeleteAction?,
+    onOpenSessionInfo: () -> Unit,
+    onRequestDelete: (SessionDetailPresentation.DeleteAction) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                painter = painterResource(R.drawable.ic_more_actions),
+                contentDescription = stringResource(R.string.session_detail_more_actions),
+                // 뒤로 가기와 같은 급으로 보이지 않도록 글리프를 작게, 색은 옅게 둔다.
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(HEADER_MENU_ICON_SIZE),
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.session_info_title)) },
+                onClick = {
+                    expanded = false
+                    onOpenSessionInfo()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.session_delete)) },
+                enabled = deleteAction != null,
+                // 되돌릴 수 없는 항목은 error 색으로 둬서 위 항목과 성격이 다름을 보인다.
+                colors = MenuDefaults.itemColors(textColor = MaterialTheme.colorScheme.error),
+                onClick = {
+                    expanded = false
+                    deleteAction?.let(onRequestDelete)
+                },
+            )
+        }
+    }
+}
+
+/**
  * 삭제를 확인받는 판이다.
  *
  * 되돌릴 수 없으므로 한 번 묻는다. 무엇을 잃는지는 업로드 여부에 달렸고, 서버에 DELETE API가
- * 없어 이미 올린 사본은 어느 쪽이든 남는다. 두 경우를 같은 문구로 덮으면 아직 올리지 않은
- * 세션을 지울 때 사용자가 무엇을 잃는지 모른 채 확인을 누른다.
+ * 없어 이미 업로드된 데이터는 어느 쪽이든 서버에 남는다. 두 경우를 같은 문구로 덮으면 아직
+ * 올리지 않은 세션을 삭제할 때 사용자가 무엇을 잃는지 모른 채 확인을 누른다.
  */
 @Composable
 @Suppress("FunctionName")
@@ -1776,12 +1805,9 @@ private val DETAIL_CONTENT_PADDING = 16.dp
 private val DETAIL_VIDEO_GAP = 24.dp
 
 /**
- * 세션 정보 버튼의 글리프 크기.
+ * 헤더 메뉴 버튼의 글리프 크기.
  *
  * 헤더에서 뒤로 가기와 나란히 서지만 같은 급의 동작은 아니다. 기본 24dp보다 작게 두어 있는 줄만
  * 알면 되는 단추로 남긴다. 터치 영역은 `IconButton`의 48dp를 그대로 둔다.
  */
-private val SESSION_INFO_ICON_SIZE = 20.dp
-
-/** Material 3이 비활성 내용에 쓰는 투명도. 색을 직접 주는 아이콘에 같은 값을 맞춘다. */
-private const val DISABLED_ICON_ALPHA = 0.38f
+private val HEADER_MENU_ICON_SIZE = 20.dp
