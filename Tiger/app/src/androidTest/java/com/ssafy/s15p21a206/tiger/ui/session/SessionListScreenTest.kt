@@ -1,16 +1,15 @@
 package com.ssafy.s15p21a206.tiger.ui.session
 
-import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.test.core.app.ApplicationProvider
 import com.ssafy.s15p21a206.tiger.R
 import com.ssafy.s15p21a206.tiger.episode.SessionSummary
 import com.ssafy.s15p21a206.tiger.episode.UploadState
+import com.ssafy.s15p21a206.tiger.string
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -81,9 +80,4 @@ class SessionListScreenTest {
             completedEpisodeCount = 2,
             taskName = "Door opening",
         )
-
-    private fun string(
-        resourceId: Int,
-        vararg formatArgs: Any,
-    ): String = ApplicationProvider.getApplicationContext<Context>().getString(resourceId, *formatArgs)
 }

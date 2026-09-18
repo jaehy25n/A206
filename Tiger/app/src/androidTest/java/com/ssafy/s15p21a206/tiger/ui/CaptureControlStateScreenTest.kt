@@ -12,7 +12,10 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import com.ssafy.s15p21a206.tiger.R
+import com.ssafy.s15p21a206.tiger.string
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureControlPolicy
+import com.ssafy.s15p21a206.tiger.ui.capture.CaptureFinalizingOverlay
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureStopConfirmation
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceControlState
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceControls
@@ -37,26 +40,32 @@ class CaptureControlStateScreenTest {
                 CaptureWorkspaceExitControls(CaptureControlPolicy(state.value), { exits++ })
             }
         }
-        composeRule.onNodeWithContentDescription("수집 작업 공간 닫기").performClick()
+        composeRule.onNodeWithContentDescription(string(R.string.capture_close_content_description)).performClick()
         composeRule.runOnIdle { dispatcher.onBackPressed() }
         assertEquals(2, exits)
         composeRule.runOnIdle { state.value = CaptureWorkspaceControlState.Finalizing }
-        composeRule.onNodeWithContentDescription("수집 작업 공간 닫기").assertIsNotEnabled().performClick()
+        composeRule
+            .onNodeWithContentDescription(string(R.string.capture_close_content_description))
+            .assertIsNotEnabled()
+            .performClick()
         composeRule.runOnIdle { dispatcher.onBackPressed() }
         assertEquals(2, exits)
     }
 
+    // 마감 중에는 어떤 제어도 받지 않으며, 그 사실을 화면을 덮는 판이 알린다. 진행 표시는 제어와
+    // 같은 줄이 아니라 그 판에 있으므로 판을 함께 띄워야 상태 전체를 검사한 것이 된다.
     @Test
     fun finalizing_disables_controls_and_exposes_progress() {
         var calls = 0
         composeRule.setContent {
             TigerTheme {
                 CaptureWorkspaceControls(CaptureWorkspaceControlState.Finalizing, { calls++ }, { calls++ }, { calls++ })
+                CaptureFinalizingOverlay(failure = null, onDismissFailure = {})
             }
         }
-        composeRule.onNodeWithContentDescription("작업 구간 시작").assertIsNotEnabled().performClick()
-        composeRule.onNodeWithContentDescription("수집 종료").assertIsNotEnabled().performClick()
-        composeRule.onNodeWithContentDescription("수집을 완료하고 있습니다").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(string(R.string.capture_control_resume)).assertIsNotEnabled()
+        composeRule.onNodeWithContentDescription(string(R.string.capture_control_stop)).assertIsNotEnabled()
+        composeRule.onNodeWithContentDescription(string(R.string.capture_finalizing)).assertIsDisplayed()
         assertEquals(0, calls)
     }
 
@@ -67,7 +76,7 @@ class CaptureControlStateScreenTest {
                 CaptureWorkspaceControls(CaptureWorkspaceControlState.Idle, {}, {}, {}, ready = false)
             }
         }
-        composeRule.onNodeWithContentDescription("수집 시작").assertIsNotEnabled()
+        composeRule.onNodeWithContentDescription(string(R.string.capture_control_start)).assertIsNotEnabled()
     }
 
     // Tracking이 안정화되기 전에는 Episode를 시작할 수 없고, 그 사실이 화면에 보여야 한다.
@@ -80,9 +89,12 @@ class CaptureControlStateScreenTest {
                 CaptureWorkspaceStatus(CaptureWorkspaceControlState.Initializing)
             }
         }
-        composeRule.onNodeWithContentDescription("작업 구간 시작").assertIsNotEnabled().performClick()
-        composeRule.onNodeWithContentDescription("수집 종료").assertIsEnabled()
-        composeRule.onNodeWithContentDescription("INITIALIZING · ARCore Tracking 준비 중").assertIsDisplayed()
+        composeRule
+            .onNodeWithContentDescription(string(R.string.capture_control_resume))
+            .assertIsNotEnabled()
+            .performClick()
+        composeRule.onNodeWithContentDescription(string(R.string.capture_control_stop)).assertIsEnabled()
+        composeRule.onNodeWithContentDescription(string(R.string.capture_status_initializing)).assertIsDisplayed()
         assertEquals(0, calls)
     }
 
@@ -95,8 +107,8 @@ class CaptureControlStateScreenTest {
                 CaptureWorkspaceStatus(CaptureWorkspaceControlState.Ready)
             }
         }
-        composeRule.onNodeWithContentDescription("작업 구간 시작").assertIsEnabled().performClick()
-        composeRule.onNodeWithContentDescription("READY").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(string(R.string.capture_control_resume)).assertIsEnabled().performClick()
+        composeRule.onNodeWithContentDescription(string(R.string.capture_status_ready)).assertIsDisplayed()
         assertEquals(1, plays)
     }
 
@@ -107,8 +119,8 @@ class CaptureControlStateScreenTest {
                 CaptureWorkspaceControls(CaptureWorkspaceControlState.Idle, {}, {}, {})
             }
         }
-        composeRule.onNodeWithContentDescription("수집 시작").performTouchInput { longClick() }
-        composeRule.onNodeWithText("수집 시작").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(string(R.string.capture_control_start)).performTouchInput { longClick() }
+        composeRule.onNodeWithText(string(R.string.capture_control_start)).assertIsDisplayed()
     }
 
     @Test
@@ -118,11 +130,11 @@ class CaptureControlStateScreenTest {
         composeRule.setContent {
             TigerTheme { CaptureStopConfirmation(onConfirm = { confirmed++ }, onDismiss = { cancelled++ }) }
         }
-        composeRule.onNodeWithText("현재 녹화를 종료하고 Session을 완료한 뒤 전송을 시작합니다.").assertIsDisplayed()
-        composeRule.onNodeWithText("취소").performClick()
+        composeRule.onNodeWithText(string(R.string.capture_stop_message)).assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.action_cancel)).performClick()
         assertEquals(0, confirmed)
         assertEquals(1, cancelled)
-        composeRule.onNodeWithText("종료").performClick()
+        composeRule.onNodeWithText(string(R.string.capture_stop_confirm)).performClick()
         assertEquals(1, confirmed)
     }
 }
