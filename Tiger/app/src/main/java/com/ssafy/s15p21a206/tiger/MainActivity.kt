@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -45,6 +46,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SnackbarHost
@@ -130,21 +132,29 @@ import com.ssafy.s15p21a206.tiger.episode.TrackingState
 import com.ssafy.s15p21a206.tiger.episode.UploadState
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureControlPolicy
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureExitAction
+import com.ssafy.s15p21a206.tiger.ui.capture.CaptureFinalizingOverlay
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureStopConfirmation
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceControlState
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceControls
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceExitControls
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceResolution
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceStatus
+import com.ssafy.s15p21a206.tiger.ui.common.ListSectionHeader
+import com.ssafy.s15p21a206.tiger.ui.common.MetaText
+import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeader
+import com.ssafy.s15p21a206.tiger.ui.common.SupportingText
 import com.ssafy.s15p21a206.tiger.ui.session.SessionDetailPresentation
 import com.ssafy.s15p21a206.tiger.ui.session.SessionListScreen
 import com.ssafy.s15p21a206.tiger.ui.session.TaskSessionListScreen
+import com.ssafy.s15p21a206.tiger.ui.session.VideoResolutionState
+import com.ssafy.s15p21a206.tiger.ui.session.rememberVideoResolution
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerTheme
-import com.ssafy.s15p21a206.tiger.ui.upload.UploadStatusScreen
 import com.ssafy.s15p21a206.tiger.ui.upload.cancelUploadOnStop
+import com.ssafy.s15p21a206.tiger.ui.upload.labelRes
 import com.ssafy.s15p21a206.tiger.upload.SessionUploadRequestFactory
 import com.ssafy.s15p21a206.tiger.upload.SessionUploadService
 import com.ssafy.s15p21a206.tiger.upload.SessionUploader
+import com.ssafy.s15p21a206.tiger.upload.UploadResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -184,11 +194,6 @@ private data class SessionDetailRoute(
 
 @Serializable
 private data class SessionVideoRoute(
-    val sessionId: String,
-)
-
-@Serializable
-private data class UploadStatusRoute(
     val sessionId: String,
 )
 
@@ -240,6 +245,7 @@ fun CaptureScreen() {
     val captureRuntime = remember { AndroidCaptureRuntime(context.applicationContext, SessionBundleStore(context.applicationContext)) }
     var controlBusy by remember { mutableStateOf(false) }
     var finalizing by remember { mutableStateOf(false) }
+    var finalizeFailure by remember { mutableStateOf<String?>(null) }
     var previewReady by remember { mutableStateOf(false) }
     var previewFailed by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -319,6 +325,7 @@ fun CaptureScreen() {
      */
     var capturing by remember { mutableStateOf(false) }
     var uploadJob by remember { mutableStateOf<Job?>(null) }
+    var uploadFailureReason by remember { mutableStateOf<String?>(null) }
     var showStopConfirmation by remember { mutableStateOf(false) }
     var showCaptureMetadataDialog by remember { mutableStateOf(false) }
     var trackingReady by remember { mutableStateOf(false) }
@@ -552,7 +559,9 @@ fun CaptureScreen() {
         }
     }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
-        if (cancelUploadOnStop(currentEntry?.destination?.hasRoute<UploadStatusRoute>() == true)) {
+        // 백그라운드 업로드는 하지 않는다. 판정 기준이 "업로드 화면에 있는가"였으나 그 화면을 없애
+        // 전송이 진행 중인지로 바꾼다. 어느 화면에 있든 전송 중이면 끊고 FAILED로 남긴다.
+        if (cancelUploadOnStop(uploadInFlight = uploadJob?.isActive == true)) {
             uploadJob?.cancel()
         }
         if (finalizing) return@LifecycleEventEffect
@@ -584,21 +593,74 @@ fun CaptureScreen() {
         if (capturing && !collecting) restoreIdlePreview()
     }
 
+    /**
+     * 수집 정보 입력부터 시작한다.
+     *
+     * [initialTask]는 이미 알고 있는 Task 이름이다. Task의 세션 목록에서 시작하면 그 이름이
+     * 채워진 채로 열려 같은 이름을 다시 입력하지 않는다. 채워진 뒤에도 고칠 수 있게 두므로,
+     * 잘못 들어왔더라도 나갔다 올 필요는 없다.
+     */
+    fun startCapture(initialTask: String) {
+        previewReady = false
+        previewFailed = false
+        showStopConfirmation = false
+        task = initialTask
+        objectName = ""
+        recordingResolution = resolutionStore.load()
+        // 새 TextureView가 이 크기로 버퍼를 잡는다. 직전 Session이 남긴 크기를 물려받지 않는다.
+        idlePreviewSize = recordingResolution
+        message = ""
+        showCaptureMetadataDialog = true
+        capturing = true
+    }
+
+    /**
+     * 전송을 걸고 실패 사유를 받아 둔다.
+     *
+     * 사유는 화면에만 쓰고 저장하지 않는다. 업로드에는 내보내기의 `exportFailureReason`에 해당하는
+     * 컬럼이 없고, 무엇이 막았는지는 실패한 자리에서 보면 되는 값이다.
+     */
+    fun launchUpload(
+        service: SessionUploadService,
+        sessionId: String,
+    ) {
+        uploadFailureReason = null
+        uploadJob =
+            scope.launch {
+                val result = runCatching { service.upload(sessionId) }.getOrNull()
+                uploadFailureReason = (result as? UploadResult.Failed)?.reason
+            }
+    }
+
+    /**
+     * 전송을 걸고 그 세션의 상세를 띄운다.
+     *
+     * 마감이 끝나면 세션은 저장되어 존재한다. 존재하는 것에 무슨 일이 일어나는지는 그것의 화면에서
+     * 보여 주면 되므로 전송만을 위한 목적지를 따로 두지 않는다. 전송은 네트워크에 매여 길어질 수
+     * 있어 사용자를 붙잡아 둘 수도 없다.
+     */
     fun startUpload(sessionId: String) {
         val service = uploadService
         if (service == null) {
             message = uploadEndpointMissing
             return
         }
-        // 업로드 상태 화면으로 넘어가므로 작업 공간을 닫는다. 남겨 두면 NavHost를 계속 덮는다.
+        // 상세로 넘어가므로 작업 공간을 닫는다. 남겨 두면 NavHost를 계속 덮는다.
         capturing = false
-        // 계약상 업로드 상태에서 뒤로 가면 Detail로 돌아간다. 수집 마감처럼 Detail을 거치지 않고
-        // 들어오는 경로에서는 Detail을 먼저 쌓아 백스택이 그 순서를 갖게 한다.
         if (currentEntry?.destination?.hasRoute<SessionDetailRoute>() != true) {
             navController.navigate(SessionDetailRoute(sessionId))
         }
-        navController.navigate(UploadStatusRoute(sessionId))
-        uploadJob = scope.launch { service.upload(sessionId) }
+        launchUpload(service, sessionId)
+    }
+
+    /** 이미 그 세션의 상세에 있으므로 목적지를 다시 쌓지 않고 전송만 새로 건다. */
+    fun retryUpload(sessionId: String) {
+        val service = uploadService
+        if (service == null) {
+            message = uploadEndpointMissing
+            return
+        }
+        launchUpload(service, sessionId)
     }
     val sharedVideoPlayer = rememberSharedVideoPlayer()
     // 재생 화면을 벗어나면 decoder를 계속 물고 있지 않도록 재생기를 놓는다.
@@ -648,7 +710,9 @@ fun CaptureScreen() {
                             }
                         }
                     }
-                    is FinalizeResult.Failed -> message = "$captureFinalizeFailed: ${result.reason}"
+                    // 마감 실패는 지나가는 알림이 아니다. 저장된 세션이 없으므로 넘어갈 곳도 없다.
+                    // 작업 공간을 덮은 판에 세워 두고, 확인을 받은 뒤에야 다시 찍을 수 있게 한다.
+                    is FinalizeResult.Failed -> finalizeFailure = "$captureFinalizeFailed: ${result.reason}"
                 }
                 activeBundle = null
                 collecting = false
@@ -658,7 +722,7 @@ fun CaptureScreen() {
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
-                message = captureFinalizeFailed
+                finalizeFailure = captureFinalizeFailed
             } finally {
                 finalizing = false
                 // 마감에 성공하면 업로드·상세 화면으로 이동해 TextureView가 사라지므로 되살릴 필요가 없다.
@@ -688,19 +752,7 @@ fun CaptureScreen() {
                 DestinationSurface {
                     SessionListScreen(
                         sessions = completedSummaries,
-                        onStartCapture = {
-                            previewReady = false
-                            previewFailed = false
-                            showStopConfirmation = false
-                            task = ""
-                            objectName = ""
-                            recordingResolution = resolutionStore.load()
-                            // 새 TextureView가 이 크기로 버퍼를 잡는다. 직전 Session이 남긴 크기를 물려받지 않는다.
-                            idlePreviewSize = recordingResolution
-                            message = ""
-                            showCaptureMetadataDialog = true
-                            capturing = true
-                        },
+                        onStartCapture = { startCapture("") },
                         onOpenTask = { taskName -> navController.navigate(TaskSessionsRoute(taskName)) },
                     )
                 }
@@ -713,6 +765,8 @@ fun CaptureScreen() {
                         sessions = completedSummaries.filter { it.taskName.trim() == route.taskName },
                         onBack = navController::popBackStack,
                         onOpenSession = { sessionId -> navController.navigate(SessionDetailRoute(sessionId)) },
+                        // 이름 없는 Task 묶음은 이름이 빈 세션들이라 채울 것이 없다. 빈 채로 연다.
+                        onStartCapture = { startCapture(route.taskName) },
                     )
                 }
             }
@@ -731,6 +785,7 @@ fun CaptureScreen() {
                         },
                         sharedPlayer = sharedVideoPlayer,
                         onOpenFullscreenVideo = { navController.navigate(SessionVideoRoute(route.sessionId)) },
+                        uploadFailureReason = uploadFailureReason,
                     )
                 }
             }
@@ -742,19 +797,6 @@ fun CaptureScreen() {
                     sharedPlayer = sharedVideoPlayer,
                     onBack = navController::popBackStack,
                 )
-            }
-            composable<UploadStatusRoute> { entry ->
-                val route = entry.toRoute<UploadStatusRoute>()
-                DestinationSurface {
-                    UploadStatusScreen(
-                        uploadState = completedSessions.firstOrNull { it.sessionId == route.sessionId }?.uploadState,
-                        onBack = navController::popBackStack,
-                        onCancelUpload = {
-                            uploadJob?.cancel()
-                            navController.popBackStack()
-                        },
-                    )
-                }
             }
         }
         if (capturing) {
@@ -828,32 +870,38 @@ fun CaptureScreen() {
                 // 서로 다른 align으로 두면 배지 폭이 길어질 때 닫기 버튼 아래로 파고든다.
                 // 기준은 프리뷰가 아니라 화면이다. 하단 컨트롤과 좌표계를 맞추고, 레터박스가 생기는
                 // 기기에서는 검은 띠 위에 얹혀 영상을 가리지 않는다.
-                Row(
-                    modifier =
-                        Modifier
-                            .align(Alignment.TopCenter)
-                            .fillMaxWidth()
-                            .safeDrawingPadding()
-                            .padding(top = 20.dp, start = 20.dp, end = 20.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top,
-                ) {
-                    Column(
-                        // fill = false라야 배지가 제 너비만 쓰고, 길어져도 닫기 버튼 자리를 침범하지 않는다.
-                        modifier = Modifier.weight(1f, fill = false),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                // 마감 중에는 프리뷰만 남기고 판 위의 것들을 걷는다. 상태 배지는 덮은 판이 같은 말을
+                // 더 길게 하고 있고, 닫기와 제어는 그 구간에 아무것도 받지 않는다. 덮인 채로 남겨 두면
+                // 누를 수 있는 것처럼 보이기만 한다.
+                val workspaceChromeVisible = !finalizing && finalizeFailure == null
+                if (workspaceChromeVisible) {
+                    Row(
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopCenter)
+                                .fillMaxWidth()
+                                .safeDrawingPadding()
+                                .padding(top = 20.dp, start = 20.dp, end = 20.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top,
                     ) {
-                        CaptureWorkspaceStatus(state = controlPolicy().state)
-                        // 어느 해상도로 찍는지 촬영 직전에 보여 준다. Session마다 달라질 수 있다.
-                        CaptureWorkspaceResolution(resolution = recordingResolution)
+                        Column(
+                            // fill = false라야 배지가 제 너비만 쓰고, 길어져도 닫기 버튼 자리를 침범하지 않는다.
+                            modifier = Modifier.weight(1f, fill = false),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            CaptureWorkspaceStatus(state = controlPolicy().state)
+                            // 어느 해상도로 찍는지 촬영 직전에 보여 준다. Session마다 달라질 수 있다.
+                            CaptureWorkspaceResolution(resolution = recordingResolution)
+                        }
+                        CaptureWorkspaceExitControls(
+                            policy = controlPolicy(),
+                            onExit = ::requestCaptureExit,
+                        )
                     }
-                    CaptureWorkspaceExitControls(
-                        policy = controlPolicy(),
-                        onExit = ::requestCaptureExit,
-                    )
                 }
                 SnackbarHost(snackbarHostState, Modifier.align(Alignment.TopCenter).padding(top = 80.dp))
-                if (!showCaptureMetadataDialog) {
+                if (!showCaptureMetadataDialog && workspaceChromeVisible) {
                     CaptureWorkspaceControls(
                         state = controlPolicy().state,
                         ready = controlPolicy().ready,
@@ -945,6 +993,11 @@ fun CaptureScreen() {
                                         .padding(horizontal = 24.dp, vertical = 16.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp),
                             ) {
+                                // Task가 채워진 채로 열렸으면 손댈 곳은 다음 칸이다. 이미 적혀 있는
+                                // 칸에 커서를 두면 지우고 다시 쓰라는 신호로 읽힌다.
+                                LaunchedEffect(Unit) {
+                                    if (task.isNotBlank()) objectFieldFocus.requestFocus()
+                                }
                                 OutlinedTextField(
                                     value = task,
                                     onValueChange = { task = it },
@@ -979,6 +1032,14 @@ fun CaptureScreen() {
                     }
                 }
             }
+            // 마감 중이거나 마감이 실패한 동안은 작업 공간을 덮는다. 제어가 이미 전부 막혀 있는
+            // 구간이라 덮는 편이 상태를 정직하게 말한다.
+            if (finalizing || finalizeFailure != null) {
+                CaptureFinalizingOverlay(
+                    failure = finalizeFailure,
+                    onDismissFailure = { finalizeFailure = null },
+                )
+            }
             if (showStopConfirmation) {
                 CaptureStopConfirmation(
                     onConfirm = {
@@ -1003,7 +1064,9 @@ fun CaptureScreen() {
 @Suppress("FunctionName")
 @Composable
 private fun DestinationSurface(content: @Composable () -> Unit) {
-    Surface(modifier = Modifier.fillMaxSize(), content = content)
+    // targetSdk 35부터 창이 시스템 바 아래까지 늘어난다. 목적지마다 막지 않으면 헤더가 상태 표시줄에,
+    // 목록 끝이 제스처 바에 물린다. 판이 한 번 막으면 안에 놓이는 화면은 인셋을 몰라도 된다.
+    Surface(modifier = Modifier.fillMaxSize().safeDrawingPadding(), content = content)
 }
 
 /**
@@ -1055,9 +1118,11 @@ private fun SessionDetailScreen(
     exportState: ExportState,
     exportMessage: String?,
     onExport: () -> Unit,
+    uploadFailureReason: String?,
     sharedPlayer: SharedVideoPlayer,
     onOpenFullscreenVideo: () -> Unit,
 ) {
+    var showSessionInfo by remember { mutableStateOf(false) }
     // 재생 영역 높이와 전송·내보내기 상태에 따라 내용이 화면을 넘는다. 스크롤이 없으면 잘린다.
     Column(
         modifier =
@@ -1066,52 +1131,160 @@ private fun SessionDetailScreen(
                 .verticalScroll(rememberScrollState()),
     ) {
         NavigationHeader(
-            title = stringResource(R.string.session_detail_title),
+            // 어느 세션인지는 본문의 이름표가 말한다. 헤더에는 뒤로 가기와 정보만 남긴다.
+            title = "",
             onBack = onBack,
-        )
-        if (summary == null) {
-            Text(stringResource(R.string.session_detail_unavailable))
-        } else {
-            val presentation = SessionDetailPresentation.from(summary)
-            SessionVideoPreview(summary.bundlePath, sharedPlayer, onOpenFullscreenVideo)
-            Text(
-                stringResource(
-                    R.string.session_list_capture_time,
-                    java.text.DateFormat
-                        .getDateTimeInstance()
-                        .format(java.util.Date(summary.recordingStartEpochMs)),
-                ),
-            )
-            Text(stringResource(R.string.session_list_short_id, summary.sessionId.take(8)))
-            Text(stringResource(R.string.session_list_episode_count, summary.completedEpisodeCount))
-            Text(stringResource(R.string.session_detail_duration, presentation.durationSeconds))
-            Text(
-                stringResource(
-                    when (summary.uploadState) {
-                        UploadState.LOCAL_ONLY -> R.string.upload_local_only
-                        UploadState.UPLOADING -> R.string.upload_in_progress
-                        UploadState.UPLOADED -> R.string.upload_completed
-                        UploadState.FAILED -> R.string.upload_failed
-                    },
-                ),
-            )
-            if (presentation.uploadAction != null) {
-                Button(onClick = onUpload) {
-                    Text(
-                        stringResource(
-                            if (presentation.uploadAction ==
-                                SessionDetailPresentation.UploadAction.Retry
-                            ) {
-                                R.string.upload_retry
-                            } else {
-                                R.string.upload_session
-                            },
-                        ),
+        ) {
+            // 사진 앱이 크기·형식·촬영 설정을 ⓘ 뒤 시트로 미뤄 두는 자리다. 뒤로 가기와 같은 급으로
+            // 보이지 않도록 글리프를 작게, 색은 옅게 둔다.
+            if (summary != null) {
+                IconButton(onClick = { showSessionInfo = true }) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_session_info),
+                        contentDescription = stringResource(R.string.session_info_title),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(SESSION_INFO_ICON_SIZE),
                     )
                 }
             }
-            ExportControls(exportState, exportMessage, onExport)
         }
+        if (summary == null) {
+            Text(
+                text = stringResource(R.string.session_detail_unavailable),
+                modifier = Modifier.padding(horizontal = DETAIL_CONTENT_PADDING),
+            )
+        } else {
+            val presentation = SessionDetailPresentation.from(summary)
+            // 영상은 좌우 여백 없이 화면 폭을 다 쓴다. 16:9 안에 컨트롤이 오버레이로 놓이므로
+            // 여백을 주면 재생 영역만 줄고 얻는 것이 없다.
+            SessionVideoPreview(summary.bundlePath, sharedPlayer, onOpenFullscreenVideo)
+            Column(
+                modifier =
+                    Modifier.padding(
+                        start = DETAIL_CONTENT_PADDING,
+                        end = DETAIL_CONTENT_PADDING,
+                        top = DETAIL_VIDEO_GAP,
+                        bottom = DETAIL_CONTENT_PADDING,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                // 목록 화면의 이름표와 같은 짜임이다. 이 화면의 이름은 언제 찍은 것인지이고,
+                // ID는 그것을 특정해 주지 않으므로 딸린 줄로 내린다.
+                ListSectionHeader(
+                    title =
+                        java.text.DateFormat
+                            .getDateTimeInstance()
+                            .format(java.util.Date(summary.recordingStartEpochMs)),
+                    supporting = stringResource(R.string.session_list_short_id, summary.sessionId.take(8)),
+                )
+                // 전송 상태는 이름에 딸린 정보가 아니라 지금 무엇을 할 수 있는지를 말하므로,
+                // 아래 버튼과 한 묶음이 되도록 이름표에서 떼어 놓고 옅게 두지 않는다.
+                //
+                // 아직 올리지 않았다는 것은 업로드 버튼이 이미 말한다. 그 상태에서만 나오는
+                // 버튼이므로 같은 말을 한 줄 더 적지 않는다. 나머지 셋은 각자 할 말이 있다.
+                if (summary.uploadState != UploadState.LOCAL_ONLY) {
+                    Text(
+                        text = stringResource(summary.uploadState.labelRes),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                }
+                // 무엇이 막았는지 알아야 다시 걸어 볼지 판단할 수 있다. 앱을 다시 켜면 남지 않는다.
+                // 전송 실패는 기록하는 컬럼이 없다.
+                if (summary.uploadState == UploadState.FAILED && uploadFailureReason != null) {
+                    SupportingText(uploadFailureReason)
+                }
+                if (presentation.uploadAction != null) {
+                    Button(onClick = onUpload) {
+                        Text(
+                            stringResource(
+                                if (presentation.uploadAction ==
+                                    SessionDetailPresentation.UploadAction.Retry
+                                ) {
+                                    R.string.upload_retry
+                                } else {
+                                    R.string.upload_session
+                                },
+                            ),
+                        )
+                    }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ExportControls(exportState, exportMessage, onExport)
+                }
+            }
+        }
+    }
+    if (showSessionInfo && summary != null) {
+        SessionInfoSheet(
+            summary = summary,
+            durationSeconds = SessionDetailPresentation.from(summary).durationSeconds,
+            onDismiss = { showSessionInfo = false },
+        )
+    }
+}
+
+/**
+ * 세션을 특정해 주지 않는 값들을 담는 시트다.
+ *
+ * Episode 수·길이·해상도·전체 ID는 세션을 고를 때가 아니라 확인하러 들어왔을 때만 필요하다.
+ * 사진 앱이 ⓘ 뒤에 두는 것과 같은 성격이라 상세 본문에서 빼고 여기로 옮겼다.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+@Suppress("FunctionName")
+private fun SessionInfoSheet(
+    summary: com.ssafy.s15p21a206.tiger.episode.SessionSummary,
+    durationSeconds: Long,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.session_info_title),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            SessionInfoRow(stringResource(R.string.session_info_id), summary.sessionId)
+            SessionInfoRow(
+                label = stringResource(R.string.session_info_captured_at),
+                value =
+                    java.text.DateFormat
+                        .getDateTimeInstance()
+                        .format(java.util.Date(summary.recordingStartEpochMs)),
+            )
+            SessionInfoRow(
+                label = stringResource(R.string.session_info_episodes),
+                value = stringResource(R.string.session_info_episode_count, summary.completedEpisodeCount),
+            )
+            SessionInfoRow(
+                label = stringResource(R.string.session_info_duration),
+                value = stringResource(R.string.session_detail_duration, durationSeconds),
+            )
+            SessionInfoRow(
+                label = stringResource(R.string.session_info_resolution),
+                value =
+                    when (val resolution = rememberVideoResolution(summary.bundlePath)) {
+                        is VideoResolutionState.Available ->
+                            stringResource(R.string.session_detail_resolution, resolution.width, resolution.height)
+                        VideoResolutionState.Loading -> stringResource(R.string.session_detail_resolution_loading)
+                        VideoResolutionState.Unavailable -> stringResource(R.string.session_detail_resolution_unavailable)
+                    },
+            )
+        }
+    }
+}
+
+@Composable
+@Suppress("FunctionName")
+private fun SessionInfoRow(
+    label: String,
+    value: String,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        MetaText(label)
+        Text(text = value, style = MaterialTheme.typography.bodyLarge)
     }
 }
 
@@ -1125,7 +1298,11 @@ private fun SessionVideoPreview(
     val videoFile = remember(bundlePath) { File(bundlePath, SessionBundle.MAIN_VIDEO_FILE) }
     val videoDescription = stringResource(R.string.session_detail_video_content_description)
     if (!videoFile.isFile || videoFile.length() == 0L) {
-        Text(stringResource(R.string.session_detail_video_unavailable))
+        // 영상은 화면 폭을 다 쓰지만 이 문구는 본문이다. 여백 없이 두면 화면 왼쪽 끝에 붙는다.
+        Text(
+            text = stringResource(R.string.session_detail_video_unavailable),
+            modifier = Modifier.padding(horizontal = DETAIL_CONTENT_PADDING),
+        )
         return
     }
     val player = sharedPlayer.playerFor(videoFile)
@@ -1171,9 +1348,11 @@ private fun FullScreenVideoScreen(
             )
         }
         if (controlsVisible) {
+            // 검은 배경은 화면 끝까지 채우되 컨트롤만 시스템 바를 피한다. 가로로 눕히면 컷아웃이
+            // 좌우로 오므로 상단 여백만으로는 모자란다.
             IconButton(
                 onClick = onBack,
-                modifier = Modifier.align(Alignment.TopStart),
+                modifier = Modifier.align(Alignment.TopStart).safeDrawingPadding(),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_navigation_back),
@@ -1185,7 +1364,7 @@ private fun FullScreenVideoScreen(
                 LandscapeLockButton(
                     landscapeLocked = landscapeLocked,
                     onToggle = { landscapeLocked = !landscapeLocked },
-                    modifier = Modifier.align(Alignment.TopEnd),
+                    modifier = Modifier.align(Alignment.TopEnd).safeDrawingPadding(),
                 )
             }
         }
@@ -1368,26 +1547,6 @@ private fun rememberSharedVideoPlayer(): SharedVideoPlayer {
     return sharedPlayer
 }
 
-@Composable
-@Suppress("FunctionName")
-private fun NavigationHeader(
-    title: String,
-    onBack: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        IconButton(onClick = onBack) {
-            Icon(
-                painter = painterResource(R.drawable.ic_navigation_back),
-                contentDescription = stringResource(R.string.navigation_back),
-            )
-        }
-        Text(title)
-    }
-}
-
 /**
  * 유휴 프리뷰의 회전을 맞춘다.
  *
@@ -1442,14 +1601,17 @@ internal fun ExportControls(
     failureReason: String?,
     onSelectTree: () -> Unit,
 ) {
+    // 아직 내보내지 않았다는 것은 바로 아래 버튼이 이미 말한다. 그 상태에서만 나오는 버튼이므로
+    // 같은 말을 한 줄 더 적지 않는다. 진행·완료는 버튼이 사라지는 자리라 문구가 유일한 신호이고,
+    // 실패는 버튼이 옮기지 못하는 이유를 담는다.
     val label =
         when (state) {
-            ExportState.NOT_EXPORTED -> stringResource(R.string.export_not_exported)
+            ExportState.NOT_EXPORTED -> null
             ExportState.EXPORTING -> stringResource(R.string.export_exporting)
             ExportState.EXPORTED -> stringResource(R.string.export_exported)
             ExportState.EXPORT_FAILED -> stringResource(R.string.export_failed, failureReason.orEmpty())
         }
-    Text(label)
+    if (label != null) Text(label)
     if (state != ExportState.EXPORTED && state != ExportState.EXPORTING) {
         Button(onClick = onSelectTree) {
             Text(
@@ -1493,3 +1655,17 @@ private const val TRACKING_TICK_MS = 100L
 
 /** 프리뷰와 영상의 가로세로 비. 두 녹화 해상도 모두 16:9라 선택과 무관하게 같다. */
 private const val PREVIEW_ASPECT_RATIO = 16f / 9f
+
+/** 세션 상세 본문의 여백. 영상은 화면 폭을 다 쓰므로 이 여백은 그 아래 내용에만 적용된다. */
+private val DETAIL_CONTENT_PADDING = 16.dp
+
+/** 영상과 본문 사이 간격. 좌우 여백보다 넓어야 영상이 끝나고 설명이 시작되는 것으로 읽힌다. */
+private val DETAIL_VIDEO_GAP = 24.dp
+
+/**
+ * 세션 정보 버튼의 글리프 크기.
+ *
+ * 헤더에서 뒤로 가기와 나란히 서지만 같은 급의 동작은 아니다. 기본 24dp보다 작게 두어 있는 줄만
+ * 알면 되는 단추로 남긴다. 터치 영역은 `IconButton`의 48dp를 그대로 둔다.
+ */
+private val SESSION_INFO_ICON_SIZE = 20.dp

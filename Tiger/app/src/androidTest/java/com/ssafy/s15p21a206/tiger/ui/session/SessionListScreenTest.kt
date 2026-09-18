@@ -50,7 +50,7 @@ class SessionListScreenTest {
         val summary = summary()
         var selectedSessionId: String? = null
         val captureTime = DateFormat.getDateTimeInstance().format(Date(summary.recordingStartEpochMs))
-        val sessionLabel = string(R.string.session_list_capture_time, captureTime)
+        val sessionLabel = string(R.string.session_list_item_content_description, captureTime)
 
         composeRule.setContent {
             TaskSessionListScreen(
@@ -58,6 +58,7 @@ class SessionListScreenTest {
                 sessions = listOf(summary),
                 onBack = {},
                 onOpenSession = { selectedSessionId = it },
+                onStartCapture = {},
             )
         }
 

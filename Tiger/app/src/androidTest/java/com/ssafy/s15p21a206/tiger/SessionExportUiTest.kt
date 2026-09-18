@@ -11,12 +11,13 @@ import org.junit.Test
 class SessionExportUiTest {
     @get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()
 
+    /** 아직 내보내지 않았다는 것은 버튼이 말한다. 같은 말을 하는 문구를 따로 두지 않는다. */
     @Test
-    fun completedSessionExportControlIsVisible() {
+    fun completedSessionShowsExportActionWithoutRestatingItsState() {
         composeRule.setContent { ExportControls(ExportState.NOT_EXPORTED, null) {} }
 
-        composeRule.onNodeWithText("Not exported").assertIsDisplayed()
         composeRule.onNodeWithText("Select export folder").assertIsDisplayed()
+        composeRule.onNodeWithText("Not exported").assertDoesNotExist()
     }
 
     @Test
