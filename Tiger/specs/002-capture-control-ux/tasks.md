@@ -304,3 +304,49 @@ T014·T015·T016·T028의 완료 증거는 `AppDestination` sealed 목적지와 
     목적지 안의 `BackHandler`가 `NavHost`의 pop보다 우선한다는 가정이 실기기에서 확인되었다.
   - 범위 한계: 프레임워크 동작만 고정한다. `MainActivity`의 배선을 검증하지 않으므로 T038의 실기기
     확인을 대신하지 않는다.
+
+## 추가 범위 (2026-09-18, S15P21A206-35)
+
+Session을 기기에서 지우는 범위를 FR-016·FR-016a~d로 명세에 추가했다. 서버에 DELETE API가 없으므로
+삭제는 기기의 색인과 번들에만 미친다.
+
+- [X] T040 [S15P21A206-35] `app/src/main/java/com/ssafy/s15p21a206/tiger/data/local/TigerDatabase.kt`,
+  `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/EpisodeBundleStore.kt`,
+  `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/SessionRepository.kt`에 Session 단위 삭제와
+  고아 번들 회수를 구현한다.
+  - 구현: `CaptureSessionDao.delete`·`allSessionIds`, `EpisodeMarkerDao.deleteForSession`,
+    `SessionBundleStore.deleteCompletedBundle`·`orphanCompletedBundles`,
+    `SessionRepository.delete`·`purgeOrphanBundles`와 `SessionDeleteResult`. 색인(마커·세션 행)을
+    먼저 지우고 디렉터리를 지우므로, 디렉터리 삭제가 실패해도 목록에는 고아가 남지 않는다.
+    `UPLOADING` 상태는 거절한다.
+  - production 호출 경로: `MainActivity.kt`의 `CaptureScreen`이 `deleteSession(sessionId)`에서
+    `repository.delete`를, 시작 `LaunchedEffect(repository)`에서 `repository.purgeOrphanBundles()`를
+    호출한다. 회수는 `recoverInterruptedStaging()` 뒤에 돈다.
+  - 자동 검증: `SessionRepositoryTest.deleting a session removes its index row, markers and bundle`,
+    `deleting a session that is uploading is refused`,
+    `a bundle left behind by a failed delete is purged on the next run`,
+    `purging orphan bundles keeps bundles of sessions that are not completed yet`,
+    `a deleted session does not come back through staging recovery`;
+    `.\gradlew.bat testDebugUnitTest` 성공 (2026-09-18).
+- [X] T041 [S15P21A206-35] `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/session/SessionDetailPresentation.kt`,
+  `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`,
+  `app/src/main/res/values/strings.xml`,
+  `app/src/main/res/drawable/ic_session_delete.xml`에 상세 화면의 삭제 진입점과 확인 흐름을 붙인다.
+  - 구현: `SessionDetailPresentation.DeleteAction`이 업로드 상태로 확인 문구를 가르고(`UPLOADED`는
+    `DeleteLocalCopy`, `LOCAL_ONLY`·`FAILED`는 `DeleteOnlyCopy`, `UPLOADING`은 `null`),
+    `SessionDetailScreen`의 헤더 삭제 아이콘이 `SessionDeleteConfirmation`을 띄운다. 삭제하면
+    `popBackStack()`으로 돌아가고, 거절당하면 상세에 사유만 남는다. 문구는 전부 `strings.xml`에 있다.
+  - production 호출 경로: `NavHost`의 `composable<SessionDetailRoute>`가 `onDelete`에
+    `deleteSession(route.sessionId)`를 넘긴다.
+  - 자동 검증: `SessionDetailScreenTest.delete confirmation distinguishes an uploaded session from the only copy`,
+    `a session that is uploading exposes no delete action`;
+    `.\gradlew.bat testDebugUnitTest`, `.\gradlew.bat lintDebug` 성공 (2026-09-18).
+- [X] T042 [S15P21A206-35] `specs/002-capture-control-ux/spec.md`에 삭제 범위를 반영한다.
+  - 산출물: 2026-09-18 Clarifications 두 항목, 사용자 스토리 4의 인수 시나리오 8~10, 엣지 케이스 3건,
+    FR-016·FR-016a~d, 핵심 엔터티의 `Session 상세` 서술.
+  - 검토 기준: 삭제가 서버 사본에 미치지 않는다는 방침, 확인 문구가 업로드 여부로 갈린다는 점,
+    전송 중 삭제 금지, 색인 우선 삭제와 다음 실행 회수, 구제 경로로 되살아나지 않음이 모두 명세에 있다.
+- [ ] T043 [S15P21A206-35] 실기기에서 삭제 흐름을 확인한다.
+  - 자동화할 수 없는 범위다. 내부 저장소의 번들 디렉터리가 실제로 사라지는지, 앱을 다시 실행해도
+    돌아오지 않는지, 전송 중 삭제 아이콘이 눌리지 않는지를 확인한다.
+  - 전송 중 경로는 `BuildConfig.UPLOAD_BASE_URL`과 도달 가능한 ingestion server가 필요하다.
