@@ -12,10 +12,16 @@
 
 `connectedDebugAndroidTest`는 연결된 실제 기기 또는 에뮬레이터가 있을 때만 실행한다.
 
+화면(Composable)·문자열 리소스·접근성 속성을 바꾼 작업은 Merge Request 전에 기기 또는
+에뮬레이터를 붙여 `connectedDebugAndroidTest`를 직접 실행한다. 이 검사는 기기가 필요해 hook에
+들어가 있지 않으므로, 돌리지 않으면 아무도 돌리지 않는다. 실행하지 못했다면 그 사실을 MR에
+적는다.
+
 ## 프로젝트 규칙
 
 - Kotlin 스타일은 `.editorconfig`의 `ktlint_official`을 기준으로 한다. 위반은 `.\\gradlew.bat ktlintFormat`으로 수정한 뒤 재검사한다.
-- 새 clone 또는 worktree에서는 한 번 `.\\gradlew.bat installGitHooks`를 실행해 저장소의 git hook을 활성화한다. `pre-commit`은 `ktlintCheck`, `commit-msg`는 커밋 제목 규격을 검사한다.
+- 새 clone 또는 worktree에서는 한 번 `.\\gradlew.bat installGitHooks`를 실행해 저장소의 git hook을 활성화한다. `pre-commit`은 `ktlintCheck`와 `testDebugUnitTest`, `commit-msg`는 커밋 제목 규격을 검사한다. 즉 스타일 위반이나 단위 테스트 실패는 커밋을 막는다.
+- `git commit --no-verify`로 hook을 건너뛸 수 있으나, 그 커밋은 아무 검사도 거치지 않은 채 이력에 남는다. 검사가 잡은 문제를 고치는 것이 기본이고, 건너뛰었다면 왜 건너뛰었는지와 언제 고칠지를 남긴다.
 - 소스 식별자는 영어로 작성한다. 주석과 커밋 메시지는 한국어로 명확하게 작성한다.
 - `app/` 아래를 수정할 때는 `app/AGENTS.md`의 Compose·리소스 규칙과 기록된 예외를 읽고 따른다.
 
