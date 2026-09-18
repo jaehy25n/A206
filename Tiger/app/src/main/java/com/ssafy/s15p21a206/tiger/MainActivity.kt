@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -45,6 +46,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SnackbarHost
@@ -136,9 +138,14 @@ import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceControls
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceExitControls
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceResolution
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceStatus
+import com.ssafy.s15p21a206.tiger.ui.common.ListSectionHeader
+import com.ssafy.s15p21a206.tiger.ui.common.MetaText
+import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeader
 import com.ssafy.s15p21a206.tiger.ui.session.SessionDetailPresentation
 import com.ssafy.s15p21a206.tiger.ui.session.SessionListScreen
 import com.ssafy.s15p21a206.tiger.ui.session.TaskSessionListScreen
+import com.ssafy.s15p21a206.tiger.ui.session.VideoResolutionState
+import com.ssafy.s15p21a206.tiger.ui.session.rememberVideoResolution
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerTheme
 import com.ssafy.s15p21a206.tiger.ui.upload.UploadStatusScreen
 import com.ssafy.s15p21a206.tiger.ui.upload.cancelUploadOnStop
@@ -945,6 +952,11 @@ fun CaptureScreen() {
                                         .padding(horizontal = 24.dp, vertical = 16.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp),
                             ) {
+                                // Task가 채워진 채로 열렸으면 손댈 곳은 다음 칸이다. 이미 적혀 있는
+                                // 칸에 커서를 두면 지우고 다시 쓰라는 신호로 읽힌다.
+                                LaunchedEffect(Unit) {
+                                    if (task.isNotBlank()) objectFieldFocus.requestFocus()
+                                }
                                 OutlinedTextField(
                                     value = task,
                                     onValueChange = { task = it },
@@ -1003,7 +1015,9 @@ fun CaptureScreen() {
 @Suppress("FunctionName")
 @Composable
 private fun DestinationSurface(content: @Composable () -> Unit) {
-    Surface(modifier = Modifier.fillMaxSize(), content = content)
+    // targetSdk 35부터 창이 시스템 바 아래까지 늘어난다. 목적지마다 막지 않으면 헤더가 상태 표시줄에,
+    // 목록 끝이 제스처 바에 물린다. 판이 한 번 막으면 안에 놓이는 화면은 인셋을 몰라도 된다.
+    Surface(modifier = Modifier.fillMaxSize().safeDrawingPadding(), content = content)
 }
 
 /**
@@ -1058,6 +1072,7 @@ private fun SessionDetailScreen(
     sharedPlayer: SharedVideoPlayer,
     onOpenFullscreenVideo: () -> Unit,
 ) {
+    var showSessionInfo by remember { mutableStateOf(false) }
     // 재생 영역 높이와 전송·내보내기 상태에 따라 내용이 화면을 넘는다. 스크롤이 없으면 잘린다.
     Column(
         modifier =
@@ -1066,52 +1081,162 @@ private fun SessionDetailScreen(
                 .verticalScroll(rememberScrollState()),
     ) {
         NavigationHeader(
-            title = stringResource(R.string.session_detail_title),
+            // 어느 세션인지는 본문의 이름표가 말한다. 헤더에는 뒤로 가기와 정보만 남긴다.
+            title = "",
             onBack = onBack,
-        )
-        if (summary == null) {
-            Text(stringResource(R.string.session_detail_unavailable))
-        } else {
-            val presentation = SessionDetailPresentation.from(summary)
-            SessionVideoPreview(summary.bundlePath, sharedPlayer, onOpenFullscreenVideo)
-            Text(
-                stringResource(
-                    R.string.session_list_capture_time,
-                    java.text.DateFormat
-                        .getDateTimeInstance()
-                        .format(java.util.Date(summary.recordingStartEpochMs)),
-                ),
-            )
-            Text(stringResource(R.string.session_list_short_id, summary.sessionId.take(8)))
-            Text(stringResource(R.string.session_list_episode_count, summary.completedEpisodeCount))
-            Text(stringResource(R.string.session_detail_duration, presentation.durationSeconds))
-            Text(
-                stringResource(
-                    when (summary.uploadState) {
-                        UploadState.LOCAL_ONLY -> R.string.upload_local_only
-                        UploadState.UPLOADING -> R.string.upload_in_progress
-                        UploadState.UPLOADED -> R.string.upload_completed
-                        UploadState.FAILED -> R.string.upload_failed
-                    },
-                ),
-            )
-            if (presentation.uploadAction != null) {
-                Button(onClick = onUpload) {
-                    Text(
-                        stringResource(
-                            if (presentation.uploadAction ==
-                                SessionDetailPresentation.UploadAction.Retry
-                            ) {
-                                R.string.upload_retry
-                            } else {
-                                R.string.upload_session
-                            },
-                        ),
+        ) {
+            // 사진 앱이 크기·형식·촬영 설정을 ⓘ 뒤 시트로 미뤄 두는 자리다. 뒤로 가기와 같은 급으로
+            // 보이지 않도록 글리프를 작게, 색은 옅게 둔다.
+            if (summary != null) {
+                IconButton(onClick = { showSessionInfo = true }) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_session_info),
+                        contentDescription = stringResource(R.string.session_info_title),
+                        tint = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.size(SESSION_INFO_ICON_SIZE),
                     )
                 }
             }
-            ExportControls(exportState, exportMessage, onExport)
         }
+        if (summary == null) {
+            Text(
+                text = stringResource(R.string.session_detail_unavailable),
+                modifier = Modifier.padding(horizontal = DETAIL_CONTENT_PADDING),
+            )
+        } else {
+            val presentation = SessionDetailPresentation.from(summary)
+            // 영상은 좌우 여백 없이 화면 폭을 다 쓴다. 16:9 안에 컨트롤이 오버레이로 놓이므로
+            // 여백을 주면 재생 영역만 줄고 얻는 것이 없다.
+            SessionVideoPreview(summary.bundlePath, sharedPlayer, onOpenFullscreenVideo)
+            Column(
+                modifier =
+                    Modifier.padding(
+                        start = DETAIL_CONTENT_PADDING,
+                        end = DETAIL_CONTENT_PADDING,
+                        top = DETAIL_VIDEO_GAP,
+                        bottom = DETAIL_CONTENT_PADDING,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                // 목록 화면의 이름표와 같은 짜임이다. 이 화면의 이름은 언제 찍은 것인지이고,
+                // ID는 그것을 특정해 주지 않으므로 딸린 줄로 내린다.
+                ListSectionHeader(
+                    title =
+                        java.text.DateFormat
+                            .getDateTimeInstance()
+                            .format(java.util.Date(summary.recordingStartEpochMs)),
+                    supporting = stringResource(R.string.session_list_short_id, summary.sessionId.take(8)),
+                )
+                // 전송 상태는 이름에 딸린 정보가 아니라 지금 무엇을 할 수 있는지를 말하므로,
+                // 아래 버튼과 한 묶음이 되도록 이름표에서 떼어 놓고 옅게 두지 않는다.
+                //
+                // 아직 올리지 않았다는 것은 업로드 버튼이 이미 말한다. 그 상태에서만 나오는
+                // 버튼이므로 같은 말을 한 줄 더 적지 않는다. 나머지 셋은 각자 할 말이 있다.
+                val uploadStatus =
+                    when (summary.uploadState) {
+                        UploadState.LOCAL_ONLY -> null
+                        UploadState.UPLOADING -> R.string.upload_in_progress
+                        UploadState.UPLOADED -> R.string.upload_completed
+                        UploadState.FAILED -> R.string.upload_failed
+                    }
+                if (uploadStatus != null) {
+                    Text(
+                        text = stringResource(uploadStatus),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                }
+                if (presentation.uploadAction != null) {
+                    Button(onClick = onUpload) {
+                        Text(
+                            stringResource(
+                                if (presentation.uploadAction ==
+                                    SessionDetailPresentation.UploadAction.Retry
+                                ) {
+                                    R.string.upload_retry
+                                } else {
+                                    R.string.upload_session
+                                },
+                            ),
+                        )
+                    }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ExportControls(exportState, exportMessage, onExport)
+                }
+            }
+        }
+    }
+    if (showSessionInfo && summary != null) {
+        SessionInfoSheet(
+            summary = summary,
+            durationSeconds = SessionDetailPresentation.from(summary).durationSeconds,
+            onDismiss = { showSessionInfo = false },
+        )
+    }
+}
+
+/**
+ * 세션을 특정해 주지 않는 값들을 담는 시트다.
+ *
+ * Episode 수·길이·해상도·전체 ID는 세션을 고를 때가 아니라 확인하러 들어왔을 때만 필요하다.
+ * 사진 앱이 ⓘ 뒤에 두는 것과 같은 성격이라 상세 본문에서 빼고 여기로 옮겼다.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+@Suppress("FunctionName")
+private fun SessionInfoSheet(
+    summary: com.ssafy.s15p21a206.tiger.episode.SessionSummary,
+    durationSeconds: Long,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.session_info_title),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            SessionInfoRow(stringResource(R.string.session_info_id), summary.sessionId)
+            SessionInfoRow(
+                label = stringResource(R.string.session_info_captured_at),
+                value =
+                    java.text.DateFormat
+                        .getDateTimeInstance()
+                        .format(java.util.Date(summary.recordingStartEpochMs)),
+            )
+            SessionInfoRow(
+                label = stringResource(R.string.session_info_episodes),
+                value = stringResource(R.string.session_info_episode_count, summary.completedEpisodeCount),
+            )
+            SessionInfoRow(
+                label = stringResource(R.string.session_info_duration),
+                value = stringResource(R.string.session_detail_duration, durationSeconds),
+            )
+            SessionInfoRow(
+                label = stringResource(R.string.session_info_resolution),
+                value =
+                    when (val resolution = rememberVideoResolution(summary.bundlePath)) {
+                        is VideoResolutionState.Available ->
+                            stringResource(R.string.session_detail_resolution, resolution.width, resolution.height)
+                        VideoResolutionState.Loading -> stringResource(R.string.session_detail_resolution_loading)
+                        VideoResolutionState.Unavailable -> stringResource(R.string.session_detail_resolution_unavailable)
+                    },
+            )
+        }
+    }
+}
+
+@Composable
+@Suppress("FunctionName")
+private fun SessionInfoRow(
+    label: String,
+    value: String,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        MetaText(label)
+        Text(text = value, style = MaterialTheme.typography.bodyLarge)
     }
 }
 
@@ -1125,7 +1250,11 @@ private fun SessionVideoPreview(
     val videoFile = remember(bundlePath) { File(bundlePath, SessionBundle.MAIN_VIDEO_FILE) }
     val videoDescription = stringResource(R.string.session_detail_video_content_description)
     if (!videoFile.isFile || videoFile.length() == 0L) {
-        Text(stringResource(R.string.session_detail_video_unavailable))
+        // 영상은 화면 폭을 다 쓰지만 이 문구는 본문이다. 여백 없이 두면 화면 왼쪽 끝에 붙는다.
+        Text(
+            text = stringResource(R.string.session_detail_video_unavailable),
+            modifier = Modifier.padding(horizontal = DETAIL_CONTENT_PADDING),
+        )
         return
     }
     val player = sharedPlayer.playerFor(videoFile)
@@ -1171,9 +1300,11 @@ private fun FullScreenVideoScreen(
             )
         }
         if (controlsVisible) {
+            // 검은 배경은 화면 끝까지 채우되 컨트롤만 시스템 바를 피한다. 가로로 눕히면 컷아웃이
+            // 좌우로 오므로 상단 여백만으로는 모자란다.
             IconButton(
                 onClick = onBack,
-                modifier = Modifier.align(Alignment.TopStart),
+                modifier = Modifier.align(Alignment.TopStart).safeDrawingPadding(),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_navigation_back),
@@ -1185,7 +1316,7 @@ private fun FullScreenVideoScreen(
                 LandscapeLockButton(
                     landscapeLocked = landscapeLocked,
                     onToggle = { landscapeLocked = !landscapeLocked },
-                    modifier = Modifier.align(Alignment.TopEnd),
+                    modifier = Modifier.align(Alignment.TopEnd).safeDrawingPadding(),
                 )
             }
         }
@@ -1368,26 +1499,6 @@ private fun rememberSharedVideoPlayer(): SharedVideoPlayer {
     return sharedPlayer
 }
 
-@Composable
-@Suppress("FunctionName")
-private fun NavigationHeader(
-    title: String,
-    onBack: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        IconButton(onClick = onBack) {
-            Icon(
-                painter = painterResource(R.drawable.ic_navigation_back),
-                contentDescription = stringResource(R.string.navigation_back),
-            )
-        }
-        Text(title)
-    }
-}
-
 /**
  * 유휴 프리뷰의 회전을 맞춘다.
  *
@@ -1442,14 +1553,17 @@ internal fun ExportControls(
     failureReason: String?,
     onSelectTree: () -> Unit,
 ) {
+    // 아직 내보내지 않았다는 것은 바로 아래 버튼이 이미 말한다. 그 상태에서만 나오는 버튼이므로
+    // 같은 말을 한 줄 더 적지 않는다. 진행·완료는 버튼이 사라지는 자리라 문구가 유일한 신호이고,
+    // 실패는 버튼이 옮기지 못하는 이유를 담는다.
     val label =
         when (state) {
-            ExportState.NOT_EXPORTED -> stringResource(R.string.export_not_exported)
+            ExportState.NOT_EXPORTED -> null
             ExportState.EXPORTING -> stringResource(R.string.export_exporting)
             ExportState.EXPORTED -> stringResource(R.string.export_exported)
             ExportState.EXPORT_FAILED -> stringResource(R.string.export_failed, failureReason.orEmpty())
         }
-    Text(label)
+    if (label != null) Text(label)
     if (state != ExportState.EXPORTED && state != ExportState.EXPORTING) {
         Button(onClick = onSelectTree) {
             Text(
@@ -1493,3 +1607,17 @@ private const val TRACKING_TICK_MS = 100L
 
 /** 프리뷰와 영상의 가로세로 비. 두 녹화 해상도 모두 16:9라 선택과 무관하게 같다. */
 private const val PREVIEW_ASPECT_RATIO = 16f / 9f
+
+/** 세션 상세 본문의 여백. 영상은 화면 폭을 다 쓰므로 이 여백은 그 아래 내용에만 적용된다. */
+private val DETAIL_CONTENT_PADDING = 16.dp
+
+/** 영상과 본문 사이 간격. 좌우 여백보다 넓어야 영상이 끝나고 설명이 시작되는 것으로 읽힌다. */
+private val DETAIL_VIDEO_GAP = 24.dp
+
+/**
+ * 세션 정보 버튼의 글리프 크기.
+ *
+ * 헤더에서 뒤로 가기와 나란히 서지만 같은 급의 동작은 아니다. 기본 24dp보다 작게 두어 있는 줄만
+ * 알면 되는 단추로 남긴다. 터치 영역은 `IconButton`의 48dp를 그대로 둔다.
+ */
+private val SESSION_INFO_ICON_SIZE = 20.dp
