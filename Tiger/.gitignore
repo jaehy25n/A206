@@ -37,3 +37,7 @@ Thumbs.db
 /.claude/settings.local.json
 /.claude/.credentials.json
 /.claude/plugins/
+
+# 서명 자료
+*.jks
+*.keystore

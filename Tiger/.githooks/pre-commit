@@ -5,7 +5,7 @@ set -eu
 cd "$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 
 if [ -x ./gradlew ]; then
-    ./gradlew ktlintCheck
+    ./gradlew --quiet ktlintCheck
 else
-    ./gradlew.bat ktlintCheck
+    ./gradlew.bat --quiet ktlintCheck
 fi

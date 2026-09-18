@@ -14,14 +14,10 @@
 
 ## 프로젝트 규칙
 
-- Android 앱 모듈은 `:app` 하나이며, Kotlin·Jetpack Compose·Material 3를 사용한다.
-- 의존성 및 플러그인 버전은 `gradle/libs.versions.toml`에서 관리한다.
-- Kotlin 스타일은 `.editorconfig`의 `ktlint_official`을 기준으로 한다. 커밋 전 `.\\gradlew.bat ktlintCheck`를 통과해야 하며, `.githooks/pre-commit`도 같은 검사를 실행한다. 위반은 `.\\gradlew.bat ktlintFormat`으로 수정한 뒤 재검사한다.
-- 새 clone 또는 worktree에서는 한 번 `.\\gradlew.bat installGitHooks`를 실행해 저장소의 pre-commit hook을 활성화한다.
-- Composable과 클래스는 `PascalCase`, 함수·프로퍼티·파라미터는 `camelCase`를 사용한다.
-- 부모가 소유하는 Compose 상태는 hoisting하고, Composable은 렌더링과 사용자 이벤트 처리로 한정한다.
-- 사용자에게 보이는 문자열은 `res/values/strings.xml`에 두며, Composable에 하드코딩하지 않는다.
+- Kotlin 스타일은 `.editorconfig`의 `ktlint_official`을 기준으로 한다. 위반은 `.\\gradlew.bat ktlintFormat`으로 수정한 뒤 재검사한다.
+- 새 clone 또는 worktree에서는 한 번 `.\\gradlew.bat installGitHooks`를 실행해 저장소의 git hook을 활성화한다. `pre-commit`은 `ktlintCheck`, `commit-msg`는 커밋 제목 규격을 검사한다.
 - 소스 식별자는 영어로 작성한다. 주석과 커밋 메시지는 한국어로 명확하게 작성한다.
+- `app/` 아래를 수정할 때는 `app/AGENTS.md`의 Compose·리소스 규칙과 기록된 예외를 읽고 따른다.
 
 ## 변경 경계
 
@@ -46,12 +42,14 @@
 
 ## Git
 
-- 명시적으로 요청받지 않으면 commit, push, reset, 브랜치 삭제, 원격 브랜치 생성, Merge Request 생성·수정·종료를 하지 않는다. 한 번 받은 승인은 그때 지시받은 작업에만 유효하며, 작업 중 새로 발견한 건에는 미치지 않는다.
+- 명시적으로 요청받지 않으면 push, reset, 브랜치 삭제, 원격 브랜치 생성, Merge Request 생성·수정·종료를 하지 않는다. 한 번 받은 승인은 그때 지시받은 작업에만 유효하며, 작업 중 새로 발견한 건에는 미치지 않는다.
+- 커밋은 작업 중에 한다. 목적 하나가 끝나 그 자체로 온전한 단위가 되면 그 시점에 커밋하며, 따로 승인을 받지 않는다. 작업을 모두 끝낸 뒤 한 덩어리를 목적별로 쪼개려 하지 않는다.
+- 커밋 단위를 미리 선언하지 않는다. 경계는 작업하면서 드러나므로 시작 시점의 계획은 추측이 된다.
 - 브랜치 이름은 소문자 kebab-case의 `<type>/<scope>` 형식을 사용한다. 사용자·도구·모델 이름 접두사는 사용하지 않는다.
 - 브랜치 type은 목적에 맞게 `feature`, `fix`, `docs`, `chore`, `refactor`, `test` 중 하나를 사용한다.
 - 사용자 지시로 다른 기준점을 명시하지 않는 한, 새 작업 브랜치는 반드시 `git fetch origin develop` 후 최신 `origin/develop`에서 생성한다. 현재 체크아웃 브랜치를 기준점으로 추정해 분기하지 않는다.
 - Merge Request 생성 전에는 `git fetch origin develop`으로 대상을 갱신하고, `git merge-base origin/develop HEAD`와 비교 로그를 확인한다. `develop`에 동일 작업이 이미 병합됐거나 기준점이 뒤처졌다면 rebase·중복 제거를 먼저 수행한다.
-- 커밋 요청 시 Conventional Commits를 사용한다.
+- 커밋 메시지는 Conventional Commits를 사용한다.
 
   ```text
   <type>(<scope>): <한국어 요약>
