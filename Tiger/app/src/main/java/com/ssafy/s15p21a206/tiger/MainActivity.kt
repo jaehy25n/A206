@@ -83,6 +83,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -1303,7 +1304,9 @@ private fun SessionDetailMenu(
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DropdownMenuItem(
-                text = { Text(stringResource(R.string.session_info_title)) },
+                // `DropdownMenuItem`이 상속시키는 `labelLarge`는 Medium이다. 항목이 둘뿐이라
+                // 굵기로 무게를 더 실을 이유가 없고, 삭제 항목의 error 색만으로 충분히 구분된다.
+                text = { Text(stringResource(R.string.session_info_title), fontWeight = MENU_ITEM_FONT_WEIGHT) },
                 leadingIcon = {
                     Icon(
                         painter = painterResource(R.drawable.ic_session_info),
@@ -1317,7 +1320,7 @@ private fun SessionDetailMenu(
                 },
             )
             DropdownMenuItem(
-                text = { Text(stringResource(R.string.session_delete)) },
+                text = { Text(stringResource(R.string.session_delete), fontWeight = MENU_ITEM_FONT_WEIGHT) },
                 leadingIcon = {
                     Icon(
                         painter = painterResource(R.drawable.ic_session_delete),
@@ -1829,3 +1832,6 @@ private val DETAIL_VIDEO_GAP = 24.dp
  * 알면 되는 단추로 남긴다. 터치 영역은 `IconButton`의 48dp를 그대로 둔다.
  */
 private val HEADER_MENU_ICON_SIZE = 20.dp
+
+/** 헤더 메뉴 항목의 글자 굵기. `labelLarge`의 Medium에서 한 단계 내린 값이다. */
+private val MENU_ITEM_FONT_WEIGHT = FontWeight.Normal
