@@ -348,10 +348,22 @@ Session을 기기에서 지우는 범위를 FR-016·FR-016a~d로 명세에 추�
     FR-016·FR-016a~d, 핵심 엔터티의 `Session 상세` 서술.
   - 검토 기준: 삭제가 서버 사본에 미치지 않는다는 방침, 확인 문구가 업로드 여부로 갈린다는 점,
     전송 중 삭제 금지, 색인 우선 삭제와 다음 실행 회수, 구제 경로로 되살아나지 않음이 모두 명세에 있다.
-- [ ] T043 [S15P21A206-35] 실기기에서 삭제 흐름을 확인한다.
-  - 자동화할 수 없는 범위다. 내부 저장소의 번들 디렉터리가 실제로 사라지는지, 앱을 다시 실행해도
-    돌아오지 않는지, 전송 중 삭제 아이콘이 눌리지 않는지를 확인한다.
-  - 전송 중 경로는 `BuildConfig.UPLOAD_BASE_URL`과 도달 가능한 ingestion server가 필요하다.
+- [ ] T043 [S15P21A206-35] 실기기에서 번들 디렉터리가 실제로 사라지는지 확인한다.
+  - 자동화할 수 없는 이유: 화면만으로는 `DELETED`와 `BUNDLE_RETAINED`를 구분할 수 없다. 디렉터리
+    삭제가 실패해도 색인은 이미 지워져 카드가 똑같이 사라지므로, 저장 공간이 비워졌는지는 내부
+    저장소를 직접 봐야 한다. 단위 테스트는 임시 디렉터리를 쓰므로 실제 내부 저장소를 대신하지 않는다.
+  - 절차: 세션을 하나 수집하고 `adb shell run-as <pkg> ls files/capture/completed`로 디렉터리를
+    확인한 뒤 삭제하고 같은 명령으로 사라졌는지 본다.
+  - 범위에서 제외한 것 (2026-09-18 사용자 지적):
+    - **전송 중 삭제 차단**: 사용자가 도달할 수 없는 경로다. 상세·목록 양쪽 메뉴 항목이 `UPLOADING`이면
+      비활성이고, 업로드를 시작하는 경로가 모두 사용자 조작이라 확인 판이 열려 있는 동안 걸릴 수 없다.
+      비활성 상태 자체는 기기가 필요 없으며
+      `SessionListScreenTest.longPressOnAnUploadingSessionOffersNoEnabledDeleteAction`과
+      `SessionDetailScreenTest.a session that is uploading exposes no delete action`이 고정한다.
+    - **재실행 후 되살아나지 않음**: 되살릴 수 있는 경로는 `recoverInterruptedStaging()` 하나이고
+      Room 행이 없으면 대상이 아니다.
+      `SessionRepositoryTest.a deleted session does not come back through staging recovery`가 고정한다.
+      나머지는 SQLite가 DELETE를 유지하느냐의 문제라 이 코드가 관여하지 않는다.
 
 ## 추가 범위 (2026-09-18, S15P21A206-35 후속 정비)
 
