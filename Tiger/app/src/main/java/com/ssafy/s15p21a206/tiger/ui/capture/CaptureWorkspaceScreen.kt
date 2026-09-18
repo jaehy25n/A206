@@ -44,6 +44,7 @@ import com.ssafy.s15p21a206.tiger.R
 import com.ssafy.s15p21a206.tiger.episode.RecordingResolution
 import com.ssafy.s15p21a206.tiger.ui.theme.CaptureControlDisabled
 import com.ssafy.s15p21a206.tiger.ui.theme.CaptureDestructive
+import com.ssafy.s15p21a206.tiger.ui.theme.CaptureFullScreenScrim
 import com.ssafy.s15p21a206.tiger.ui.theme.CaptureOverlayScrim
 import com.ssafy.s15p21a206.tiger.ui.theme.CaptureStart
 
@@ -135,7 +136,7 @@ fun CaptureFinalizingOverlay(
         modifier =
             modifier
                 .fillMaxSize()
-                .background(CaptureOverlayScrim)
+                .background(CaptureFullScreenScrim)
                 // 덮은 아래의 제어가 눌리지 않게 입력을 여기서 삼킨다.
                 .clickable(enabled = false, onClick = {})
                 .safeDrawingPadding()

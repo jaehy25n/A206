@@ -890,32 +890,38 @@ fun CaptureScreen() {
                 // 서로 다른 align으로 두면 배지 폭이 길어질 때 닫기 버튼 아래로 파고든다.
                 // 기준은 프리뷰가 아니라 화면이다. 하단 컨트롤과 좌표계를 맞추고, 레터박스가 생기는
                 // 기기에서는 검은 띠 위에 얹혀 영상을 가리지 않는다.
-                Row(
-                    modifier =
-                        Modifier
-                            .align(Alignment.TopCenter)
-                            .fillMaxWidth()
-                            .safeDrawingPadding()
-                            .padding(top = 20.dp, start = 20.dp, end = 20.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top,
-                ) {
-                    Column(
-                        // fill = false라야 배지가 제 너비만 쓰고, 길어져도 닫기 버튼 자리를 침범하지 않는다.
-                        modifier = Modifier.weight(1f, fill = false),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                // 마감 중에는 프리뷰만 남기고 판 위의 것들을 걷는다. 상태 배지는 덮은 판이 같은 말을
+                // 더 길게 하고 있고, 닫기와 제어는 그 구간에 아무것도 받지 않는다. 덮인 채로 남겨 두면
+                // 누를 수 있는 것처럼 보이기만 한다.
+                val workspaceChromeVisible = !finalizing && finalizeFailure == null
+                if (workspaceChromeVisible) {
+                    Row(
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopCenter)
+                                .fillMaxWidth()
+                                .safeDrawingPadding()
+                                .padding(top = 20.dp, start = 20.dp, end = 20.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top,
                     ) {
-                        CaptureWorkspaceStatus(state = controlPolicy().state)
-                        // 어느 해상도로 찍는지 촬영 직전에 보여 준다. Session마다 달라질 수 있다.
-                        CaptureWorkspaceResolution(resolution = recordingResolution)
+                        Column(
+                            // fill = false라야 배지가 제 너비만 쓰고, 길어져도 닫기 버튼 자리를 침범하지 않는다.
+                            modifier = Modifier.weight(1f, fill = false),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            CaptureWorkspaceStatus(state = controlPolicy().state)
+                            // 어느 해상도로 찍는지 촬영 직전에 보여 준다. Session마다 달라질 수 있다.
+                            CaptureWorkspaceResolution(resolution = recordingResolution)
+                        }
+                        CaptureWorkspaceExitControls(
+                            policy = controlPolicy(),
+                            onExit = ::requestCaptureExit,
+                        )
                     }
-                    CaptureWorkspaceExitControls(
-                        policy = controlPolicy(),
-                        onExit = ::requestCaptureExit,
-                    )
                 }
                 SnackbarHost(snackbarHostState, Modifier.align(Alignment.TopCenter).padding(top = 80.dp))
-                if (!showCaptureMetadataDialog) {
+                if (!showCaptureMetadataDialog && workspaceChromeVisible) {
                     CaptureWorkspaceControls(
                         state = controlPolicy().state,
                         ready = controlPolicy().ready,

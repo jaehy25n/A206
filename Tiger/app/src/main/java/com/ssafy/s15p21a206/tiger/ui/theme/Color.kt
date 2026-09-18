@@ -23,5 +23,14 @@ val CaptureDestructive = Color(0xFFFF5252)
  */
 val CaptureOverlayScrim = Color(0xF23A3A3C)
 
+/**
+ * 화면 전체를 덮는 판의 배경.
+ *
+ * [CaptureOverlayScrim]은 배지 하나만큼의 좁은 면적을 채우는 색이라 거의 불투명하다. 같은 값으로
+ * 화면 전체를 덮으면 프리뷰가 사라져, 무엇을 찍다가 멈춘 것인지 알 수 없게 된다. 글자가 읽히는
+ * 선까지만 어둡게 깔고 뒤가 비치게 둔다.
+ */
+val CaptureFullScreenScrim = Color(0x99000000)
+
 /** 비활성 제어의 색. 의미색을 흐리기만 하면 여전히 그 색으로 읽히므로 색상을 빼고 중성으로 떨어뜨린다. */
 val CaptureControlDisabled = Color(0x61FFFFFF)
