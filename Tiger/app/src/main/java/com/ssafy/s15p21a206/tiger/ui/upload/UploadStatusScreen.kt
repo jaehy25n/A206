@@ -34,6 +34,17 @@ internal fun uploadExitAction(state: UploadState?): UploadExitAction =
 
 internal fun cancelUploadOnStop(isUploadStatusDestination: Boolean): Boolean = isUploadStatusDestination
 
+/**
+ * 전송이 끝나면 이 화면이 스스로 물러날지 정한다.
+ *
+ * 마쳤다는 글자 말고는 보여 줄 것이 없다. `UploadResult.Uploaded`는 값이 없는 결과라 크기도
+ * 소요 시간도 서버가 준 것도 없고, 세션에 대해 알아야 할 것은 상세 화면이 이미 다 갖고 있다.
+ * 사용자가 뒤로 가기를 눌러야만 그리로 돌아갈 수 있게 두면 막다른 화면이 된다.
+ *
+ * 실패는 남는다. 무엇이 잘못됐는지 읽고 다시 시도할지 정하는 것은 사용자 몫이다.
+ */
+internal fun closeOnUploadCompletion(state: UploadState?): Boolean = state == UploadState.UPLOADED
+
 @Composable
 @Suppress("FunctionName")
 internal fun UploadStatusScreen(

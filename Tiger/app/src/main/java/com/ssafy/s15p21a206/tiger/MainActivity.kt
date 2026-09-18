@@ -149,6 +149,7 @@ import com.ssafy.s15p21a206.tiger.ui.session.rememberVideoResolution
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerTheme
 import com.ssafy.s15p21a206.tiger.ui.upload.UploadStatusScreen
 import com.ssafy.s15p21a206.tiger.ui.upload.cancelUploadOnStop
+import com.ssafy.s15p21a206.tiger.ui.upload.closeOnUploadCompletion
 import com.ssafy.s15p21a206.tiger.upload.SessionUploadRequestFactory
 import com.ssafy.s15p21a206.tiger.upload.SessionUploadService
 import com.ssafy.s15p21a206.tiger.upload.SessionUploader
@@ -763,9 +764,16 @@ fun CaptureScreen() {
             }
             composable<UploadStatusRoute> { entry ->
                 val route = entry.toRoute<UploadStatusRoute>()
+                val uploadState = completedSessions.firstOrNull { it.sessionId == route.sessionId }?.uploadState
+                // 전송이 끝나면 이 화면은 할 일이 없다. 뒤로 가기를 눌러야만 세션으로 돌아갈 수
+                // 있게 두면 마쳤다는 글자만 남은 막다른 화면이 된다. 스스로 물러나 상세를 띄운다.
+                // 이 목적지를 지목해 걷어내므로 이미 벗어난 뒤라면 아무 일도 하지 않는다.
+                LaunchedEffect(uploadState) {
+                    if (closeOnUploadCompletion(uploadState)) navController.popBackStack(route, inclusive = true)
+                }
                 DestinationSurface {
                     UploadStatusScreen(
-                        uploadState = completedSessions.firstOrNull { it.sessionId == route.sessionId }?.uploadState,
+                        uploadState = uploadState,
                         onBack = navController::popBackStack,
                         onCancelUpload = {
                             uploadJob?.cancel()
