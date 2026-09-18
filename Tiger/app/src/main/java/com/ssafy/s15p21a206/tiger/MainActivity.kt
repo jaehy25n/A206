@@ -132,6 +132,7 @@ import com.ssafy.s15p21a206.tiger.episode.TrackingState
 import com.ssafy.s15p21a206.tiger.episode.UploadState
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureControlPolicy
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureExitAction
+import com.ssafy.s15p21a206.tiger.ui.capture.CaptureFinalizingOverlay
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureStopConfirmation
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceControlState
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceControls
@@ -249,6 +250,7 @@ fun CaptureScreen() {
     val captureRuntime = remember { AndroidCaptureRuntime(context.applicationContext, SessionBundleStore(context.applicationContext)) }
     var controlBusy by remember { mutableStateOf(false) }
     var finalizing by remember { mutableStateOf(false) }
+    var finalizeFailure by remember { mutableStateOf<String?>(null) }
     var previewReady by remember { mutableStateOf(false) }
     var previewFailed by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -707,7 +709,9 @@ fun CaptureScreen() {
                             }
                         }
                     }
-                    is FinalizeResult.Failed -> message = "$captureFinalizeFailed: ${result.reason}"
+                    // 마감 실패는 지나가는 알림이 아니다. 저장된 세션이 없으므로 넘어갈 곳도 없다.
+                    // 작업 공간을 덮은 판에 세워 두고, 확인을 받은 뒤에야 다시 찍을 수 있게 한다.
+                    is FinalizeResult.Failed -> finalizeFailure = "$captureFinalizeFailed: ${result.reason}"
                 }
                 activeBundle = null
                 collecting = false
@@ -717,7 +721,7 @@ fun CaptureScreen() {
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
-                message = captureFinalizeFailed
+                finalizeFailure = captureFinalizeFailed
             } finally {
                 finalizing = false
                 // 마감에 성공하면 업로드·상세 화면으로 이동해 TextureView가 사라지므로 되살릴 필요가 없다.
@@ -1041,6 +1045,14 @@ fun CaptureScreen() {
                         }
                     }
                 }
+            }
+            // 마감 중이거나 마감이 실패한 동안은 작업 공간을 덮는다. 제어가 이미 전부 막혀 있는
+            // 구간이라 덮는 편이 상태를 정직하게 말한다.
+            if (finalizing || finalizeFailure != null) {
+                CaptureFinalizingOverlay(
+                    failure = finalizeFailure,
+                    onDismissFailure = { finalizeFailure = null },
+                )
             }
             if (showStopConfirmation) {
                 CaptureStopConfirmation(
