@@ -42,6 +42,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -142,15 +143,14 @@ import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceStatus
 import com.ssafy.s15p21a206.tiger.ui.common.ListSectionHeader
 import com.ssafy.s15p21a206.tiger.ui.common.MetaText
 import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeader
+import com.ssafy.s15p21a206.tiger.ui.common.SupportingText
 import com.ssafy.s15p21a206.tiger.ui.session.SessionDetailPresentation
 import com.ssafy.s15p21a206.tiger.ui.session.SessionListScreen
 import com.ssafy.s15p21a206.tiger.ui.session.TaskSessionListScreen
 import com.ssafy.s15p21a206.tiger.ui.session.VideoResolutionState
 import com.ssafy.s15p21a206.tiger.ui.session.rememberVideoResolution
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerTheme
-import com.ssafy.s15p21a206.tiger.ui.upload.UploadStatusScreen
 import com.ssafy.s15p21a206.tiger.ui.upload.cancelUploadOnStop
-import com.ssafy.s15p21a206.tiger.ui.upload.closeOnUploadCompletion
 import com.ssafy.s15p21a206.tiger.upload.SessionUploadRequestFactory
 import com.ssafy.s15p21a206.tiger.upload.SessionUploadService
 import com.ssafy.s15p21a206.tiger.upload.SessionUploader
@@ -194,11 +194,6 @@ private data class SessionDetailRoute(
 
 @Serializable
 private data class SessionVideoRoute(
-    val sessionId: String,
-)
-
-@Serializable
-private data class UploadStatusRoute(
     val sessionId: String,
 )
 
@@ -564,7 +559,9 @@ fun CaptureScreen() {
         }
     }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
-        if (cancelUploadOnStop(currentEntry?.destination?.hasRoute<UploadStatusRoute>() == true)) {
+        // 백그라운드 업로드는 하지 않는다. 판정 기준이 "업로드 화면에 있는가"였으나 그 화면을 없애
+        // 전송이 진행 중인지로 바꾼다. 어느 화면에 있든 전송 중이면 끊고 FAILED로 남긴다.
+        if (cancelUploadOnStop(uploadInFlight = uploadJob?.isActive == true)) {
             uploadJob?.cancel()
         }
         if (finalizing) return@LifecycleEventEffect
@@ -635,24 +632,28 @@ fun CaptureScreen() {
             }
     }
 
+    /**
+     * 전송을 걸고 그 세션의 상세를 띄운다.
+     *
+     * 마감이 끝나면 세션은 저장되어 존재한다. 존재하는 것에 무슨 일이 일어나는지는 그것의 화면에서
+     * 보여 주면 되므로 전송만을 위한 목적지를 따로 두지 않는다. 전송은 네트워크에 매여 길어질 수
+     * 있어 사용자를 붙잡아 둘 수도 없다.
+     */
     fun startUpload(sessionId: String) {
         val service = uploadService
         if (service == null) {
             message = uploadEndpointMissing
             return
         }
-        // 업로드 상태 화면으로 넘어가므로 작업 공간을 닫는다. 남겨 두면 NavHost를 계속 덮는다.
+        // 상세로 넘어가므로 작업 공간을 닫는다. 남겨 두면 NavHost를 계속 덮는다.
         capturing = false
-        // 계약상 업로드 상태에서 뒤로 가면 Detail로 돌아간다. 수집 마감처럼 Detail을 거치지 않고
-        // 들어오는 경로에서는 Detail을 먼저 쌓아 백스택이 그 순서를 갖게 한다.
         if (currentEntry?.destination?.hasRoute<SessionDetailRoute>() != true) {
             navController.navigate(SessionDetailRoute(sessionId))
         }
-        navController.navigate(UploadStatusRoute(sessionId))
         launchUpload(service, sessionId)
     }
 
-    /** 이미 업로드 상태 화면에 있으므로 다시 쌓지 않고 전송만 새로 건다. */
+    /** 이미 그 세션의 상세에 있으므로 목적지를 다시 쌓지 않고 전송만 새로 건다. */
     fun retryUpload(sessionId: String) {
         val service = uploadService
         if (service == null) {
@@ -784,6 +785,7 @@ fun CaptureScreen() {
                         },
                         sharedPlayer = sharedVideoPlayer,
                         onOpenFullscreenVideo = { navController.navigate(SessionVideoRoute(route.sessionId)) },
+                        uploadFailureReason = uploadFailureReason,
                     )
                 }
             }
@@ -795,28 +797,6 @@ fun CaptureScreen() {
                     sharedPlayer = sharedVideoPlayer,
                     onBack = navController::popBackStack,
                 )
-            }
-            composable<UploadStatusRoute> { entry ->
-                val route = entry.toRoute<UploadStatusRoute>()
-                val uploadState = completedSessions.firstOrNull { it.sessionId == route.sessionId }?.uploadState
-                // 전송이 끝나면 이 화면은 할 일이 없다. 뒤로 가기를 눌러야만 세션으로 돌아갈 수
-                // 있게 두면 마쳤다는 글자만 남은 막다른 화면이 된다. 스스로 물러나 상세를 띄운다.
-                // 이 목적지를 지목해 걷어내므로 이미 벗어난 뒤라면 아무 일도 하지 않는다.
-                LaunchedEffect(uploadState) {
-                    if (closeOnUploadCompletion(uploadState)) navController.popBackStack(route, inclusive = true)
-                }
-                DestinationSurface {
-                    UploadStatusScreen(
-                        uploadState = uploadState,
-                        onBack = navController::popBackStack,
-                        onCancelUpload = {
-                            uploadJob?.cancel()
-                            navController.popBackStack()
-                        },
-                        failureReason = uploadFailureReason,
-                        onRetry = { retryUpload(route.sessionId) },
-                    )
-                }
             }
         }
         if (capturing) {
@@ -1138,6 +1118,7 @@ private fun SessionDetailScreen(
     exportState: ExportState,
     exportMessage: String?,
     onExport: () -> Unit,
+    uploadFailureReason: String?,
     sharedPlayer: SharedVideoPlayer,
     onOpenFullscreenVideo: () -> Unit,
 ) {
@@ -1209,10 +1190,25 @@ private fun SessionDetailScreen(
                         UploadState.FAILED -> R.string.upload_failed
                     }
                 if (uploadStatus != null) {
-                    Text(
-                        text = stringResource(uploadStatus),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        // 전송은 따로 화면을 두지 않고 여기서 돈다. 진행률은 쓰지 않는다. 서버에
+                        // 진행을 묻지 않기로 한 계약이라 얼마나 왔는지 알 방법이 없다.
+                        if (summary.uploadState == UploadState.UPLOADING) {
+                            CircularProgressIndicator(modifier = Modifier.size(UPLOAD_PROGRESS_SIZE))
+                        }
+                        Text(
+                            text = stringResource(uploadStatus),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+                }
+                // 무엇이 막았는지 알아야 다시 걸어 볼지 판단할 수 있다. 앱을 다시 켜면 남지 않는다.
+                // 전송 실패는 기록하는 컬럼이 없다.
+                if (summary.uploadState == UploadState.FAILED && uploadFailureReason != null) {
+                    SupportingText(uploadFailureReason)
                 }
                 if (presentation.uploadAction != null) {
                     Button(onClick = onUpload) {
@@ -1690,3 +1686,6 @@ private val DETAIL_VIDEO_GAP = 24.dp
  * 알면 되는 단추로 남긴다. 터치 영역은 `IconButton`의 48dp를 그대로 둔다.
  */
 private val SESSION_INFO_ICON_SIZE = 20.dp
+
+/** 상세에서 전송 진행을 알리는 표시의 크기. 옆에 선 글자와 같은 줄로 읽히도록 본문 높이에 맞춘다. */
+private val UPLOAD_PROGRESS_SIZE = 20.dp
