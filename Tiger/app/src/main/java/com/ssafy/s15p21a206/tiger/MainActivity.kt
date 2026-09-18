@@ -1304,6 +1304,13 @@ private fun SessionDetailMenu(
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.session_info_title)) },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_session_info),
+                        // 이름은 바로 옆 글자가 말한다. 아이콘까지 읽히면 같은 말을 두 번 한다.
+                        contentDescription = null,
+                    )
+                },
                 onClick = {
                     expanded = false
                     onOpenSessionInfo()
@@ -1311,9 +1318,20 @@ private fun SessionDetailMenu(
             )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.session_delete)) },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_session_delete),
+                        contentDescription = null,
+                    )
+                },
                 enabled = deleteAction != null,
                 // 되돌릴 수 없는 항목은 error 색으로 둬서 위 항목과 성격이 다름을 보인다.
-                colors = MenuDefaults.itemColors(textColor = MaterialTheme.colorScheme.error),
+                // 글자와 글리프가 같은 색이어야 한 덩어리로 읽힌다.
+                colors =
+                    MenuDefaults.itemColors(
+                        textColor = MaterialTheme.colorScheme.error,
+                        leadingIconColor = MaterialTheme.colorScheme.error,
+                    ),
                 onClick = {
                     expanded = false
                     deleteAction?.let(onRequestDelete)
