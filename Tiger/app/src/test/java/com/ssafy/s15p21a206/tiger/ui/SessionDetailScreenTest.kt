@@ -21,6 +21,28 @@ class SessionDetailScreenTest {
         assertEquals(null, SessionDetailPresentation.from(summary(UploadState.UPLOADED)).uploadAction)
     }
 
+    /** 서버에 DELETE API가 없어 이미 올린 사본은 남는다. 확인 문구가 그 차이를 말해야 한다. */
+    @Test
+    fun `delete confirmation distinguishes an uploaded session from the only copy`() {
+        assertEquals(
+            SessionDetailPresentation.DeleteAction.DeleteLocalCopy,
+            SessionDetailPresentation.from(summary(UploadState.UPLOADED)).deleteAction,
+        )
+        assertEquals(
+            SessionDetailPresentation.DeleteAction.DeleteOnlyCopy,
+            SessionDetailPresentation.from(summary(UploadState.LOCAL_ONLY)).deleteAction,
+        )
+        assertEquals(
+            SessionDetailPresentation.DeleteAction.DeleteOnlyCopy,
+            SessionDetailPresentation.from(summary(UploadState.FAILED)).deleteAction,
+        )
+    }
+
+    @Test
+    fun `a session that is uploading exposes no delete action`() {
+        assertEquals(null, SessionDetailPresentation.from(summary(UploadState.UPLOADING)).deleteAction)
+    }
+
     private fun summary(
         uploadState: UploadState,
         endNs: Long? = 2_000_000_000L,

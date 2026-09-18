@@ -63,6 +63,12 @@
     <string name="session_info_episode_count">%1$d개</string>
     <string name="session_info_duration">길이</string>
     <string name="session_info_resolution">해상도</string>
+    <string name="session_delete">세션 삭제</string>
+    <string name="session_delete_title">이 세션을 지울까요?</string>
+    <string name="session_delete_message_local_copy">기기에서만 지웁니다. 서버에 올린 사본은 남습니다.</string>
+    <string name="session_delete_message_only_copy">아직 업로드하지 않은 세션입니다. 지우면 수집한 데이터가 영구히 사라집니다.</string>
+    <string name="session_delete_upload_in_progress">업로드가 끝난 뒤에 지울 수 있습니다.</string>
+    <string name="session_delete_failed">세션을 지우지 못했습니다. 다시 시도해 주세요.</string>
     <string name="session_detail_video_content_description">세션 동영상 재생</string>
     <string name="session_detail_video_unavailable">재생할 수 있는 동영상이 없습니다.</string>
     <string name="session_video_lock_landscape">가로로 고정</string>

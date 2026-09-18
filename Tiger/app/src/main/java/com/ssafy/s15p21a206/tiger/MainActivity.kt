@@ -41,6 +41,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -127,6 +128,7 @@ import com.ssafy.s15p21a206.tiger.episode.SafDocumentTreeGateway
 import com.ssafy.s15p21a206.tiger.episode.SessionBundle
 import com.ssafy.s15p21a206.tiger.episode.SessionBundleExporter
 import com.ssafy.s15p21a206.tiger.episode.SessionBundleStore
+import com.ssafy.s15p21a206.tiger.episode.SessionDeleteResult
 import com.ssafy.s15p21a206.tiger.episode.SessionRepository
 import com.ssafy.s15p21a206.tiger.episode.TrackingState
 import com.ssafy.s15p21a206.tiger.episode.UploadState
@@ -326,6 +328,7 @@ fun CaptureScreen() {
     var capturing by remember { mutableStateOf(false) }
     var uploadJob by remember { mutableStateOf<Job?>(null) }
     var uploadFailureReason by remember { mutableStateOf<String?>(null) }
+    var deleteFailureReason by remember { mutableStateOf<String?>(null) }
     var showStopConfirmation by remember { mutableStateOf(false) }
     var showCaptureMetadataDialog by remember { mutableStateOf(false) }
     var trackingReady by remember { mutableStateOf(false) }
@@ -385,10 +388,15 @@ fun CaptureScreen() {
     val arCoreInstallMessage = stringResource(R.string.arcore_install_requested)
     val arCoreSessionStartFailed = stringResource(R.string.arcore_session_start_failed)
     val uploadEndpointMissing = stringResource(R.string.upload_endpoint_missing)
+    val deleteUploadInProgressMessage = stringResource(R.string.session_delete_upload_in_progress)
+    val deleteFailedMessage = stringResource(R.string.session_delete_failed)
     LaunchedEffect(repository) {
         repository.recoverInterruptedStaging()
         repository.failInterruptedUploads()
         repository.normalizeDisplayNumbers()
+        // 구제가 끝난 뒤에 회수한다. 구제가 staging에서 옮겨 온 번들은 색인에 행이 있으므로
+        // 고아가 아니지만, 순서를 뒤집으면 옮겨지기 전 상태를 보고 판단하게 된다.
+        repository.purgeOrphanBundles()
     }
     val treePicker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
@@ -653,6 +661,31 @@ fun CaptureScreen() {
         launchUpload(service, sessionId)
     }
 
+    /**
+     * Session을 기기에서 지우고 목록으로 돌아간다.
+     *
+     * 지운 세션의 상세에 남아 있을 이유가 없다. 색인에서 사라지므로 화면은 "찾을 수 없음"이 된다.
+     * 업로드가 진행 중이라 거절당하면 상세에 머무르고 이유만 본문에 남긴다.
+     */
+    fun deleteSession(sessionId: String) {
+        scope.launch {
+            val result =
+                runCatching { withContext(Dispatchers.IO) { repository.delete(sessionId) } }
+                    .getOrElse {
+                        deleteFailureReason = deleteFailedMessage
+                        return@launch
+                    }
+            when (result) {
+                // 디렉터리가 남았더라도 목록과 색인에서는 사라졌다. 남은 것은 다음 실행이 회수한다.
+                SessionDeleteResult.DELETED, SessionDeleteResult.BUNDLE_RETAINED -> {
+                    deleteFailureReason = null
+                    navController.popBackStack()
+                }
+                SessionDeleteResult.UPLOAD_IN_PROGRESS -> deleteFailureReason = deleteUploadInProgressMessage
+            }
+        }
+    }
+
     /** 이미 그 세션의 상세에 있으므로 목적지를 다시 쌓지 않고 전송만 새로 건다. */
     fun retryUpload(sessionId: String) {
         val service = uploadService
@@ -783,6 +816,8 @@ fun CaptureScreen() {
                             pendingSessionId = route.sessionId
                             treePicker.launch(null)
                         },
+                        onDelete = { deleteSession(route.sessionId) },
+                        deleteFailureReason = deleteFailureReason,
                         sharedPlayer = sharedVideoPlayer,
                         onOpenFullscreenVideo = { navController.navigate(SessionVideoRoute(route.sessionId)) },
                         uploadFailureReason = uploadFailureReason,
@@ -1118,11 +1153,15 @@ private fun SessionDetailScreen(
     exportState: ExportState,
     exportMessage: String?,
     onExport: () -> Unit,
+    onDelete: () -> Unit,
+    deleteFailureReason: String?,
     uploadFailureReason: String?,
     sharedPlayer: SharedVideoPlayer,
     onOpenFullscreenVideo: () -> Unit,
 ) {
     var showSessionInfo by remember { mutableStateOf(false) }
+    var pendingDelete by remember { mutableStateOf<SessionDetailPresentation.DeleteAction?>(null) }
+    val presentation = summary?.let(SessionDetailPresentation::from)
     // 재생 영역 높이와 전송·내보내기 상태에 따라 내용이 화면을 넘는다. 스크롤이 없으면 잘린다.
     Column(
         modifier =
@@ -1146,6 +1185,25 @@ private fun SessionDetailScreen(
                         modifier = Modifier.size(SESSION_INFO_ICON_SIZE),
                     )
                 }
+                // 삭제는 이 화면의 주 동작이 아니다. 업로드 버튼이 본문에서 주 동작을 맡고 있고,
+                // 삭제는 그 옆에 같은 크기로 둘 만한 것이 아니라 필요할 때 찾아가는 동작이다.
+                // 업로드가 진행 중인 동안은 번들을 읽고 있으므로 누를 수 없게 둔다.
+                val deleteAction = presentation?.deleteAction
+                IconButton(
+                    onClick = { pendingDelete = deleteAction },
+                    enabled = deleteAction != null,
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_session_delete),
+                        contentDescription = stringResource(R.string.session_delete),
+                        // 색을 직접 주므로 비활성 색도 직접 맞춘다. 누를 수 없는 동안 같은 명도로
+                        // 남으면 눌리지 않는 이유를 화면이 말하지 못한다.
+                        tint =
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                                .copy(alpha = if (deleteAction != null) 1f else DISABLED_ICON_ALPHA),
+                        modifier = Modifier.size(SESSION_INFO_ICON_SIZE),
+                    )
+                }
             }
         }
         if (summary == null) {
@@ -1153,8 +1211,7 @@ private fun SessionDetailScreen(
                 text = stringResource(R.string.session_detail_unavailable),
                 modifier = Modifier.padding(horizontal = DETAIL_CONTENT_PADDING),
             )
-        } else {
-            val presentation = SessionDetailPresentation.from(summary)
+        } else if (presentation != null) {
             // 영상은 좌우 여백 없이 화면 폭을 다 쓴다. 16:9 안에 컨트롤이 오버레이로 놓이므로
             // 여백을 주면 재생 영역만 줄고 얻는 것이 없다.
             SessionVideoPreview(summary.bundlePath, sharedPlayer, onOpenFullscreenVideo)
@@ -1193,6 +1250,10 @@ private fun SessionDetailScreen(
                 if (summary.uploadState == UploadState.FAILED && uploadFailureReason != null) {
                     SupportingText(uploadFailureReason)
                 }
+                // 지우지 못했으면 화면이 그대로 남는다. 아무 말이 없으면 눌리지 않은 것처럼 보인다.
+                if (deleteFailureReason != null) {
+                    SupportingText(deleteFailureReason)
+                }
                 if (presentation.uploadAction != null) {
                     Button(onClick = onUpload) {
                         Text(
@@ -1214,13 +1275,65 @@ private fun SessionDetailScreen(
             }
         }
     }
-    if (showSessionInfo && summary != null) {
+    if (showSessionInfo && presentation != null && summary != null) {
         SessionInfoSheet(
             summary = summary,
-            durationSeconds = SessionDetailPresentation.from(summary).durationSeconds,
+            durationSeconds = presentation.durationSeconds,
             onDismiss = { showSessionInfo = false },
         )
     }
+    pendingDelete?.let { action ->
+        SessionDeleteConfirmation(
+            action = action,
+            onConfirm = {
+                pendingDelete = null
+                onDelete()
+            },
+            onDismiss = { pendingDelete = null },
+        )
+    }
+}
+
+/**
+ * 삭제를 확인받는 판이다.
+ *
+ * 되돌릴 수 없으므로 한 번 묻는다. 무엇을 잃는지는 업로드 여부에 달렸고, 서버에 DELETE API가
+ * 없어 이미 올린 사본은 어느 쪽이든 남는다. 두 경우를 같은 문구로 덮으면 아직 올리지 않은
+ * 세션을 지울 때 사용자가 무엇을 잃는지 모른 채 확인을 누른다.
+ */
+@Composable
+@Suppress("FunctionName")
+private fun SessionDeleteConfirmation(
+    action: SessionDetailPresentation.DeleteAction,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.session_delete_title)) },
+        text = {
+            Text(
+                stringResource(
+                    when (action) {
+                        SessionDetailPresentation.DeleteAction.DeleteLocalCopy -> R.string.session_delete_message_local_copy
+                        SessionDetailPresentation.DeleteAction.DeleteOnlyCopy -> R.string.session_delete_message_only_copy
+                    },
+                ),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                // 되돌릴 수 없는 쪽을 error 색으로 둬서 취소와 눈으로 구분되게 한다.
+                Text(
+                    text = stringResource(R.string.action_delete),
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+    )
 }
 
 /**
@@ -1669,3 +1782,6 @@ private val DETAIL_VIDEO_GAP = 24.dp
  * 알면 되는 단추로 남긴다. 터치 영역은 `IconButton`의 48dp를 그대로 둔다.
  */
 private val SESSION_INFO_ICON_SIZE = 20.dp
+
+/** Material 3이 비활성 내용에 쓰는 투명도. 색을 직접 주는 아이콘에 같은 값을 맞춘다. */
+private const val DISABLED_ICON_ALPHA = 0.38f
