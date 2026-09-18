@@ -171,6 +171,7 @@ private val SECTION_HEADER_BOTTOM_PADDING = 8.dp
 private const val HOME_SECTION_KEY = "home-section"
 private const val HOME_EMPTY_KEY = "home-empty"
 private const val TASK_SESSIONS_SECTION_KEY = "task-sessions-section"
+private const val TASK_SESSIONS_EMPTY_KEY = "task-sessions-empty"
 
 /** 카드가 안쪽에 두는 여백. 카드 바깥의 글자를 카드 안 글자와 맞출 때 같은 값을 쓴다. */
 private val CARD_CONTENT_PADDING = 16.dp
@@ -205,8 +206,23 @@ fun TaskSessionListScreen(
                     ListSectionHeader(
                         modifier = Modifier.padding(bottom = SECTION_HEADER_BOTTOM_PADDING),
                         title = title,
-                        supporting = stringResource(R.string.session_list_count, sessions.size),
+                        // 홈과 같은 이유로, 비어 있을 때는 바로 아래 안내가 같은 말을 하므로 세지 않는다.
+                        supporting =
+                            sessions.size
+                                .takeIf { it > 0 }
+                                ?.let { stringResource(R.string.session_list_count, it) },
                     )
+                }
+                // 마지막 세션을 지우면 이 화면이 빈 채로 남는다. 삭제하기 전에는 세션이 있는 Task만
+                // 홈에 나타나 이 상태에 닿을 수 없었다.
+                if (sessions.isEmpty()) {
+                    item(key = TASK_SESSIONS_EMPTY_KEY) {
+                        Text(
+                            text = stringResource(R.string.task_session_list_empty),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
                 items(sessions, key = SessionSummary::sessionId) { summary ->
                     SessionSummaryItem(summary, onOpenSession, onDeleteSession)

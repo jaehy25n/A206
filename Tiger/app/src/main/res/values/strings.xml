@@ -45,7 +45,8 @@
     <string name="task_list_count">%1$d개의 Task</string>
     <string name="session_list_count">%1$d개의 Session</string>
     <string name="session_list_new_capture">새 세션</string>
-    <string name="session_list_empty">완료된 세션이 없습니다. 새 세션을 시작하세요.</string>
+    <string name="session_list_empty">아직 세션이 없습니다. 새 세션을 눌러 추가하세요.</string>
+    <string name="task_session_list_empty">이 Task에 남은 세션이 없습니다. 새 세션을 눌러 추가하세요.</string>
     <string name="session_list_session_number">Session %1$d</string>
     <string name="session_list_item_content_description">세션 %1$s</string>
     <string name="session_list_episode_count">Episode %1$d개</string>
