@@ -153,6 +153,7 @@ import com.ssafy.s15p21a206.tiger.ui.upload.closeOnUploadCompletion
 import com.ssafy.s15p21a206.tiger.upload.SessionUploadRequestFactory
 import com.ssafy.s15p21a206.tiger.upload.SessionUploadService
 import com.ssafy.s15p21a206.tiger.upload.SessionUploader
+import com.ssafy.s15p21a206.tiger.upload.UploadResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -327,6 +328,7 @@ fun CaptureScreen() {
      */
     var capturing by remember { mutableStateOf(false) }
     var uploadJob by remember { mutableStateOf<Job?>(null) }
+    var uploadFailureReason by remember { mutableStateOf<String?>(null) }
     var showStopConfirmation by remember { mutableStateOf(false) }
     var showCaptureMetadataDialog by remember { mutableStateOf(false) }
     var trackingReady by remember { mutableStateOf(false) }
@@ -613,6 +615,24 @@ fun CaptureScreen() {
         capturing = true
     }
 
+    /**
+     * 전송을 걸고 실패 사유를 받아 둔다.
+     *
+     * 사유는 화면에만 쓰고 저장하지 않는다. 업로드에는 내보내기의 `exportFailureReason`에 해당하는
+     * 컬럼이 없고, 무엇이 막았는지는 실패한 자리에서 보면 되는 값이다.
+     */
+    fun launchUpload(
+        service: SessionUploadService,
+        sessionId: String,
+    ) {
+        uploadFailureReason = null
+        uploadJob =
+            scope.launch {
+                val result = runCatching { service.upload(sessionId) }.getOrNull()
+                uploadFailureReason = (result as? UploadResult.Failed)?.reason
+            }
+    }
+
     fun startUpload(sessionId: String) {
         val service = uploadService
         if (service == null) {
@@ -627,7 +647,17 @@ fun CaptureScreen() {
             navController.navigate(SessionDetailRoute(sessionId))
         }
         navController.navigate(UploadStatusRoute(sessionId))
-        uploadJob = scope.launch { service.upload(sessionId) }
+        launchUpload(service, sessionId)
+    }
+
+    /** 이미 업로드 상태 화면에 있으므로 다시 쌓지 않고 전송만 새로 건다. */
+    fun retryUpload(sessionId: String) {
+        val service = uploadService
+        if (service == null) {
+            message = uploadEndpointMissing
+            return
+        }
+        launchUpload(service, sessionId)
     }
     val sharedVideoPlayer = rememberSharedVideoPlayer()
     // 재생 화면을 벗어나면 decoder를 계속 물고 있지 않도록 재생기를 놓는다.
@@ -779,6 +809,8 @@ fun CaptureScreen() {
                             uploadJob?.cancel()
                             navController.popBackStack()
                         },
+                        failureReason = uploadFailureReason,
+                        onRetry = { retryUpload(route.sessionId) },
                     )
                 }
             }

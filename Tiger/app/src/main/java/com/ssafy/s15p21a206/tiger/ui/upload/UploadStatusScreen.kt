@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -51,6 +52,8 @@ internal fun UploadStatusScreen(
     uploadState: UploadState?,
     onBack: () -> Unit,
     onCancelUpload: () -> Unit,
+    failureReason: String? = null,
+    onRetry: () -> Unit = {},
 ) {
     var showCancellationConfirmation by remember { mutableStateOf(false) }
     val uploadInProgress = stringResource(R.string.upload_in_progress)
@@ -92,6 +95,17 @@ internal fun UploadStatusScreen(
                     text = stringResource(R.string.upload_leave_warning),
                     textAlign = TextAlign.Center,
                 )
+            }
+            if (uploadState == UploadState.FAILED) {
+                // 무엇이 막았는지 알아야 다시 걸어 볼지, 번들을 손봐야 할지 판단할 수 있다.
+                // 앱을 다시 켜면 사유는 남지 않는다. 전송 실패는 기록하는 컬럼이 없다.
+                if (failureReason != null) {
+                    SupportingText(text = failureReason, textAlign = TextAlign.Center)
+                }
+                // 사유를 보고 소용없겠다고 판단하는 것은 사용자 몫이다. 어떤 사유가 다시 걸면
+                // 되는 것인지 단정할 만큼 사유가 잘게 나뉘어 있지 않고, 필요한데 버튼이 없어
+                // 막히는 쪽이 헛수고 한 번보다 비싸다. 상세 화면도 실패면 늘 재시도를 내민다.
+                Button(onClick = onRetry) { Text(stringResource(R.string.upload_retry)) }
             }
         }
     }
