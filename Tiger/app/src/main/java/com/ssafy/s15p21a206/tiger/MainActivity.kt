@@ -1268,6 +1268,14 @@ private fun SessionDetailScreen(
             onDismiss = { showSessionInfo = false },
         )
     }
+    // 삭제를 묻는 동안은 영상을 멈춘다. 되돌릴 수 없는 확인을 받는데 뒤에서 소리가 계속 나면
+    // 무엇을 묻고 있는지 흐려진다.
+    //
+    // 확인을 누르면 재생기가 연 그 파일이 곧 사라진다. unlink 자체는 열린 파일에도 안전하지만,
+    // 멈춰 두면 재생기가 파일을 다시 열 일이 없어 사라진 뒤에 읽으려 드는 경우가 생기지 않는다.
+    LaunchedEffect(pendingDelete) {
+        if (pendingDelete != null) sharedPlayer.pause()
+    }
     pendingDelete?.let { action ->
         SessionDeleteConfirmation(
             action = action,
@@ -1657,6 +1665,16 @@ private class SharedVideoPlayer(
             preparedPath = path
         }
         return current
+    }
+
+    /**
+     * 재생을 멈춘다. 적재한 파일은 그대로 두므로 다시 누르면 이어서 재생한다.
+     *
+     * 화면을 덮는 판이 뜨는 동안 쓴다. 놓지 않고 멈추기만 하는 이유는, 놓으면 판 뒤의 재생 영역이
+     * 빈 화면이 되어 무엇을 덮고 있는지 알 수 없게 되기 때문이다.
+     */
+    fun pause() {
+        player?.pause()
     }
 
     fun release() {

@@ -352,9 +352,12 @@ Session을 기기에서 지우는 범위를 FR-016·FR-016a~d로 명세에 추�
   - 자동화할 수 없는 이유: 상세 화면의 `ExoPlayer`가 `main_rgb.mp4`를 연 채로 그 파일이 사라진다.
     POSIX는 열린 파일의 unlink를 허용하므로 삭제 자체는 성공하지만, 파일이 사라진 뒤 재생기가
     어떻게 반응하는지는 실제 decoder로 돌려 봐야 안다. 단위 테스트에는 재생기가 없다.
-  - 절차: 상세 화면에서 영상을 재생한 상태로 메뉴에서 삭제하고, 목록으로 돌아간 뒤 앱이 살아 있는지와
-    logcat에 재생기 예외가 남지 않는지 본다. 이어서
-    `adb shell run-as <pkg> ls files/capture/completed`로 디렉터리가 사라졌는지 함께 확인한다.
+  - 위험은 줄여 뒀다: 확인 판이 뜨면 `SharedVideoPlayer.pause()`로 재생을 멈추므로, 파일이
+    사라질 때 재생기가 읽는 중이 아니다. 다만 파일을 연 채로 멈춰 있을 뿐 닫은 것은 아니라
+    남은 경로가 완전히 없어지지는 않았다.
+  - 절차: 상세 화면에서 영상을 재생한 상태로 메뉴에서 삭제하고, 확인 판이 뜰 때 재생이 멈추는지,
+    목록으로 돌아간 뒤 앱이 살아 있고 소리가 남지 않는지, logcat에 재생기 예외가 없는지 본다.
+    이어서 `adb shell run-as <pkg> ls files/capture/completed`로 디렉터리가 사라졌는지 함께 확인한다.
   - 번들 디렉터리 삭제 자체는 실기기 검증 사유가 아니다 (2026-09-18 사용자 지적).
     `SessionRepositoryTest.deleting a session removes its index row, markers and bundle`이 실제 파일을
     만들고 `assertFalse(directory.exists())`까지 본다. `File.deleteRecursively()`에 안드로이드만의
@@ -413,7 +416,7 @@ FR-016e~g 추가가 여기에 대응한다.
 ## Phase 8: Convergence
 
 - [ ] T048 `contracts/capture-control-ui.md`의 화면·진입점 표에서 Session Detail의 "우측 상단 정보 아이콘"을 `세션 정보`·`세션 삭제`를 담은 헤더 메뉴로 고치고, Task Session 목록 행에 길게 눌러 여는 삭제 진입점을 적는다 per FR-016, FR-016e (contradicts)
-- [ ] T049 `contracts/capture-control-ui.md`에 삭제 동작 절을 추가한다. 기기에서만 지운다는 방침, 업로드 여부로 갈리는 확인 문구, 전송 중 금지, 색인 우선 삭제와 다음 실행 회수, 되돌릴 수 없는 확인 판의 공통 형태를 포함한다 per FR-016, FR-016a, FR-016b, FR-016c, FR-016f (missing)
+- [ ] T049 `contracts/capture-control-ui.md`에 삭제 동작 절을 추가한다. 기기에서만 지운다는 방침, 업로드 여부로 갈리는 확인 문구, 전송 중 금지, 색인 우선 삭제와 다음 실행 회수, 되돌릴 수 없는 확인 판의 공통 형태, 확인 판이 뜨는 동안 영상 재생을 멈춘다는 규칙을 포함한다 per FR-016, FR-016a, FR-016b, FR-016c, FR-016f (missing)
 - [ ] T050 `contracts/capture-control-ui.md`의 `조회 화면의 짜임`에서 "상세의 세션 정보는 상단 우측 아이콘으로 연다"를 메뉴로 접은 현재 짜임과 그 이유로 고치고, 목록 카드가 삭제 표를 상주시키지 않는다는 제약을 적는다 per FR-016, FR-016e (contradicts)
 - [ ] T051 `specs/002-capture-control-ux/plan.md`에 삭제의 설계 결정을 기록한다. 색인을 먼저 지우고 디렉터리를 지우는 순서, 실패 시 고아 디렉터리를 다음 실행이 회수하는 경로, 서버 DELETE API가 없다는 제약을 포함한다 per plan: 저장소 정책 (missing)
 - [ ] T052 `specs/002-capture-control-ux/data-model.md`에 삭제가 더한 DAO 연산(`CaptureSessionDao.delete`·`allSessionIds`, `EpisodeMarkerDao.deleteForSession`)과 고아 번들 회수 수명주기를 반영한다 per FR-016, FR-016c (missing)
