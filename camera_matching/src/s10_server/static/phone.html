@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>S10 capture</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #111; color: #eee;
+    font: 15px/1.5 system-ui, -apple-system, sans-serif;
+    min-height: 100vh; padding: 16px;
+  }
+  h1 { font-size: 17px; margin: 0 0 12px; font-weight: 600; }
+  /* 촬영 중에는 상태 한 줄만 보인다. 조작은 전부 노트북에서 한다. */
+  #status {
+    padding: 14px 16px; border-radius: 10px; background: #1c1c1c;
+    border: 1px solid #333; font-variant-numeric: tabular-nums;
+  }
+  #status.live { border-color: #2a7; background: #12231b; }
+  #error {
+    display: none; margin-top: 14px; padding: 16px; border-radius: 10px;
+    background: #3a1212; border: 2px solid #c33; color: #ffdede;
+    font-size: 17px; font-weight: 600; line-height: 1.6;
+  }
+  #error.show { display: block; }
+  #error .detail { font-size: 14px; font-weight: 400; margin-top: 10px; color: #f3b8b8; }
+  #pick { margin-top: 16px; }
+  #pick.hidden { display: none; }
+  .cam {
+    display: block; width: 100%; text-align: left; margin-bottom: 8px;
+    padding: 14px; border-radius: 10px; border: 1px solid #444;
+    background: #1c1c1c; color: #eee; font: inherit;
+  }
+  .cam.back { border-color: #2a7; }
+  .cam .id { display: block; color: #888; font-size: 12px; margin-top: 4px; }
+  .note { color: #999; font-size: 13px; margin-top: 12px; }
+  video, canvas { display: none; }
+  #reset { margin-top: 20px; background: none; border: none; color: #666;
+           font: inherit; text-decoration: underline; padding: 0; }
+</style>
+</head>
+<body>
+<h1>S10 촬영</h1>
+
+<div id="status">시작하는 중…</div>
+<div id="error"><span id="errorMsg"></span><div class="detail" id="errorDetail"></div></div>
+
+<div id="pick" class="hidden">
+  <div class="note">후면 메인 카메라를 고른다. 한 번만 고르면 이 폰에 기억된다.<br>
+    초광각·망원을 고르면 화각이 달라져 세션 전체를 다시 찍어야 한다.</div>
+  <div id="camList"></div>
+</div>
+
+<button id="reset">카메라 선택 다시 하기</button>
+
+<video id="video" playsinline autoplay muted></video>
+<canvas id="full"></canvas>
+<canvas id="prev"></canvas>
+
+<script>
+"use strict";
+
+// --- 상수 (서버 app.py 와 맞춰야 한다) ---
+const REQ_WIDTH = 1920;
+const REQ_HEIGHT = 1080;
+const PREVIEW_WIDTH = 320;
+const PREVIEW_HEIGHT = 180;
+const PREVIEW_FPS = 5;
+const PING_INTERVAL_MS = 20000;
+const STORAGE_KEY = "camcal.s10.deviceId";
+
+const $ = (id) => document.getElementById(id);
+const video = $("video");
+const full = $("full");
+const prev = $("prev");
+full.width = REQ_WIDTH; full.height = REQ_HEIGHT;
+prev.width = PREVIEW_WIDTH; prev.height = PREVIEW_HEIGHT;
+
+let stream = null;
+let track = null;
+let autoTimer = null;
+let autoInterval = 3.0;
+let busy = false;          // 업로드 중복 방지
+let shotCount = 0;
+let lastLine = "";
+
+function setStatus(text, live) {
+  lastLine = text;
+  $("status").textContent = text;
+  $("status").classList.toggle("live", !!live);
+}
+
+/** 조용히 넘어가면 안 되는 실패는 전부 여기로. 화면을 덮을 만큼 크게 띄운다. */
+function fail(message, detail) {
+  $("errorMsg").textContent = message;
+  $("errorDetail").textContent = detail || "";
+  $("error").classList.add("show");
+  setStatus("중단됨", false);
+  report({ error: message + (detail ? " / " + detail : "") });
+}
+
+function clearError() { $("error").classList.remove("show"); }
+
+// --- 서버 보고 ---
+
+async function report(payload) {
+  try {
+    await fetch("/api/phone/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch (e) { /* 서버가 잠깐 끊긴 것. 다음 보고에서 다시 맞는다 */ }
+}
+
+// --- 카메라 선택 ---
+
+function isBackFacing(label) {
+  const l = (label || "").toLowerCase();
+  return l.includes("back") || l.includes("rear") || l.includes("environment") || l.includes("후면");
+}
+
+async function listCameras() {
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  return devices.filter((d) => d.kind === "videoinput");
+}
+
+function showPicker(cams) {
+  const list = $("camList");
+  list.innerHTML = "";
+  cams.forEach((cam, i) => {
+    const btn = document.createElement("button");
+    btn.className = "cam" + (isBackFacing(cam.label) ? " back" : "");
+    btn.innerHTML = `${cam.label || "카메라 " + (i + 1)}<span class="id">${cam.deviceId.slice(0, 24)}…</span>`;
+    btn.onclick = () => {
+      localStorage.setItem(STORAGE_KEY, cam.deviceId);
+      $("pick").classList.add("hidden");
+      start(cam.deviceId);
+    };
+    list.appendChild(btn);
+  });
+  $("pick").classList.remove("hidden");
+  setStatus("카메라를 고른다", false);
+}
+
+// --- 스트림 열기 ---
+
+async function start(deviceId) {
+  clearError();
+  setStatus("카메라 여는 중…", false);
+  if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
+
+  // exact 로 요청한다. 실패하면 **다른 해상도로 넘어가지 않는다.**
+  // 폰이 1920x1080 을 못 주면 그 사실을 알아야 하고, 몰래 다른 크기로 찍으면
+  // 세션 전체가 못 쓰게 된다.
+  const constraints = {
+    audio: false,
+    video: {
+      deviceId: { exact: deviceId },
+      width: { exact: REQ_WIDTH },
+      height: { exact: REQ_HEIGHT },
+      resizeMode: "none",          // 브라우저가 스케일/크롭해서 맞추는 것을 막는다
+    },
+  };
+
+  try {
+    stream = await navigator.mediaDevices.getUserMedia(constraints);
+  } catch (e) {
+    fail(
+      "1920×1080 으로 카메라를 열 수 없다",
+      `${e.name}: ${e.message}. 다른 해상도로 대신 찍지 않는다. ` +
+      "다른 카메라를 고르거나(아래 '카메라 선택 다시 하기') 폰 설정을 확인한다."
+    );
+    return;
+  }
+
+  video.srcObject = stream;
+  await video.play().catch(() => {});
+  track = stream.getVideoTracks()[0];
+
+  const settings = track.getSettings();
+  if (settings.width !== REQ_WIDTH || settings.height !== REQ_HEIGHT) {
+    // exact 가 통과했는데도 실제가 다르면 브라우저가 거짓말한 것이다. 멈춘다.
+    fail(
+      "실제 해상도가 요청과 다르다",
+      `요청 ${REQ_WIDTH}×${REQ_HEIGHT}, 실제 ${settings.width}×${settings.height}`
+    );
+    return;
+  }
+
+  const manual = await tryManual(track);
+  await report({ settings: settings, manual: manual, error: null });
+
+  requestWakeLock();
+  connectSockets();
+  startPreview();
+  setStatus(`연결됨 · ${settings.width}×${settings.height} · 노트북에서 조작한다`, true);
+}
+
+/**
+ * 수동 제어 시도. **실패는 정상 경로다** - 기기마다 지원이 다르다.
+ * 성공/실패를 그대로 서버에 보고해서 meta.json 에 남긴다. 나중에 "그때 AF 가
+ * 잠겨 있었나"를 사진만 보고 판단할 수 없기 때문이다.
+ */
+async function tryManual(track) {
+  const caps = typeof track.getCapabilities === "function" ? track.getCapabilities() : {};
+  const result = { capabilities: caps, applied: {}, failed: {} };
+  const wanted = {
+    focusMode: "manual",
+    exposureMode: "manual",
+    whiteBalanceMode: "manual",
+  };
+  for (const [key, value] of Object.entries(wanted)) {
+    if (!caps[key] || !caps[key].includes(value)) {
+      result.failed[key] = "미지원 (capabilities 에 없음)";
+      continue;
+    }
+    try {
+      await track.applyConstraints({ advanced: [{ [key]: value }] });
+      const now = track.getSettings()[key];
+      if (now === value) result.applied[key] = value;
+      else result.failed[key] = `적용했으나 되읽기 ${now}`;
+    } catch (e) {
+      result.failed[key] = `${e.name}: ${e.message}`;
+    }
+  }
+  return result;
+}
+
+// --- Wake Lock ---
+
+let wakeLock = null;
+async function requestWakeLock() {
+  if (!("wakeLock" in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request("screen");
+    wakeLock.addEventListener("release", () => { wakeLock = null; });
+  } catch (e) { /* 배터리 절약 모드 등. 촬영 자체는 계속된다 */ }
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && !wakeLock) requestWakeLock();
+});
+
+// --- 소켓 ---
+
+let cmdSocket = null;
+let previewSocket = null;
+
+function wsUrl(path) {
+  return (location.protocol === "https:" ? "wss://" : "ws://") + location.host + path;
+}
+
+function connectSockets() {
+  cmdSocket = new WebSocket(wsUrl("/ws/phone"));
+  cmdSocket.onmessage = (ev) => handleCommand(JSON.parse(ev.data));
+  cmdSocket.onclose = () => {
+    setStatus("서버 연결 끊김 · 5초 후 재연결", false);
+    setTimeout(connectSockets, 5000);
+  };
+  setInterval(() => {
+    if (cmdSocket && cmdSocket.readyState === WebSocket.OPEN) cmdSocket.send("ping");
+  }, PING_INTERVAL_MS);
+
+  previewSocket = new WebSocket(wsUrl("/ws/preview"));
+  previewSocket.binaryType = "arraybuffer";
+}
+
+function handleCommand(msg) {
+  if (msg.type === "capture_now") {
+    captureOne();
+  } else if (msg.type === "set_interval") {
+    autoInterval = msg.interval;
+    if (autoTimer) startAuto();
+  } else if (msg.type === "start_auto") {
+    if (msg.interval) autoInterval = msg.interval;
+    startAuto();
+  } else if (msg.type === "stop_auto") {
+    stopAuto();
+  }
+}
+
+// --- 프리뷰 (320×180 JPEG, 5fps) ---
+
+function startPreview() {
+  const ctx = prev.getContext("2d");
+  setInterval(() => {
+    if (!track || !previewSocket || previewSocket.readyState !== WebSocket.OPEN) return;
+    ctx.drawImage(video, 0, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT);
+    prev.toBlob(
+      (blob) => { if (blob) blob.arrayBuffer().then((b) => {
+        if (previewSocket.readyState === WebSocket.OPEN) previewSocket.send(b);
+      }); },
+      "image/jpeg",
+      0.5
+    );
+  }, 1000 / PREVIEW_FPS);
+}
+
+// --- 촬영 ---
+
+async function captureOne() {
+  if (!track || busy) return;
+  busy = true;
+  try {
+    const ctx = full.getContext("2d");
+    ctx.drawImage(video, 0, 0, REQ_WIDTH, REQ_HEIGHT);
+    // PNG 무손실. JPEG 로 보내면 코너 위치가 흔들린다.
+    const blob = await new Promise((res) => full.toBlob(res, "image/png"));
+    if (!blob) { setStatus("PNG 인코딩 실패", false); return; }
+
+    const resp = await fetch("/upload", {
+      method: "POST",
+      headers: { "Content-Type": "image/png" },
+      body: blob,
+    });
+    const out = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      setStatus(`서버 거부: ${out.detail || resp.status}`, false);
+      return;
+    }
+    if (out.ok) {
+      shotCount += 1;
+      setStatus(`저장 ${out.saved} · 총 ${shotCount}장 · ${autoTimer ? "자동" : "수동"}`, true);
+    } else {
+      setStatus(`미검출 (저장 안 함) · 총 ${shotCount}장`, true);
+    }
+  } catch (e) {
+    setStatus(`업로드 실패: ${e.message}`, false);
+  } finally {
+    busy = false;
+  }
+}
+
+function startAuto() {
+  stopAuto();
+  autoTimer = setInterval(captureOne, autoInterval * 1000);
+  setStatus(`자동 촬영 ${autoInterval}s 간격 · 총 ${shotCount}장`, true);
+}
+
+function stopAuto() {
+  if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+  setStatus(`자동 정지 · 총 ${shotCount}장`, true);
+}
+
+// --- 부팅 ---
+
+$("reset").onclick = () => {
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+};
+
+async function boot() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    fail("이 브라우저는 카메라를 지원하지 않는다",
+         "HTTPS 로 접속했는지 확인한다. HTTP 에서는 카메라를 열 수 없다.");
+    return;
+  }
+
+  // 권한을 먼저 받아야 enumerateDevices 가 라벨을 준다 (라벨이 없으면 어느 것이
+  // 후면 메인인지 고를 수 없다). 권한용 스트림은 바로 닫는다.
+  try {
+    const probe = await navigator.mediaDevices.getUserMedia({ video: true });
+    probe.getTracks().forEach((t) => t.stop());
+  } catch (e) {
+    fail("카메라 권한이 거부됐다", `${e.name}: ${e.message}`);
+    return;
+  }
+
+  const cams = await listCameras();
+  if (cams.length === 0) { fail("카메라를 찾지 못했다", ""); return; }
+
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved && cams.some((c) => c.deviceId === saved)) {
+    start(saved);
+  } else {
+    showPicker(cams);
+  }
+}
+
+boot();
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+# 1~2단계 의존성. 새 패키지를 추가할 때는 왜 필요한지를 커밋 메시지에 적는다.
+
+# --- 공통 (camcal) ---
+numpy>=2.0
+opencv-python>=4.10        # VideoCapture, findChessboardCorners, cornerSubPix
+PyYAML>=6.0                # config/board.yaml, cameras.yaml
+
+# --- S10 웹앱 서버 (src/s10_server/) ---
+fastapi>=0.115             # REST + WebSocket 라우팅
+uvicorn[standard]>=0.30    # ASGI 서버. [standard] 가 websockets 를 끌고 온다
+python-multipart>=0.0.9    # /upload 의 multipart 업로드 파싱
+cryptography>=42.0         # 자체 서명 인증서 생성 (getUserMedia 는 HTTPS 필수)
+
+# --- 테스트 ---
+pytest>=8.0
+httpx>=0.27                # fastapi TestClient 가 쓴다
