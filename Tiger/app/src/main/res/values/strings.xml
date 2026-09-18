@@ -79,11 +79,11 @@
     <string name="control_pause">Ⅱ</string>
     <string name="control_stop">■</string>
     <string name="control_close">✕</string>
-    <string name="capture_close_content_description">세션 작업 공간 닫기</string>
+    <string name="capture_close_content_description">수집 작업 공간 닫기</string>
     <string name="capture_stop_title">세션을 종료할까요?</string>
     <string name="capture_stop_message">현재 녹화를 종료하고 세션을 완료한 뒤 전송을 시작합니다.</string>
     <string name="capture_stop_confirm">종료</string>
-    <string name="capture_metadata_title">세션 정보 입력</string>
+    <string name="capture_metadata_title">수집 정보 입력</string>
     <string name="capture_metadata_task">Task</string>
     <string name="capture_metadata_object">Object</string>
     <string name="capture_metadata_resolution">녹화 해상도</string>
@@ -96,6 +96,6 @@
     <string name="capture_control_stop">세션 종료</string>
     <string name="capture_finalizing">세션을 마무리하고 있습니다</string>
     <string name="capture_finalizing_warning">저장이 끝날 때까지 앱을 닫지 마세요.</string>
-    <string name="capture_preview_failed">프리뷰를 준비할 수 없습니다. 카메라 권한을 허용한 뒤 세션 화면을 다시 열어 주세요.</string>
-    <string name="capture_operation_failed">세션 조작을 완료할 수 없습니다. 다시 시도해 주세요.</string>
+    <string name="capture_preview_failed">프리뷰를 준비할 수 없습니다. 카메라 권한을 허용한 뒤 수집 화면을 다시 열어 주세요.</string>
+    <string name="capture_operation_failed">수집 조작을 완료할 수 없습니다. 다시 시도해 주세요.</string>
 </resources>
