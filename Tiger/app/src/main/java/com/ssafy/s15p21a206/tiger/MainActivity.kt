@@ -591,6 +591,27 @@ fun CaptureScreen() {
         if (capturing && !collecting) restoreIdlePreview()
     }
 
+    /**
+     * 수집 정보 입력부터 시작한다.
+     *
+     * [initialTask]는 이미 알고 있는 Task 이름이다. Task의 세션 목록에서 시작하면 그 이름이
+     * 채워진 채로 열려 같은 이름을 다시 입력하지 않는다. 채워진 뒤에도 고칠 수 있게 두므로,
+     * 잘못 들어왔더라도 나갔다 올 필요는 없다.
+     */
+    fun startCapture(initialTask: String) {
+        previewReady = false
+        previewFailed = false
+        showStopConfirmation = false
+        task = initialTask
+        objectName = ""
+        recordingResolution = resolutionStore.load()
+        // 새 TextureView가 이 크기로 버퍼를 잡는다. 직전 Session이 남긴 크기를 물려받지 않는다.
+        idlePreviewSize = recordingResolution
+        message = ""
+        showCaptureMetadataDialog = true
+        capturing = true
+    }
+
     fun startUpload(sessionId: String) {
         val service = uploadService
         if (service == null) {
@@ -695,19 +716,7 @@ fun CaptureScreen() {
                 DestinationSurface {
                     SessionListScreen(
                         sessions = completedSummaries,
-                        onStartCapture = {
-                            previewReady = false
-                            previewFailed = false
-                            showStopConfirmation = false
-                            task = ""
-                            objectName = ""
-                            recordingResolution = resolutionStore.load()
-                            // 새 TextureView가 이 크기로 버퍼를 잡는다. 직전 Session이 남긴 크기를 물려받지 않는다.
-                            idlePreviewSize = recordingResolution
-                            message = ""
-                            showCaptureMetadataDialog = true
-                            capturing = true
-                        },
+                        onStartCapture = { startCapture("") },
                         onOpenTask = { taskName -> navController.navigate(TaskSessionsRoute(taskName)) },
                     )
                 }
@@ -720,6 +729,8 @@ fun CaptureScreen() {
                         sessions = completedSummaries.filter { it.taskName.trim() == route.taskName },
                         onBack = navController::popBackStack,
                         onOpenSession = { sessionId -> navController.navigate(SessionDetailRoute(sessionId)) },
+                        // 이름 없는 Task 묶음은 이름이 빈 세션들이라 채울 것이 없다. 빈 채로 연다.
+                        onStartCapture = { startCapture(route.taskName) },
                     )
                 }
             }

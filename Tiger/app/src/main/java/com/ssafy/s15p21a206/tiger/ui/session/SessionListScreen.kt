@@ -153,34 +153,42 @@ fun TaskSessionListScreen(
     sessions: List<SessionSummary>,
     onBack: () -> Unit,
     onOpenSession: (String) -> Unit,
+    onStartCapture: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val title = taskName.ifBlank { stringResource(R.string.task_name_unknown) }
-    Column(modifier = modifier.fillMaxSize()) {
-        // 이름은 아래 이름표가 말하므로 헤더에는 뒤로 가기만 남긴다. 60dp 안에서 같은 이름을 두 번
-        // 읽게 할 이유가 없다.
-        NavigationHeader(title = "", onBack = onBack)
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            // 홈과 달리 이 화면에는 헤더가 얹히므로 위 여백을 적게 둔다. 헤더가 이미 아래로
-            // 여백을 두고 있어, 여기서 16dp를 더 띄우면 이름표가 화면 한참 아래에서 시작한다.
-            //
-            // 마지막 카드가 화면 끝에 붙지 않도록 아래 여백을 목록 안쪽에 둔다. Modifier.padding으로
-            // 주면 스크롤 영역 자체가 줄어 카드가 여백 위에서 잘린다.
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            item(key = TASK_SESSIONS_SECTION_KEY) {
-                ListSectionHeader(
-                    modifier = Modifier.padding(bottom = SECTION_HEADER_BOTTOM_PADDING),
-                    title = title,
-                    supporting = stringResource(R.string.session_list_count, sessions.size),
-                )
-            }
-            items(sessions, key = SessionSummary::sessionId) { summary ->
-                SessionSummaryItem(summary, onOpenSession)
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // 이름은 아래 이름표가 말하므로 헤더에는 뒤로 가기만 남긴다. 60dp 안에서 같은 이름을 두 번
+            // 읽게 할 이유가 없다.
+            NavigationHeader(title = "", onBack = onBack)
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                // 홈과 달리 이 화면에는 헤더가 얹히므로 위 여백을 적게 둔다. 헤더가 이미 아래로
+                // 여백을 두고 있어, 여기서 16dp를 더 띄우면 이름표가 화면 한참 아래에서 시작한다.
+                //
+                // 아래 여백은 홈과 같은 이유로 FAB가 마지막 카드를 가리지 않을 만큼 둔다.
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                item(key = TASK_SESSIONS_SECTION_KEY) {
+                    ListSectionHeader(
+                        modifier = Modifier.padding(bottom = SECTION_HEADER_BOTTOM_PADDING),
+                        title = title,
+                        supporting = stringResource(R.string.session_list_count, sessions.size),
+                    )
+                }
+                items(sessions, key = SessionSummary::sessionId) { summary ->
+                    SessionSummaryItem(summary, onOpenSession)
+                }
             }
         }
+        // 같은 Task를 한 번 더 찍으려고 홈까지 나갔다 올 이유가 없다. 여기서 시작하면 Task 이름은
+        // 이 화면이 알고 있으므로 다시 입력하지 않는다.
+        NewSessionFab(
+            onClick = onStartCapture,
+            modifier = Modifier.align(Alignment.BottomEnd),
+        )
     }
 }
 
