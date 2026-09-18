@@ -33,6 +33,7 @@ import com.ssafy.s15p21a206.tiger.ui.common.MetaText
 import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeader
 import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeaderTitleCenter
 import com.ssafy.s15p21a206.tiger.ui.common.SupportingText
+import com.ssafy.s15p21a206.tiger.ui.upload.labelRes
 
 @Suppress("FunctionName")
 @Composable
@@ -234,17 +235,9 @@ private fun SessionSummaryItem(
     ) {
         Column(modifier = Modifier.padding(CARD_CONTENT_PADDING), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(text = captureTime, style = MaterialTheme.typography.titleMedium)
-            SupportingText(stringResource(uploadStateLabel(summary.uploadState)))
+            SupportingText(stringResource(summary.uploadState.labelRes))
             MetaText(stringResource(R.string.session_list_episode_count, summary.completedEpisodeCount))
             MetaText(stringResource(R.string.session_list_short_id, summary.sessionId.take(8)))
         }
     }
 }
-
-private fun uploadStateLabel(state: com.ssafy.s15p21a206.tiger.episode.UploadState): Int =
-    when (state) {
-        com.ssafy.s15p21a206.tiger.episode.UploadState.LOCAL_ONLY -> R.string.upload_local_only
-        com.ssafy.s15p21a206.tiger.episode.UploadState.UPLOADING -> R.string.upload_in_progress
-        com.ssafy.s15p21a206.tiger.episode.UploadState.UPLOADED -> R.string.upload_completed
-        com.ssafy.s15p21a206.tiger.episode.UploadState.FAILED -> R.string.upload_failed
-    }

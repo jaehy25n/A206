@@ -42,7 +42,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -151,6 +150,7 @@ import com.ssafy.s15p21a206.tiger.ui.session.VideoResolutionState
 import com.ssafy.s15p21a206.tiger.ui.session.rememberVideoResolution
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerTheme
 import com.ssafy.s15p21a206.tiger.ui.upload.cancelUploadOnStop
+import com.ssafy.s15p21a206.tiger.ui.upload.labelRes
 import com.ssafy.s15p21a206.tiger.upload.SessionUploadRequestFactory
 import com.ssafy.s15p21a206.tiger.upload.SessionUploadService
 import com.ssafy.s15p21a206.tiger.upload.SessionUploader
@@ -1182,28 +1182,11 @@ private fun SessionDetailScreen(
                 //
                 // 아직 올리지 않았다는 것은 업로드 버튼이 이미 말한다. 그 상태에서만 나오는
                 // 버튼이므로 같은 말을 한 줄 더 적지 않는다. 나머지 셋은 각자 할 말이 있다.
-                val uploadStatus =
-                    when (summary.uploadState) {
-                        UploadState.LOCAL_ONLY -> null
-                        UploadState.UPLOADING -> R.string.upload_in_progress
-                        UploadState.UPLOADED -> R.string.upload_completed
-                        UploadState.FAILED -> R.string.upload_failed
-                    }
-                if (uploadStatus != null) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        // 전송은 따로 화면을 두지 않고 여기서 돈다. 진행률은 쓰지 않는다. 서버에
-                        // 진행을 묻지 않기로 한 계약이라 얼마나 왔는지 알 방법이 없다.
-                        if (summary.uploadState == UploadState.UPLOADING) {
-                            CircularProgressIndicator(modifier = Modifier.size(UPLOAD_PROGRESS_SIZE))
-                        }
-                        Text(
-                            text = stringResource(uploadStatus),
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    }
+                if (summary.uploadState != UploadState.LOCAL_ONLY) {
+                    Text(
+                        text = stringResource(summary.uploadState.labelRes),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
                 }
                 // 무엇이 막았는지 알아야 다시 걸어 볼지 판단할 수 있다. 앱을 다시 켜면 남지 않는다.
                 // 전송 실패는 기록하는 컬럼이 없다.
@@ -1686,6 +1669,3 @@ private val DETAIL_VIDEO_GAP = 24.dp
  * 알면 되는 단추로 남긴다. 터치 영역은 `IconButton`의 48dp를 그대로 둔다.
  */
 private val SESSION_INFO_ICON_SIZE = 20.dp
-
-/** 상세에서 전송 진행을 알리는 표시의 크기. 옆에 선 글자와 같은 줄로 읽히도록 본문 높이에 맞춘다. */
-private val UPLOAD_PROGRESS_SIZE = 20.dp
