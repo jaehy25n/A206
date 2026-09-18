@@ -1142,7 +1142,7 @@ private fun SessionDetailScreen(
                     Icon(
                         painter = painterResource(R.drawable.ic_session_info),
                         contentDescription = stringResource(R.string.session_info_title),
-                        tint = MaterialTheme.colorScheme.outline,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(SESSION_INFO_ICON_SIZE),
                     )
                 }

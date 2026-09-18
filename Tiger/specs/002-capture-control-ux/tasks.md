@@ -137,6 +137,10 @@
 
 ## Phase 6: 사용자 스토리 4 - Session Detail과 업로드 상태 (우선순위: P2)
 
+> 2026-09-18, S15P21A206-34으로 별도 업로드 상태 화면을 없앴다. 이 Phase의 task는 당시 구현을
+> 기록한 것이며, 전송 진행·결과는 이제 Session Detail이 맡는다. 현재 계약은
+> [contracts/capture-control-ui.md](contracts/capture-control-ui.md)의 "전송 동작"을 따른다.
+
 **목표**: Detail에서 수집 내용을 확인하고 전송·재전송을 시작하며, 별도 업로드 상태 화면에서 진행·완료·실패·취소를 관리한다.
 
 **독립 검증**: 로컬 보관·실패 Session Detail에서 전송·재전송을 시작하고, 업로드 상태 화면에서 로딩·종료·이탈 확인·백그라운드 중단 뒤 retry를 확인한다.

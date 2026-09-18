@@ -106,7 +106,7 @@ Compose 제어 상태 검증은 연결된 기기 또는 에뮬레이터가 있�
 이번 변경이 건드리지 않아야 하는 범위다.
 
 - ARCore `SharedCamera` 기반 Main RGB 녹화가 정상 동작한다. 영상이 재생되고 길이가 수집 시간과 맞는다.
-- Session 목록, Session 상세, 업로드 상태 화면의 동작이 그대로다.
+- Session 목록과 Session 상세의 동작이 그대로다. 전송 진행·결과는 상세에서 확인한다(2026-09-18, S15P21A206-34로 업로드 상태 화면 제거).
 - SAF export가 계속 동작한다.
 - `arcore_poses.csv`의 헤더와 `tracking_state` 기록 형식이 변경되지 않았다.
 
