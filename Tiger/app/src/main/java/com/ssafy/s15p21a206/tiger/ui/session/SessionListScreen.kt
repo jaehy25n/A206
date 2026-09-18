@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -27,6 +28,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -36,7 +40,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.round
 import com.ssafy.s15p21a206.tiger.R
 import com.ssafy.s15p21a206.tiger.episode.SessionSummary
 import com.ssafy.s15p21a206.tiger.ui.common.ListSectionHeader
@@ -265,13 +271,30 @@ private fun SessionSummaryItem(
     val deleteAction = SessionDeleteAction.from(summary.uploadState)
     var menuExpanded by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<SessionDeleteAction?>(null) }
+    // 길게 누른 지점. 메뉴는 카드가 아니라 이 지점에 건다.
+    var pressPosition by remember { mutableStateOf(IntOffset.Zero) }
     Box {
         Card(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .semantics { contentDescription = sessionLabel }
-                    .combinedClickable(
+                    // 누른 자리를 기록만 하고 소비하지 않는다. Initial pass에서 보기만 하므로
+                    // 아래 `combinedClickable`의 탭·길게 누르기와 ripple이 그대로 동작한다.
+                    .pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent(PointerEventPass.Initial)
+                                if (event.type == PointerEventType.Press) {
+                                    pressPosition =
+                                        event.changes
+                                            .first()
+                                            .position
+                                            .round()
+                                }
+                            }
+                        }
+                    }.combinedClickable(
                         role = Role.Button,
                         onLongClickLabel = stringResource(R.string.session_delete),
                         onLongClick = { menuExpanded = true },
@@ -285,28 +308,33 @@ private fun SessionSummaryItem(
                 MetaText(stringResource(R.string.session_list_short_id, summary.sessionId.take(8)))
             }
         }
-        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.session_delete), fontWeight = FontWeight.Normal) },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_session_delete),
-                        // 이름은 바로 옆 글자가 말한다. 아이콘까지 읽히면 같은 말을 두 번 한다.
-                        contentDescription = null,
-                    )
-                },
-                // 업로드가 번들을 읽고 있는 동안은 지울 수 없다. 이유는 카드의 전송 상태가 말한다.
-                enabled = deleteAction != null,
-                colors =
-                    MenuDefaults.itemColors(
-                        textColor = MaterialTheme.colorScheme.error,
-                        leadingIconColor = MaterialTheme.colorScheme.error,
-                    ),
-                onClick = {
-                    menuExpanded = false
-                    pendingDelete = deleteAction
-                },
-            )
+        // 메뉴는 누른 손가락 자리에서 열린다. 카드를 앵커로 쓰면 폭이 화면을 꽉 채우므로 어디를
+        // 눌렀든 카드 왼쪽 아래 구석에서 열려, 방금 건드린 곳과 메뉴가 멀리 떨어진다.
+        // 크기 0짜리 앵커를 누른 지점에 두고 거기에 건다.
+        Box(modifier = Modifier.offset { pressPosition }) {
+            DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.session_delete), fontWeight = FontWeight.Normal) },
+                    leadingIcon = {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_session_delete),
+                            // 이름은 바로 옆 글자가 말한다. 아이콘까지 읽히면 같은 말을 두 번 한다.
+                            contentDescription = null,
+                        )
+                    },
+                    // 업로드가 번들을 읽고 있는 동안은 지울 수 없다. 이유는 카드의 전송 상태가 말한다.
+                    enabled = deleteAction != null,
+                    colors =
+                        MenuDefaults.itemColors(
+                            textColor = MaterialTheme.colorScheme.error,
+                            leadingIconColor = MaterialTheme.colorScheme.error,
+                        ),
+                    onClick = {
+                        menuExpanded = false
+                        pendingDelete = deleteAction
+                    },
+                )
+            }
         }
     }
     pendingDelete?.let { action ->

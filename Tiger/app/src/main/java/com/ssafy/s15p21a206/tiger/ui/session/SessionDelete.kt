@@ -1,13 +1,10 @@
 package com.ssafy.s15p21a206.tiger.ui.session
 
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.ssafy.s15p21a206.tiger.R
 import com.ssafy.s15p21a206.tiger.episode.UploadState
+import com.ssafy.s15p21a206.tiger.ui.common.DestructiveConfirmationDialog
 
 /**
  * 삭제를 확인받는 방식.
@@ -52,30 +49,18 @@ internal fun SessionDeleteConfirmation(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.session_delete_title)) },
-        text = {
-            Text(
-                stringResource(
-                    when (action) {
-                        SessionDeleteAction.DeleteLocalCopy -> R.string.session_delete_message_local_copy
-                        SessionDeleteAction.DeleteOnlyCopy -> R.string.session_delete_message_only_copy
-                    },
-                ),
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                // 되돌릴 수 없는 쪽을 error 색으로 둬서 취소와 눈으로 구분되게 한다.
-                Text(
-                    text = stringResource(R.string.action_delete),
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        },
+    // 세션 종료 확인과 같은 판을 쓴다. 같은 무게의 결정이 화면마다 다르게 생길 이유가 없다.
+    DestructiveConfirmationDialog(
+        title = stringResource(R.string.session_delete_title),
+        message =
+            stringResource(
+                when (action) {
+                    SessionDeleteAction.DeleteLocalCopy -> R.string.session_delete_message_local_copy
+                    SessionDeleteAction.DeleteOnlyCopy -> R.string.session_delete_message_only_copy
+                },
+            ),
+        confirmLabel = stringResource(R.string.action_delete),
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
     )
 }
