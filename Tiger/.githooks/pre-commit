@@ -8,7 +8,10 @@
 
 set -eu
 
-cd "$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+# 검사할 곳은 이 스크립트가 놓인 체크아웃이 아니라 지금 커밋하는 체크아웃이다. `installGitHooks`가
+# core.hooksPath에 절대경로를 박고 worktree들이 그 설정을 공유하므로, 스크립트 위치를 기준으로 삼으면
+# worktree에서 커밋할 때 엉뚱한 체크아웃을 검사하고 그대로 통과시킨다. 커밋 대상을 git에게 직접 묻는다.
+cd "$(git rev-parse --show-toplevel)/Tiger"
 
 if [ -x ./gradlew ]; then
     ./gradlew --quiet ktlintCheck testDebugUnitTest
