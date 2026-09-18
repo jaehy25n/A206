@@ -2,6 +2,7 @@ package com.ssafy.s15p21a206.tiger.ui
 
 import com.ssafy.s15p21a206.tiger.episode.SessionSummary
 import com.ssafy.s15p21a206.tiger.episode.UploadState
+import com.ssafy.s15p21a206.tiger.ui.session.SessionDeleteAction
 import com.ssafy.s15p21a206.tiger.ui.session.SessionDetailPresentation
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -21,19 +22,19 @@ class SessionDetailScreenTest {
         assertEquals(null, SessionDetailPresentation.from(summary(UploadState.UPLOADED)).uploadAction)
     }
 
-    /** 서버에 DELETE API가 없어 이미 올린 사본은 남는다. 확인 문구가 그 차이를 말해야 한다. */
+    /** 서버에 DELETE API가 없어 이미 업로드된 데이터는 서버에 남는다. 확인 문구가 그 차이를 말해야 한다. */
     @Test
     fun `delete confirmation distinguishes an uploaded session from the only copy`() {
         assertEquals(
-            SessionDetailPresentation.DeleteAction.DeleteLocalCopy,
+            SessionDeleteAction.DeleteLocalCopy,
             SessionDetailPresentation.from(summary(UploadState.UPLOADED)).deleteAction,
         )
         assertEquals(
-            SessionDetailPresentation.DeleteAction.DeleteOnlyCopy,
+            SessionDeleteAction.DeleteOnlyCopy,
             SessionDetailPresentation.from(summary(UploadState.LOCAL_ONLY)).deleteAction,
         )
         assertEquals(
-            SessionDetailPresentation.DeleteAction.DeleteOnlyCopy,
+            SessionDeleteAction.DeleteOnlyCopy,
             SessionDetailPresentation.from(summary(UploadState.FAILED)).deleteAction,
         )
     }

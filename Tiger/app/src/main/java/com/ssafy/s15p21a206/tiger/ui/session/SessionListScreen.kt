@@ -1,6 +1,7 @@
 package com.ssafy.s15p21a206.tiger.ui.session
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,12 +12,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -27,6 +35,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ssafy.s15p21a206.tiger.R
 import com.ssafy.s15p21a206.tiger.episode.SessionSummary
@@ -167,6 +176,7 @@ fun TaskSessionListScreen(
     sessions: List<SessionSummary>,
     onBack: () -> Unit,
     onOpenSession: (String) -> Unit,
+    onDeleteSession: (String) -> Unit,
     onStartCapture: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -193,7 +203,7 @@ fun TaskSessionListScreen(
                     )
                 }
                 items(sessions, key = SessionSummary::sessionId) { summary ->
-                    SessionSummaryItem(summary, onOpenSession)
+                    SessionSummaryItem(summary, onOpenSession, onDeleteSession)
                 }
             }
         }
@@ -228,29 +238,85 @@ private fun TaskSummaryItem(
     }
 }
 
+/**
+ * 목록의 Session 카드다. 열기는 탭, 삭제는 길게 누르기에 둔다.
+ *
+ * 카드마다 삭제 표를 상주시키지 않는다. 이 목록의 주 동작은 여는 것이고, 모든 행에 부수 동작이
+ * 붙으면 목록이 점으로 얼룩진다. 길게 누르기는 안드로이드에서 항목별 동작을 여는 관용구다.
+ *
+ * 밀어서 삭제는 쓰지 않는다. 그 제스처는 실행취소가 따라온다는 약속을 달고 다니는데, 여기서는
+ * 번들을 실제로 지우므로 되돌릴 수 없다. 확인 판을 붙이면 제스처의 약속을 깨고, 붙이지 않으면
+ * 스크롤 오조작이 그대로 영구 삭제가 된다.
+ *
+ * 발견성은 상세 화면의 메뉴가 담당한다. 여기 제스처는 아는 사람을 위한 지름길이다.
+ */
 @Composable
 @Suppress("FunctionName")
 private fun SessionSummaryItem(
     summary: SessionSummary,
     onOpenSession: (String) -> Unit,
+    onDeleteSession: (String) -> Unit,
 ) {
     val captureTime =
         java.text.DateFormat
             .getDateTimeInstance()
             .format(java.util.Date(summary.recordingStartEpochMs))
     val sessionLabel = stringResource(R.string.session_list_item_content_description, captureTime)
-    Card(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .semantics { contentDescription = sessionLabel }
-                .clickable(role = Role.Button) { onOpenSession(summary.sessionId) },
-    ) {
-        Column(modifier = Modifier.padding(CARD_CONTENT_PADDING), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(text = captureTime, style = MaterialTheme.typography.titleMedium)
-            SupportingText(stringResource(summary.uploadState.labelRes))
-            MetaText(stringResource(R.string.session_list_episode_count, summary.completedEpisodeCount))
-            MetaText(stringResource(R.string.session_list_short_id, summary.sessionId.take(8)))
+    val deleteAction = SessionDeleteAction.from(summary.uploadState)
+    var menuExpanded by remember { mutableStateOf(false) }
+    var pendingDelete by remember { mutableStateOf<SessionDeleteAction?>(null) }
+    Box {
+        Card(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .semantics { contentDescription = sessionLabel }
+                    .combinedClickable(
+                        role = Role.Button,
+                        onLongClickLabel = stringResource(R.string.session_delete),
+                        onLongClick = { menuExpanded = true },
+                        onClick = { onOpenSession(summary.sessionId) },
+                    ),
+        ) {
+            Column(modifier = Modifier.padding(CARD_CONTENT_PADDING), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(text = captureTime, style = MaterialTheme.typography.titleMedium)
+                SupportingText(stringResource(summary.uploadState.labelRes))
+                MetaText(stringResource(R.string.session_list_episode_count, summary.completedEpisodeCount))
+                MetaText(stringResource(R.string.session_list_short_id, summary.sessionId.take(8)))
+            }
         }
+        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.session_delete), fontWeight = FontWeight.Normal) },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_session_delete),
+                        // 이름은 바로 옆 글자가 말한다. 아이콘까지 읽히면 같은 말을 두 번 한다.
+                        contentDescription = null,
+                    )
+                },
+                // 업로드가 번들을 읽고 있는 동안은 지울 수 없다. 이유는 카드의 전송 상태가 말한다.
+                enabled = deleteAction != null,
+                colors =
+                    MenuDefaults.itemColors(
+                        textColor = MaterialTheme.colorScheme.error,
+                        leadingIconColor = MaterialTheme.colorScheme.error,
+                    ),
+                onClick = {
+                    menuExpanded = false
+                    pendingDelete = deleteAction
+                },
+            )
+        }
+    }
+    pendingDelete?.let { action ->
+        SessionDeleteConfirmation(
+            action = action,
+            onConfirm = {
+                pendingDelete = null
+                onDeleteSession(summary.sessionId)
+            },
+            onDismiss = { pendingDelete = null },
+        )
     }
 }

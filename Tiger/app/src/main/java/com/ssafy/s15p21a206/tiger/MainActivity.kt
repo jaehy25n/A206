@@ -41,7 +41,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -149,6 +148,8 @@ import com.ssafy.s15p21a206.tiger.ui.common.ListSectionHeader
 import com.ssafy.s15p21a206.tiger.ui.common.MetaText
 import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeader
 import com.ssafy.s15p21a206.tiger.ui.common.SupportingText
+import com.ssafy.s15p21a206.tiger.ui.session.SessionDeleteAction
+import com.ssafy.s15p21a206.tiger.ui.session.SessionDeleteConfirmation
 import com.ssafy.s15p21a206.tiger.ui.session.SessionDetailPresentation
 import com.ssafy.s15p21a206.tiger.ui.session.SessionListScreen
 import com.ssafy.s15p21a206.tiger.ui.session.TaskSessionListScreen
@@ -683,7 +684,11 @@ fun CaptureScreen() {
                 // 디렉터리가 남았더라도 목록과 색인에서는 사라졌다. 남은 것은 다음 실행이 회수한다.
                 SessionDeleteResult.DELETED, SessionDeleteResult.BUNDLE_RETAINED -> {
                     deleteFailureReason = null
-                    navController.popBackStack()
+                    // 상세에서 지웠으면 그 화면은 이제 "찾을 수 없음"이 되므로 나간다. 목록에서
+                    // 지웠으면 목록에 머무른다. 카드는 Flow가 갱신하면서 스스로 사라진다.
+                    if (currentEntry?.destination?.hasRoute<SessionDetailRoute>() == true) {
+                        navController.popBackStack()
+                    }
                 }
                 SessionDeleteResult.UPLOAD_IN_PROGRESS -> deleteFailureReason = deleteUploadInProgressMessage
             }
@@ -802,6 +807,7 @@ fun CaptureScreen() {
                         sessions = completedSummaries.filter { it.taskName.trim() == route.taskName },
                         onBack = navController::popBackStack,
                         onOpenSession = { sessionId -> navController.navigate(SessionDetailRoute(sessionId)) },
+                        onDeleteSession = ::deleteSession,
                         // 이름 없는 Task 묶음은 이름이 빈 세션들이라 채울 것이 없다. 빈 채로 연다.
                         onStartCapture = { startCapture(route.taskName) },
                     )
@@ -1164,7 +1170,7 @@ private fun SessionDetailScreen(
     onOpenFullscreenVideo: () -> Unit,
 ) {
     var showSessionInfo by remember { mutableStateOf(false) }
-    var pendingDelete by remember { mutableStateOf<SessionDetailPresentation.DeleteAction?>(null) }
+    var pendingDelete by remember { mutableStateOf<SessionDeleteAction?>(null) }
     val presentation = summary?.let(SessionDetailPresentation::from)
     // 재생 영역 높이와 전송·내보내기 상태에 따라 내용이 화면을 넘는다. 스크롤이 없으면 잘린다.
     Column(
@@ -1287,9 +1293,9 @@ private fun SessionDetailScreen(
 @Composable
 @Suppress("FunctionName")
 private fun SessionDetailMenu(
-    deleteAction: SessionDetailPresentation.DeleteAction?,
+    deleteAction: SessionDeleteAction?,
     onOpenSessionInfo: () -> Unit,
-    onRequestDelete: (SessionDetailPresentation.DeleteAction) -> Unit,
+    onRequestDelete: (SessionDeleteAction) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box {
@@ -1342,48 +1348,6 @@ private fun SessionDetailMenu(
             )
         }
     }
-}
-
-/**
- * 삭제를 확인받는 판이다.
- *
- * 되돌릴 수 없으므로 한 번 묻는다. 무엇을 잃는지는 업로드 여부에 달렸고, 서버에 DELETE API가
- * 없어 이미 업로드된 데이터는 어느 쪽이든 서버에 남는다. 두 경우를 같은 문구로 덮으면 아직
- * 올리지 않은 세션을 삭제할 때 사용자가 무엇을 잃는지 모른 채 확인을 누른다.
- */
-@Composable
-@Suppress("FunctionName")
-private fun SessionDeleteConfirmation(
-    action: SessionDetailPresentation.DeleteAction,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.session_delete_title)) },
-        text = {
-            Text(
-                stringResource(
-                    when (action) {
-                        SessionDetailPresentation.DeleteAction.DeleteLocalCopy -> R.string.session_delete_message_local_copy
-                        SessionDetailPresentation.DeleteAction.DeleteOnlyCopy -> R.string.session_delete_message_only_copy
-                    },
-                ),
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                // 되돌릴 수 없는 쪽을 error 색으로 둬서 취소와 눈으로 구분되게 한다.
-                Text(
-                    text = stringResource(R.string.action_delete),
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        },
-    )
 }
 
 /**
