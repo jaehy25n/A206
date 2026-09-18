@@ -332,10 +332,12 @@ Session을 기기에서 지우는 범위를 FR-016·FR-016a~d로 명세에 추�
   `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`,
   `app/src/main/res/values/strings.xml`,
   `app/src/main/res/drawable/ic_session_delete.xml`에 상세 화면의 삭제 진입점과 확인 흐름을 붙인다.
-  - 구현: `SessionDetailPresentation.DeleteAction`이 업로드 상태로 확인 문구를 가르고(`UPLOADED`는
-    `DeleteLocalCopy`, `LOCAL_ONLY`·`FAILED`는 `DeleteOnlyCopy`, `UPLOADING`은 `null`),
-    `SessionDetailScreen`의 헤더 삭제 아이콘이 `SessionDeleteConfirmation`을 띄운다. 삭제하면
-    `popBackStack()`으로 돌아가고, 거절당하면 상세에 사유만 남는다. 문구는 전부 `strings.xml`에 있다.
+  - 구현: `SessionDeleteAction`이 업로드 상태로 확인 문구를 가르고(`UPLOADED`는 `DeleteLocalCopy`,
+    `LOCAL_ONLY`·`FAILED`는 `DeleteOnlyCopy`, `UPLOADING`은 `null`), `SessionDetailScreen`의
+    헤더 메뉴가 `SessionDeleteConfirmation`을 띄운다. 삭제하면 `popBackStack()`으로 돌아가고,
+    거절당하면 상세에 사유만 남는다. 문구는 전부 `strings.xml`에 있다.
+  - 이후 변경(T044): 진입점이 삭제 아이콘에서 `세션 정보`·`세션 삭제`를 담은 헤더 메뉴로 바뀌었고,
+    `SessionDeleteAction`과 확인 판은 목록과 공유하려고 `ui/session/SessionDelete.kt`로 옮겼다.
   - production 호출 경로: `NavHost`의 `composable<SessionDetailRoute>`가 `onDelete`에
     `deleteSession(route.sessionId)`를 넘긴다.
   - 자동 검증: `SessionDetailScreenTest.delete confirmation distinguishes an uploaded session from the only copy`,
@@ -350,3 +352,51 @@ Session을 기기에서 지우는 범위를 FR-016·FR-016a~d로 명세에 추�
   - 자동화할 수 없는 범위다. 내부 저장소의 번들 디렉터리가 실제로 사라지는지, 앱을 다시 실행해도
     돌아오지 않는지, 전송 중 삭제 아이콘이 눌리지 않는지를 확인한다.
   - 전송 중 경로는 `BuildConfig.UPLOAD_BASE_URL`과 도달 가능한 ingestion server가 필요하다.
+
+## 추가 범위 (2026-09-18, S15P21A206-35 후속 정비)
+
+삭제를 실기기에서 확인하는 과정에서 진입점·확인 판·빈 상태를 다시 잡았다. FR-016 갱신과
+FR-016e~g 추가가 여기에 대응한다.
+
+- [X] T044 [S15P21A206-35] 상세 헤더의 아이콘 둘을 메뉴 하나로 접고, 목록 카드에 길게 눌러 삭제를 붙인다.
+  - 구현: `MainActivity.kt`의 `SessionDetailMenu`(⋮ → `세션 정보`·`세션 삭제`),
+    `SessionListScreen.kt`의 `SessionSummaryItem`이 `combinedClickable`의 `onLongClick`으로
+    메뉴를 연다. 메뉴는 누른 지점에 둔 크기 0짜리 앵커에 건다. 좌표는 `PointerEventPass.Initial`에서
+    기록만 하고 소비하지 않아 탭·ripple·접근성 동작이 유지된다. `SessionDeleteAction`과
+    `SessionDeleteConfirmation`은 상세·목록이 같은 판단을 하도록 `ui/session/SessionDelete.kt`에 둔다.
+  - production 호출 경로: `NavHost`의 `composable<TaskSessionsRoute>`가 `onDeleteSession`에
+    `deleteSession`을 넘긴다. `deleteSession`은 상세에 있을 때만 `popBackStack()`한다.
+  - 자동 검증: `SessionListScreenTest.longPressDeletesASessionOnlyAfterConfirmation`,
+    `longPressOnAnUploadingSessionOffersNoEnabledDeleteAction`;
+    `.\gradlew.bat connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.ssafy.s15p21a206.tiger.ui.session.SessionListScreenTest`
+    (2026-09-18, `SM-G973N`, Android 12) 두 테스트 통과.
+  - 미해결: 같은 클래스의 `emptyListShowsStartCaptureAction`은 실패한다. 이 작업과 무관한 기존
+    결함이며 `origin/develop`에서도 동일하게 실패한다. S15P21A206-43으로 분리했다.
+- [X] T045 [S15P21A206-35] 되돌릴 수 없는 확인 판을 한 곳으로 모은다.
+  - 구현: `ui/common/DestructiveConfirmationDialog.kt`. `CaptureStopConfirmation`과
+    `SessionDeleteConfirmation`이 이 판을 쓴다. 확정 쪽은 채워진 error 버튼으로 통일했다.
+    세션 삭제만 빨간 글씨 `TextButton`이라 같은 무게의 결정이 다르게 보였다.
+  - 자동 검증: `.\gradlew.bat testDebugUnitTest`, `.\gradlew.bat lintDebug` 성공 (2026-09-18).
+    판의 생김새 자체를 고정하는 테스트는 없다. 두 화면이 한 Composable을 쓰므로 갈라질 수 없다.
+- [X] T046 [S15P21A206-35] 빈 목록 안내를 고쳐 쓰고 Task Session 목록에도 둔다.
+  - 구현: `session_list_empty`가 FAB 이름을 불러 준다(`새 세션을 눌러 추가하세요`).
+    `task_session_list_empty`를 추가했다. 마지막 세션을 삭제하면 닿게 되는 상태로, 삭제를 붙이기
+    전에는 세션이 있는 Task만 홈에 나타나 도달할 수 없었다. 두 화면이 `EmptyListMessage`를
+    공유하며, 비었을 때는 `LazyColumn` 대신 `Column`으로 남은 공간 가운데에 놓고 `bodyLarge`로 키운다.
+  - 자동 검증: `.\gradlew.bat testDebugUnitTest`, `.\gradlew.bat lintDebug` 성공 (2026-09-18).
+  - 범위 한계: 빈 상태를 고정하는 계측 테스트가 없다. 홈 빈 상태를 검사하는
+    `emptyListShowsStartCaptureAction`은 S15P21A206-43 때문에 실패 중이라 근거로 쓸 수 없다.
+- [X] T047 [S15P21A206-35] `specs/002-capture-control-ux/spec.md`에 위 변경을 반영한다.
+  - 산출물: 2026-09-18 Clarifications 2건(목록 진입점, 밀어서 삭제를 쓰지 않는 이유),
+    사용자 스토리 4의 인수 시나리오 11~12, FR-016 개정, FR-016e~g, 핵심 엔터티의 `Session 상세` 보강.
+  - 검토 기준: 목록 진입점과 그 형태 제약, 확인 판의 통일, 빈 목록 안내가 모두 명세에 있다.
+
+## Phase 8: Convergence
+
+- [ ] T048 `contracts/capture-control-ui.md`의 화면·진입점 표에서 Session Detail의 "우측 상단 정보 아이콘"을 `세션 정보`·`세션 삭제`를 담은 헤더 메뉴로 고치고, Task Session 목록 행에 길게 눌러 여는 삭제 진입점을 적는다 per FR-016, FR-016e (contradicts)
+- [ ] T049 `contracts/capture-control-ui.md`에 삭제 동작 절을 추가한다. 기기에서만 지운다는 방침, 업로드 여부로 갈리는 확인 문구, 전송 중 금지, 색인 우선 삭제와 다음 실행 회수, 되돌릴 수 없는 확인 판의 공통 형태를 포함한다 per FR-016, FR-016a, FR-016b, FR-016c, FR-016f (missing)
+- [ ] T050 `contracts/capture-control-ui.md`의 `조회 화면의 짜임`에서 "상세의 세션 정보는 상단 우측 아이콘으로 연다"를 메뉴로 접은 현재 짜임과 그 이유로 고치고, 목록 카드가 삭제 표를 상주시키지 않는다는 제약을 적는다 per FR-016, FR-016e (contradicts)
+- [ ] T051 `specs/002-capture-control-ux/plan.md`에 삭제의 설계 결정을 기록한다. 색인을 먼저 지우고 디렉터리를 지우는 순서, 실패 시 고아 디렉터리를 다음 실행이 회수하는 경로, 서버 DELETE API가 없다는 제약을 포함한다 per plan: 저장소 정책 (missing)
+- [ ] T052 `specs/002-capture-control-ux/data-model.md`에 삭제가 더한 DAO 연산(`CaptureSessionDao.delete`·`allSessionIds`, `EpisodeMarkerDao.deleteForSession`)과 고아 번들 회수 수명주기를 반영한다 per FR-016, FR-016c (missing)
+- [ ] T053 `specs/002-capture-control-ux/spec.md`의 성공 기준에 삭제 항목을 추가한다. 목록·번들·색인에서 사라지고 재실행 후에도 돌아오지 않는다는 측정 가능한 결과를 포함한다 per FR-016 계열 (missing)
+- [ ] T054 `app/src/androidTest/java/com/ssafy/s15p21a206/tiger/ui/session/SessionListScreenTest.kt`에 Task Session 목록의 빈 상태를 고정하는 계측 테스트를 추가한다. 홈 빈 상태를 보던 `emptyListShowsStartCaptureAction`은 S15P21A206-43이 해결될 때까지 근거로 쓸 수 없다 per FR-016g (partial)
