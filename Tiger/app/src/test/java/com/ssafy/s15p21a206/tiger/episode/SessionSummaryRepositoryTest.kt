@@ -83,11 +83,17 @@ class SessionSummaryRepositoryTest {
         ) = Unit
 
         override suspend fun nextDisplayNumber(): Int = 1
+
+        override suspend fun delete(sessionId: String) = Unit
+
+        override suspend fun allSessionIds(): List<String> = emptyList()
     }
 
     private class EmptyMarkerDao : EpisodeMarkerDao {
         override fun observeForSession(sessionId: String): Flow<List<EpisodeMarkerEntity>> = flowOf(emptyList())
 
         override suspend fun upsert(marker: EpisodeMarkerEntity) = Unit
+
+        override suspend fun deleteForSession(sessionId: String) = Unit
     }
 }

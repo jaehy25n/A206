@@ -98,11 +98,17 @@ class SessionExportRepositoryTest {
         }
 
         override suspend fun nextDisplayNumber(): Int = (sessions.values.maxOfOrNull(CaptureSessionEntity::displayNumber) ?: 0) + 1
+
+        override suspend fun delete(sessionId: String) = Unit
+
+        override suspend fun allSessionIds(): List<String> = sessions.keys.toList()
     }
 
     private class FakeMarkerDao : EpisodeMarkerDao {
         override fun observeForSession(sessionId: String): Flow<List<EpisodeMarkerEntity>> = flowOf(emptyList())
 
         override suspend fun upsert(marker: EpisodeMarkerEntity) = Unit
+
+        override suspend fun deleteForSession(sessionId: String) = Unit
     }
 }
