@@ -401,11 +401,10 @@ FR-016e~g 추가가 여기에 대응한다.
     세션 삭제만 빨간 글씨 `TextButton`이라 같은 무게의 결정이 다르게 보였다.
   - 자동 검증: `.\gradlew.bat ktlintCheck testDebugUnitTest lintDebug compileDebugAndroidTestKotlin`
     성공 (2026-09-21).
-  - 남은 검증: `CaptureControlStateScreenTest.stop_confirmation_explains_upload_and_separates_cancel_from_confirm`이
+  - 계측 검증: `CaptureControlStateScreenTest.stop_confirmation_explains_upload_and_separates_cancel_from_confirm`이
     `CaptureStopConfirmation`의 메시지·취소·확정을 고정한다. 이 task가 그 Composable의 속을
-    `DestructiveConfirmationDialog`로 바꿨으므로 기기에서 다시 돌려야 한다. 문구 리소스
-    (`capture_stop_message`·`capture_stop_confirm`·`action_cancel`)와 콜백은 그대로 넘기므로
-    통과할 것으로 보지만 확인하지 않았다.
+    `DestructiveConfirmationDialog`로 바꿨으므로 기기에서 다시 돌렸고 통과한다
+    (2026-09-21, `SM-G973N`, Android 12).
 - [X] T046 [S15P21A206-35] 빈 목록 안내를 고쳐 쓰고 Task Session 목록에도 둔다.
   - 구현: `session_list_empty`가 FAB 이름을 불러 준다(`새 세션을 눌러 추가하세요`).
     `task_session_list_empty`를 추가했다. 마지막 세션을 삭제하면 닿게 되는 상태로, 삭제를 붙이기
@@ -446,9 +445,24 @@ FR-016e~g 추가가 여기에 대응한다.
   빈 안내가 보이고 `0개의 Session`이 없는지 검사한다.
 - 자동 검증: `.\gradlew.bat ktlintCheck testDebugUnitTest lintDebug compileDebugAndroidTestKotlin` 성공
   (2026-09-21).
-- 계측 검증: `.\gradlew.bat connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.ssafy.s15p21a206.tiger.ui.session.SessionListScreenTest`
-  (2026-09-21, `SM-G973N`, Android 12). 6 tests, 0 failures. T054의
-  `anEmptyTaskSessionListExplainsHowToAddOne`을 포함한다.
+- 계측 검증: androidTest 전체를 실기기에서 돌렸다 (2026-09-21, `SM-G973N`, Android 12).
+  **20 tests, 0 failures.**
+
+  ```text
+  ExportMigrationTest:.            SessionExportUiTest:..
+  CaptureSessionOrderTest:.        CaptureControlStateScreenTest:.......
+  CaptureWorkspaceScreenTest:...   SessionListScreenTest:......
+  Time: 15.48 / OK (20 tests)
+  ```
+
+  실행 방법: `.\gradlew.bat assembleDebug assembleDebugAndroidTest`로 APK를 만들고
+  `adb install -r`로 둘 다 깐 뒤
+  `adb shell am instrument -w com.ssafy.s15p21a206.tiger.test/androidx.test.runner.AndroidJUnitRunner`.
+
+  `connectedDebugAndroidTest`는 이 기기에서 쓰지 않았다. 매 실행마다 APK를 다시 설치하는데
+  앱 APK가 42MB라 기기에서 dex2oat이 수 분씩 걸린다. 32분을 기다려도 테스트가 시작되지 않았고,
+  같은 테스트가 이미 설치된 APK로는 15초에 끝난다. 전송이 아니라 기기에서의 컴파일이 병목이다
+  (`adb push`는 74MB/s로 측정됐다).
 - `origin/develop`에 `fix/fab-accessible-name`이 병합되면서 S15P21A206-43이 해결됐다.
   그동안 실패하던 `emptyListShowsStartCaptureAction`이 통과하므로, T046의 "홈 빈 상태를
   검사하는 테스트를 근거로 쓸 수 없다"는 범위 한계는 해소됐다.
