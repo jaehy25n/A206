@@ -79,7 +79,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import androidx.room.Room
 import com.google.ar.core.ArCoreApk
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException
 import com.ssafy.s15p21a206.tiger.capture.AndroidCaptureRuntime
@@ -92,9 +91,6 @@ import com.ssafy.s15p21a206.tiger.capture.CaptureSessionCoordinator
 import com.ssafy.s15p21a206.tiger.capture.MonotonicClock
 import com.ssafy.s15p21a206.tiger.capture.PreviewRuntime
 import com.ssafy.s15p21a206.tiger.capture.RecordingResolutionStore
-import com.ssafy.s15p21a206.tiger.data.local.MIGRATION_2_3
-import com.ssafy.s15p21a206.tiger.data.local.MIGRATION_3_4
-import com.ssafy.s15p21a206.tiger.data.local.TigerDatabase
 import com.ssafy.s15p21a206.tiger.episode.CaptureSession
 import com.ssafy.s15p21a206.tiger.episode.EpisodeMarker
 import com.ssafy.s15p21a206.tiger.episode.EpisodeState
@@ -108,7 +104,6 @@ import com.ssafy.s15p21a206.tiger.episode.SessionBundle
 import com.ssafy.s15p21a206.tiger.episode.SessionBundleExporter
 import com.ssafy.s15p21a206.tiger.episode.SessionBundleStore
 import com.ssafy.s15p21a206.tiger.episode.SessionDeleteResult
-import com.ssafy.s15p21a206.tiger.episode.SessionRepository
 import com.ssafy.s15p21a206.tiger.episode.TrackingState
 import com.ssafy.s15p21a206.tiger.episode.UploadState
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureControlPolicy
@@ -128,9 +123,7 @@ import com.ssafy.s15p21a206.tiger.ui.session.TaskSessionListScreen
 import com.ssafy.s15p21a206.tiger.ui.upload.cancelUploadOnStop
 import com.ssafy.s15p21a206.tiger.ui.video.FullScreenVideoScreen
 import com.ssafy.s15p21a206.tiger.ui.video.rememberSharedVideoPlayer
-import com.ssafy.s15p21a206.tiger.upload.SessionUploadRequestFactory
 import com.ssafy.s15p21a206.tiger.upload.SessionUploadService
-import com.ssafy.s15p21a206.tiger.upload.SessionUploader
 import com.ssafy.s15p21a206.tiger.upload.UploadResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -139,7 +132,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import okhttp3.OkHttpClient
 
 // 조회 흐름의 목적지다. 인자는 Navigation Compose의 type-safe route로 전달한다. Task 이름은
 // 사용자가 자유롭게 입력하는 문자열이라 `/`나 공백이 들어올 수 있는데, route 문자열을 직접
@@ -172,40 +164,11 @@ private data class SessionVideoRoute(
 fun CaptureScreen() {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    val database =
-        remember {
-            Room
-                .databaseBuilder(
-                    context.applicationContext,
-                    TigerDatabase::class.java,
-                    "tiger.db",
-                ).addMigrations(MIGRATION_2_3, MIGRATION_3_4)
-                .build()
-        }
-    val repository =
-        remember {
-            SessionRepository(
-                database.captureSessionDao(),
-                database.episodeMarkerDao(),
-                SessionBundleStore(context.applicationContext),
-            )
-        }
-    val uploadService =
-        remember {
-            BuildConfig.UPLOAD_BASE_URL.takeIf(String::isNotBlank)?.let { baseUrl ->
-                SessionUploadService(
-                    repository,
-                    SessionUploader(
-                        OkHttpClient
-                            .Builder()
-                            .followRedirects(false)
-                            .followSslRedirects(false)
-                            .build(),
-                        SessionUploadRequestFactory(baseUrl),
-                    ),
-                )
-            }
-        }
+    // 프로세스 수명을 갖는 것들은 TigerApplication이 소유한다. 여기서 remember로 만들면
+    // Activity가 재생성될 때마다 인스턴스가 하나씩 더 생긴다.
+    val application = context.tigerApplication
+    val repository = application.repository
+    val uploadService = application.uploadService
     val completedSessions by repository.observeCompleted().collectAsState(emptyList())
     val completedSummaries by repository.observeCompletedSummaries().collectAsState(emptyList())
     val scope = rememberCoroutineScope()
