@@ -362,3 +362,46 @@ def test_live_frames_are_not_cached(client) -> None:
                 break
     resp = client.get("/api/live/s10.jpg?remap=0")
     assert resp.headers.get("cache-control") == "no-store"
+
+
+# --- 프리뷰 해상도 설정 ------------------------------------------------------
+
+
+def test_phone_config_tells_the_preview_size(client) -> None:
+    """폰 코드에 해상도를 박아두면 바꿀 때마다 파일을 고쳐야 한다. 서버가 정한다."""
+    config = client.get("/api/phone/config").json()
+    for key in ("preview_width", "preview_height", "preview_fps", "preview_quality"):
+        assert key in config, f"{key} 가 없으면 폰이 규격을 알 수 없다"
+    assert config["preview_width"] == client.state.preview_size[0]
+    assert config["preview_height"] == client.state.preview_size[1]
+
+
+def test_view_and_preview_sizes_are_reported(client) -> None:
+    status = client.get("/api/live/status").json()
+    assert status["view_size"] == list(client.state.view_size)
+    assert status["preview_size"] == list(client.state.preview_size)
+
+
+def test_changing_view_size_changes_the_output(tmp_path, measured_board) -> None:
+    """--view-width 를 올리면 비교 화면 출력이 실제로 커져야 한다."""
+    import cv2
+    import numpy as np
+    from fastapi.testclient import TestClient
+
+    from s10_server.app import ServerState, create_app
+
+    state = ServerState(measured_board, tmp_path, allow_unmeasured=True)
+    state.view_size = (1280, 720)
+    with TestClient(create_app(state)) as client:
+        ok, buf = cv2.imencode(".jpg", np.full((540, 960, 3), 120, dtype=np.uint8))
+        assert ok
+        with client.websocket_connect("/ws/preview") as preview:
+            preview.send_bytes(buf.tobytes())
+            for _ in range(20):
+                if client.get("/api/live/status").json()["s10"]["preview"]:
+                    break
+        # target 이 없으면 변환 없이 view 크기로만 맞춰 준다
+        out = client.get("/api/live/s10.jpg?remap=1")
+        assert out.status_code == 200
+        img = cv2.imdecode(np.frombuffer(out.content, np.uint8), cv2.IMREAD_COLOR)
+        assert (img.shape[1], img.shape[0]) == (1280, 720)

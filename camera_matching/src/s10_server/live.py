@@ -23,9 +23,18 @@ import numpy as np
 from camcal.remap_metrics import build_map_to_distorted, build_map_to_pinhole
 from camcal.target_space import DESIGN_PINHOLE, TargetSpace
 
-#: 비교 화면에 띄우는 크기. S10 프리뷰(320x180)보다 키우면 없는 정보가 커 보이기만 한다.
-VIEW_WIDTH = 640
-VIEW_HEIGHT = 360
+#: 비교 화면에 띄우는 기본 크기. 서버 옵션(--view-width)으로 바꿀 수 있다.
+#: 폰 프리뷰보다 크게 잡아도 없는 정보가 커 보이기만 하므로 보통 같이 올린다.
+VIEW_WIDTH = 960
+VIEW_HEIGHT = 540
+
+#: 폰이 보내는 프리뷰 기본 크기. --preview-width 로 바꾼다.
+#: 대역폭: 320x180 약 8 KB/장, 960x540 약 60 KB/장, 1920x1080 약 250 KB/장.
+#: 5 fps 기준으로 각각 0.3 / 2.4 / 10 Mbps 다.
+PREVIEW_WIDTH = 960
+PREVIEW_HEIGHT = 540
+PREVIEW_FPS = 5
+PREVIEW_QUALITY = 0.6
 
 #: 비교 화면용 JPEG 품질. 정렬을 보는 용도라 원본 품질이 필요 없다.
 VIEW_JPEG_QUALITY = 80
@@ -76,10 +85,12 @@ def encode_jpeg(image: np.ndarray, quality: int = VIEW_JPEG_QUALITY) -> bytes:
     return buf.tobytes()
 
 
-def fit_view(image: np.ndarray) -> np.ndarray:
-    if (image.shape[1], image.shape[0]) == (VIEW_WIDTH, VIEW_HEIGHT):
+def fit_view(image: np.ndarray, size: tuple[int, int] | None = None) -> np.ndarray:
+    width, height = size or (VIEW_WIDTH, VIEW_HEIGHT)
+    if (image.shape[1], image.shape[0]) == (width, height):
         return image
-    return cv2.resize(image, (VIEW_WIDTH, VIEW_HEIGHT), interpolation=cv2.INTER_AREA)
+    interp = cv2.INTER_AREA if image.shape[1] > width else cv2.INTER_LINEAR
+    return cv2.resize(image, (width, height), interpolation=interp)
 
 
 class LuazCamera:

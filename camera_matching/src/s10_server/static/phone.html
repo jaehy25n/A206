@@ -65,9 +65,12 @@
 // --- 상수 (서버 app.py 와 맞춰야 한다) ---
 const REQ_WIDTH = 1920;
 const REQ_HEIGHT = 1080;
-const PREVIEW_WIDTH = 320;
-const PREVIEW_HEIGHT = 180;
-const PREVIEW_FPS = 5;
+// 프리뷰 규격은 서버가 정한다 (/api/phone/config). 여기 값은 서버를 못 읽었을 때의 대비책.
+// 폰 코드에 박아두면 바꿀 때마다 파일을 고치고 폰을 새로고침해야 한다.
+let PREVIEW_WIDTH = 960;
+let PREVIEW_HEIGHT = 540;
+let PREVIEW_FPS = 5;
+let PREVIEW_QUALITY = 0.6;
 const PING_INTERVAL_MS = 20000;
 const STORAGE_KEY = "camcal.s10.deviceId";
 
@@ -77,6 +80,19 @@ const full = $("full");
 const prev = $("prev");
 full.width = REQ_WIDTH; full.height = REQ_HEIGHT;
 prev.width = PREVIEW_WIDTH; prev.height = PREVIEW_HEIGHT;
+
+/** 서버가 정한 프리뷰 규격을 받아온다. 실패하면 위 기본값으로 간다. */
+async function loadConfig() {
+  try {
+    const c = await (await fetch("/api/phone/config")).json();
+    PREVIEW_WIDTH = c.preview_width;
+    PREVIEW_HEIGHT = c.preview_height;
+    PREVIEW_FPS = c.preview_fps;
+    PREVIEW_QUALITY = c.preview_quality;
+    prev.width = PREVIEW_WIDTH;
+    prev.height = PREVIEW_HEIGHT;
+  } catch (e) { /* 기본값으로 진행한다 */ }
+}
 
 let stream = null;
 let track = null;
@@ -293,7 +309,7 @@ function startPreview() {
         if (previewSocket.readyState === WebSocket.OPEN) previewSocket.send(b);
       }); },
       "image/jpeg",
-      0.5
+      PREVIEW_QUALITY
     );
   }, 1000 / PREVIEW_FPS);
 }
@@ -352,6 +368,7 @@ $("reset").onclick = () => {
 };
 
 async function boot() {
+  await loadConfig();
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     fail("이 브라우저는 카메라를 지원하지 않는다",
          "HTTPS 로 접속했는지 확인한다. HTTP 에서는 카메라를 열 수 없다.");

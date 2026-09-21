@@ -41,7 +41,18 @@ from camcal.target_space import TARGET_SPACE_FILENAME, TargetSpace
 from capture_luaz import load_camera_config
 
 from .certs import cert_san_ips, ensure_certs, lan_ip
-from .live import LuazCamera, build_view_map, encode_jpeg, fit_view
+from .live import (
+    PREVIEW_FPS,
+    PREVIEW_HEIGHT,
+    PREVIEW_QUALITY,
+    PREVIEW_WIDTH,
+    VIEW_HEIGHT,
+    VIEW_WIDTH,
+    LuazCamera,
+    build_view_map,
+    encode_jpeg,
+    fit_view,
+)
 
 # --- 상수 -------------------------------------------------------------------
 
@@ -63,10 +74,7 @@ MAX_AUTO_INTERVAL_SEC = 10.0
 LAST_FRAME_WIDTH = 960
 LAST_FRAME_JPEG_QUALITY = 80
 
-#: 폰이 보내는 프리뷰 규격. phone.html 과 맞춰야 한다.
-PREVIEW_WIDTH = 320
-PREVIEW_HEIGHT = 180
-PREVIEW_FPS = 5
+# 프리뷰 규격은 live.py 가 정본이고 CLI 로 바꾼다 (여기서 다시 정의하면 가려진다).
 
 #: 업로드 최대 크기 (바이트). 1920x1080 PNG 는 보통 2~5MB.
 MAX_UPLOAD_BYTES = 32 * 1024 * 1024
@@ -120,6 +128,11 @@ class ServerState:
         self.luaz: Any = None            # LuazCamera | None
         self.luaz_error: str | None = None
         self.luaz_pnp_name: str | None = None
+        #: 비교 화면 출력 크기와 폰 프리뷰 크기. CLI 로 바꾼다.
+        self.view_size: tuple[int, int] = (VIEW_WIDTH, VIEW_HEIGHT)
+        self.preview_size: tuple[int, int] = (PREVIEW_WIDTH, PREVIEW_HEIGHT)
+        self.preview_fps: int = PREVIEW_FPS
+        self.preview_quality: float = PREVIEW_QUALITY
         self.target: TargetSpace | None = None
         self.target_error: str | None = None
         self.intrinsics: dict[str, dict[str, Any]] = {}
@@ -132,10 +145,9 @@ class ServerState:
         if key not in self._view_maps:
             if self.target is None or camera not in self.intrinsics:
                 return None
-            from .live import VIEW_HEIGHT, VIEW_WIDTH
-
             self._view_maps[key] = build_view_map(
-                self.intrinsics[camera], self.target, VIEW_WIDTH, VIEW_HEIGHT, source_size
+                self.intrinsics[camera], self.target,
+                self.view_size[0], self.view_size[1], source_size,
             )
         return self._view_maps[key]
 
@@ -170,7 +182,11 @@ class ServerState:
             "source": "s10_web",
             "track_settings": self.phone_settings,
             "manual_constraints": self.phone_manual,
-            "preview": {"width": PREVIEW_WIDTH, "height": PREVIEW_HEIGHT, "fps": PREVIEW_FPS},
+            "preview": {
+                "width": self.preview_size[0],
+                "height": self.preview_size[1],
+                "fps": self.preview_fps,
+            },
         }
         self.session = Session.create(
             data_root=self.data_root,
@@ -363,11 +379,11 @@ def create_app(state: ServerState) -> FastAPI:
     def _remapped(camera: str, frame: np.ndarray, remap: bool) -> bytes:
         """프레임 한 장을 비교 화면 크기로 맞추고, 필요하면 target 공간으로 옮긴다."""
         if not remap:
-            return encode_jpeg(fit_view(frame))
+            return encode_jpeg(fit_view(frame, state.view_size))
         maps = state.view_map(camera, (frame.shape[1], frame.shape[0]))
         if maps is None:
             # 변환할 수 없으면 원본을 주되, 화면이 그 사실을 알 수 있게 헤더로 알린다
-            return encode_jpeg(fit_view(frame))
+            return encode_jpeg(fit_view(frame, state.view_size))
         # 맵은 **이 프레임 크기**를 원본으로 삼아 만들어졌다 (view_map 의 source_size).
         # 축소본에 적용하면 좌표가 원본 스케일이라 좌상단에 뭉친다 (2026-09-21에 겪음).
         # 그러니 프레임을 그대로 넣는다. 출력은 맵 크기(VIEW_WIDTH x VIEW_HEIGHT)다.
@@ -411,7 +427,7 @@ def create_app(state: ServerState) -> FastAPI:
                 raise RuntimeError("프리뷰 JPEG 를 디코드하지 못했다")
             maps = state.view_map("s10", (frame.shape[1], frame.shape[0]))
             if maps is None:
-                return encode_jpeg(fit_view(frame))
+                return encode_jpeg(fit_view(frame, state.view_size))
             warped = cv2.remap(frame, maps[0], maps[1], cv2.INTER_LINEAR,
                                borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0))
             return encode_jpeg(warped)
@@ -448,6 +464,8 @@ def create_app(state: ServerState) -> FastAPI:
                 "design": state.target.design if state.target else None,
             },
             "intrinsics": sorted(state.intrinsics),
+            "view_size": list(state.view_size),
+            "preview_size": list(state.preview_size),
         })
 
     # --- 상태 ---
@@ -463,6 +481,20 @@ def create_app(state: ServerState) -> FastAPI:
         return Response(content=state.last_overlay_jpeg, media_type="image/jpeg")
 
     # --- 폰이 보고하는 것 ---
+
+    @app.get("/api/phone/config")
+    async def phone_config() -> JSONResponse:
+        """폰이 부팅할 때 읽는 설정. 프리뷰 크기를 서버가 정한다.
+
+        폰 코드에 해상도를 박아두면 바꿀 때마다 파일을 고쳐야 한다.
+        서버 옵션 하나로 끝나게 둔다.
+        """
+        return JSONResponse({
+            "preview_width": state.preview_size[0],
+            "preview_height": state.preview_size[1],
+            "preview_fps": state.preview_fps,
+            "preview_quality": state.preview_quality,
+        })
 
     @app.post("/api/phone/settings")
     async def phone_settings(payload: dict[str, Any]) -> JSONResponse:
@@ -622,6 +654,15 @@ def _setup_live(state: ServerState, args: argparse.Namespace) -> None:
     여기서 실패해도 **서버는 뜬다.** 촬영이 주 기능이고 비교는 덤이므로,
     비교가 안 된다고 촬영까지 막으면 안 된다. 대신 이유를 화면에 그대로 띄운다.
     """
+    def sixteen_nine(width: int) -> tuple[int, int]:
+        return (int(width), int(round(width * 9 / 16)))
+
+    state.view_size = sixteen_nine(args.view_width)
+    state.preview_size = sixteen_nine(args.preview_width)
+    state.preview_fps = args.preview_fps
+    print(f"프리뷰 {state.preview_size[0]}x{state.preview_size[1]} @ {state.preview_fps}fps "
+          f"-> 비교 화면 {state.view_size[0]}x{state.view_size[1]}")
+
     results_dir = PROJECT_ROOT / "results"
 
     try:
@@ -682,6 +723,23 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--luaz-index", type=int, default=None, help="--with-luaz 의 카메라 index 덮어쓰기"
+    )
+    parser.add_argument(
+        "--preview-width",
+        type=int,
+        default=PREVIEW_WIDTH,
+        help=f"폰이 보내는 프리뷰 가로 (기본 {PREVIEW_WIDTH}). 16:9 로 세로가 따라간다. "
+             "320=0.3Mbps / 960=2.4Mbps / 1920=10Mbps (5fps 기준)",
+    )
+    parser.add_argument(
+        "--view-width",
+        type=int,
+        default=VIEW_WIDTH,
+        help=f"비교 화면 출력 가로 (기본 {VIEW_WIDTH}). 프리뷰보다 크게 잡아도 "
+             "없는 정보가 커 보일 뿐이다",
+    )
+    parser.add_argument(
+        "--preview-fps", type=int, default=PREVIEW_FPS, help=f"프리뷰 fps (기본 {PREVIEW_FPS})"
     )
     parser.add_argument(
         "--allow-unmeasured-square",
