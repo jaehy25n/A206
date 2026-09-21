@@ -26,16 +26,18 @@
 - ARCore `requestInstall`과 수집 화면의 방향 고정은 Activity를 필요로 한다.
 - `CapturePreviewController`의 preflight가 `previewSurface`를 클로저로 잡는다.
 
-### 데이터·업로드 계층을 그대로 두는 이유
+### 데이터·업로드 계층이 여기 있는 이유
 
 이쪽은 위 이유에 해당하지 않는다. Room도 OkHttp도 Activity와 무관하며, 여기에 있는 것은 누적된 결과다.
 
-다만 현재 동작에 결함은 없다. `CaptureScreen`은 `setContent`의 뿌리이고 Activity와 수명이 같아 인스턴스가 하나만 생긴다. Room 데이터베이스와 `OkHttpClient`를 단일 인스턴스로 쓰는 것은 두 라이브러리의 권장 사용법과 어긋나지 않는다.
+2026-09-17에는 "현재 동작에 결함이 없으므로 미룬다"는 판단으로 두었다. **그 전제는 사실이 아니다.**
 
-분리하려면 카메라·ARCore·업로드를 포함한 수집 흐름 전체를 실기기에서 다시 검증해야 한다. 고쳐서 얻는 것보다 위험이 커서 하지 않는다 (2026-09-17 사용자 결정).
+`MainActivity`의 `configChanges`에 `uiMode`·`locale`·`fontScale`·`density`가 없다. 시스템 다크 모드 전환, 언어 변경, 글꼴 크기 변경은 Activity를 재생성하고, 새 composition에서 `remember`가 다시 돌아 두 번째 Room 인스턴스와 두 번째 `OkHttpClient`가 생긴다. 앞의 것을 닫는 경로가 없다.
 
-### 다시 검토해야 하는 조건
+크래시는 아니다. Room은 첫 쿼리까지 연결을 열지 않고 OkHttp의 유휴 스레드는 60초면 회수된다. 남는 것은 같은 파일을 보는 연결 풀 둘과 회수되지 않는 Room 인스턴스다. 그래도 "인스턴스가 하나만 생긴다"는 틀렸다.
 
-`CaptureScreen`이 `setContent`의 뿌리에서 벗어나 composition을 떠났다 돌아올 수 있게 되면 — 예를 들어 `NavHost`의 목적지 안으로 들어가면 — `remember`로 만든 Room 데이터베이스와 `OkHttpClient` 인스턴스가 여러 개 생긴다. 앞의 것을 닫는 경로가 없으므로 SQLite 연결과 소켓이 누적된다.
+분리 비용도 과하게 잡혀 있었다. 생성 위치를 올려도 `repository` 인스턴스의 동일성과 수명이 유지되면 카메라와 ARCore의 동작은 바뀌지 않는다. 기기에서 확인할 것은 업로드 경로와 Activity 재생성 경로다.
 
-그 변경을 하게 되면 데이터·업로드 계층 분리는 선택이 아니다. 먼저 분리하고 나서 화면을 옮긴다.
+### 예정된 작업
+
+Room 데이터베이스와 `OkHttpClient` 생성을 `Application`으로 올린다. 위 결함을 없애는 것이 하나이고, 화면을 수집과 조회로 가르면 `repository`를 양쪽이 쓰게 되어 어느 한쪽에 둘 수 없다는 것이 다른 하나다. 화면 분리의 선행조건이다.
