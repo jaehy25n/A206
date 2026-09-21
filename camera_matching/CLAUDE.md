@@ -16,16 +16,20 @@ Galaxy S10과 LUAZ WC1080 웹캠의 영상을 서로 비교 가능하게 만드�
 
 즉 S10의 geometry를 LUAZ에 맞추고, LUAZ의 appearance를 S10에 맞추는 방향이다.
 
+**이번 회차 범위는 geometry 뿐이다.** appearance(밝기·WB·색·감마·선명도) 매칭은
+다음 회차다. 위 표는 프로젝트 전체 목표이고, 지금 구현되어 있는 것과 다르다.
+
 ---
 
 ## 2. 환경
 
 - **해상도: 양쪽 모두 1920×1080, 16:9. S10은 camera 0(후면 메인), LUAZ는 camera 0**
-- Python 3.11.9, JupyterLab
-- numpy, opencv-python, matplotlib, scipy, scikit-image, pandas
-- LUAZ: USB 직결, 실시간 캡처 가능
-- S10: 실시간 제어 불가. **촬영 후 파일 전달** 방식
-  - 향후 로컬 웹서버 + 브라우저 업로드 방식 고려 중
+- Python 3.11.9. 노트북 실행은 쓰지 않는다 (전부 CLI 스크립트)
+- 정본은 `requirements.txt`. 요약: numpy, opencv-python, PyYAML, matplotlib,
+  fastapi + uvicorn[standard] + python-multipart + cryptography (S10 서버), pytest
+- LUAZ: USB 직결, 실시간 캡처 (`src/capture_luaz.py`)
+- S10: **노트북이 띄운 HTTPS 웹앱으로 원격 촬영** (`src/run_s10_server.py`).
+  폰은 삼각대에 고정하고 조작은 전부 노트북에서 한다. 파일을 손으로 옮기지 않는다
 
 ---
 
@@ -59,33 +63,24 @@ p_src --[K_src^-1]--> (x_d, y_d) --[D_src^-1]--> (x, y) --[K_target]--> p_target
 > 구현은 `cv2.initUndistortRectifyMap` + `cv2.remap`을 쓴다.
 > 내부적으로는 목적지→원본 역방향으로 계산하지만 그건 라이브러리가 처리한다.
 > 코드에서 직접 다룰 일은 없으므로 설명이나 변수명에 역방향 개념을 끌어들이지 말 것.
+>
+> **예외는 `camcal/remap_metrics.py` 하나다.** 거기서는 map 을 직접 만들므로
+> "목적지 픽셀 → 원본 픽셀"이라는 방향을 명시해야 한다 (안 적으면 야코비안의
+> 의미가 뒤집힌다). 그 모듈 밖으로는 이 개념을 내보내지 않는다.
 
 ---
 
 ## 4. 측정된 값
 
-**2회차 재측정 전. 아래는 1회차 참고값이며 `result.md`에 옮기지 않는다.**
-정본은 `legacy/docs/result.md`.
+**아직 없다.** 양쪽 카메라 모두 2회차 촬영 전이다.
 
-### LUAZ WC1080 (1회차)
+- `results/luaz_intrinsics.json`, `results/s10_intrinsics.json` 은 아직 생성되지 않았다
+- 측정값의 정본은 [result.md](result.md) 다. 여기(CLAUDE.md)에 수치를 적지 않는다.
+  두 곳에 적으면 반드시 갈라진다
+- **`legacy/` 는 참조하지 않는다.** 1회차 데이터는 잘못된 데이터로 판정됐다.
+  수치·결론 어디에도 근거로 쓰지 않는다
 
-```json
-{
-  "camera": "LUAZ_WC1080",
-  "resolution": [1920, 1080],
-  "fx": 1527,
-  "fy": 1520,
-  "cx": 960,
-  "cy": 540,
-  "hfov": 64.3,
-  "vfov": 38.9,
-  "rms": 0.36
-}
-```
-
-### S10
-
-- 2회차에서 웹앱으로 처음부터 촬영. 16:9만 사용 (4:3 폐기)
+체커보드는 9×6 내부 코너, 한 칸 **25.0 mm** 로 확정 (`config/board.yaml`).
 
 ### FOV 정의 (확정)
 
@@ -94,23 +89,32 @@ p_src --[K_src^-1]--> (x_d, y_d) --[D_src^-1]--> (x, y) --[K_target]--> p_target
 - `fov_nominal` — `K`와 W, H만으로. `2·atan(W/2fx)`, `2·atan(H/2fy)`
 - `fov_effective` — `getOptimalNewCameraMatrix(alpha=0)`의 `K'`로 다시 계산
 
-1회차에서 64.3°와 61.0°가 같은 데이터에서 나온 원인이 이 구분 없음이었다.
+같은 데이터에서 두 값이 다르게 나오는 것이 정상이다. 구분 없이 "화각"이라고 부르면
+같은 데이터가 두 숫자를 내놓는다.
+
+**대소는 왜곡 부호에 따라 뒤집힌다** (result.md 5-2 측정): 배럴(k1<0)이면
+effective 가 nominal 보다 **넓고**, 핀쿠션이면 좁다. 그래서 화각 비교(게이트)는
+**양쪽 다 `fov_effective` 로** 한다.
 
 ---
 
 ## 5. 미정 사항 — 임의로 정하지 말 것
 
-### 결정 A/B: target 공간을 무엇으로 할 것인가
+### 결정 ②/③: target 공간을 무엇으로 할 것인가
 
-| | 설계 A: 가상 카메라 | 설계 B: LUAZ 원본 |
+**번호는 README 를 따른다.** (옛 표기 A = ③, B = ②. 문서마다 이름이 다르면
+같은 것을 놓고 서로 다른 것을 가리키게 되므로 A/B 는 더 쓰지 않는다.)
+
+| | 설계 ③ 가상 카메라 | 설계 ② LUAZ 원본 |
 |---|---|---|
-| `K_target` | `K_LUAZ` 유도값 | `K_LUAZ` |
+| `K_target` | `K_LUAZ` 유도값 (alpha=0 의 K') | `K_LUAZ` |
 | `D_target` | **0** | **`D_LUAZ`** |
 | LUAZ 영상 | 왜곡 보정됨, 크롭 발생 | **손대지 않음** |
 | S10 경로 | `K^-1 → D_s10^-1 → K_target` | `K^-1 → D_s10^-1 → D_luaz → K_luaz` |
 | 공통 공간 | 직선이 직선 | 왜곡이 남음 |
+| 구현 | `remap_metrics.build_map_to_pinhole` | `remap_metrics.build_map_to_distorted` |
 
-**`K_target = K_LUAZ`로 두는 것만으로는 B가 되지 않는다.** `D_target`이 0이면 여전히 A다.
+**`K_target = K_LUAZ`로 두는 것만으로는 ②가 되지 않는다.** `D_target`이 0이면 여전히 ③이다.
 
 일반적인 canonical normalization 관점에서는 A가 더 깔끔하다. 공통 공간에 왜곡이 없어
 이후 처리가 단순하고, 새 카메라가 합류하기도 쉽다. B의 장점은 LUAZ 영상을 전혀
@@ -221,8 +225,19 @@ Inference:  LUAZ → model
 
 ### 촬영 조건
 
-S10은 다음을 반드시 고정: 카메라 모듈, 해상도, aspect ratio, digital zoom,
-focus, WB, exposure, stabilization/crop.
+S10 은 한 세션 안에서 다음이 **변하지 않아야** 한다: 카메라 모듈, 해상도,
+aspect ratio, digital zoom, focus, WB, exposure, stabilization/crop.
+
+"고정한다"와 "고정을 강제할 수 있다"는 다르다. 실제로는 이렇게 나뉜다.
+
+| 항목 | 강제 가능 여부 |
+|---|---|
+| 카메라 모듈, 해상도, aspect ratio | **강제한다.** `deviceId` exact + 1920x1080 exact. 실패하면 촬영을 시작하지 않는다 |
+| focus, WB, exposure | 브라우저가 `applyConstraints` 로 manual 을 지원할 때만 잠긴다. **미지원은 정상 경로다** (기기마다 다르다). 지원 여부를 `meta.json` 에 그대로 기록한다 |
+| stabilization/crop (EIS) | API 로 확인할 수 없다. `preflight_jitter.py` 로 **실측**해서 판정한다 |
+
+즉 잠글 수 있는 것은 잠그고, 잠글 수 없는 것은 **무엇이 잠기지 않았는지를 기록**하고
+실측으로 확인한다. 잠기지 않았다는 이유로 촬영을 막지는 않는다.
 
 ---
 
@@ -232,21 +247,46 @@ focus, WB, exposure, stabilization/crop.
 
 README.md의 폴더 구조가 정본. 요약:
 
+실행 순서의 정본은 [action.md](action.md) "실행 순서 한눈에" 표다.
+직접 실행하는 파일은 `src/` 바로 아래 6개뿐이고, 나머지는 불러 쓰는 패키지다.
+
 ```
 config/board.yaml, cameras.yaml
-src/camcal/            공통 패키지
-src/capture_luaz.py    LUAZ 촬영
-src/s10_server/        S10 웹앱
-src/run_calibrate.py, run_fov_compare.py
-data/<camera>/<session_id>/frames/*.png + meta.json
-results/<camera>_intrinsics.json, reports/
-legacy/                읽기 전용. import 금지
+src/camcal/              공통 패키지 (직접 실행하지 않는다)
+  board, session, detect, coverage, constants, console
+  calibrate, report, fov, remap_metrics
+src/capture_luaz.py      1) LUAZ 촬영
+src/run_s10_server.py    2) S10 웹앱 서버 진입점 (구현은 src/s10_server/)
+src/preflight_jitter.py  3) EIS/AF 흔들림 실측 (첫 세션)
+src/path_check.py        4) 웹앱 vs 기본앱 경로 동일성 (첫 세션)
+src/run_calibrate.py     5) 세션 -> (K, D) + 품질 리포트
+src/run_fov_compare.py   6) 두 intrinsics -> ②/③ 판정 지표
+data/<camera>/<session_id>/frames/NNN.png + meta.json
+results/<camera>_intrinsics.json, results/reports/
+legacy/                  **참조 금지.** import 도, 수치 인용도 하지 않는다
 ```
 
 ### 산출물 포맷
 
-intrinsic JSON은 4절의 LUAZ 예시 스키마를 따른다.
-`dist` 필드로 D를 추가하고, 촬영 조건과 날짜를 함께 기록한다.
+`results/<camera>_intrinsics.json` 의 정본은 **`run_calibrate.py` 가 실제로 쓰는 것**이다.
+아래는 그 키 목록이며, 바꾸려면 코드와 함께 바꾼다.
+
+```
+camera, session_id, session_path, resolution [W, H],
+K            3x3 중첩 리스트          D            길이 5 리스트
+D_model      "opencv_5"              D_length     5
+rms_train, rms_holdout, n_train, n_holdout, train_ids, holdout_ids, seed,
+stability    {fx|fy|cx|cy: {mean, std, full, max_dev}, n_runs, subset, requested_subset}
+fov_nominal  {h, v}                  fov_effective {h, v, K_prime}
+fov_degenerate, spatial, radiality, holdout_per_image, sanity, warnings,
+board, created_at
+```
+
+- `K` 와 `D` 는 **분리해서** 싣는다. `fx, fy, cx, cy` 를 평평하게 펴거나
+  `dist` 같은 다른 이름을 쓰지 않는다. 소비자는 `run_fov_compare.py` 다
+- `D_model` 없이 `D` 만 있으면 계수를 해석할 수 없다. 항상 함께 쓴다
+- RMS 는 여기 있지만 **`fov_compare.md` 에는 넣지 않는다.** RMS 는 추정 품질이고
+  target 적합성과 무관하다
 
 ### 스타일
 
@@ -263,19 +303,35 @@ intrinsic JSON은 4절의 LUAZ 예시 스키마를 따른다.
 
 ---
 
-## 8. 현재 상태
+## 8. 현재 상태 (2026-09-21)
 
-### 완료
+**코드 개발과 실촬영은 별개로 진행된다.** 도구는 다 만들어졌지만 아직 아무것도
+찍지 않았다. 이 둘을 섞어 읽으면 "4단계까지 끝났다 = 결과가 나왔다"로 오해하게 된다.
 
-- 1회차 산출물 `legacy/`로 이관
-- 카메라 모델 이론 정리 (`docs/calibration_theory.pdf`)
-- 해상도·카메라·FOV 정의 확정
-- 단계별 위임 프롬프트 (`prompts/PROMPTS.md`)
+### 코드: 1~4단계 구현 완료
 
-### 다음 (prompts/PROMPTS.md 단계 순서)
+| 단계 | 산출물 | 상태 |
+|---|---|---|
+| 1 | `camcal/` + `capture_luaz.py` | 완료 |
+| 2 | `run_s10_server.py` + `s10_server/` + `preflight_jitter.py`, `path_check.py` | 완료 |
+| 3 | `run_calibrate.py` + 품질 리포트 | 완료 |
+| 4 | `run_fov_compare.py` + `fov_compare.md` | 완료 |
+| 5 | 변환 프로그램 | **다음 회차.** 지금 없는 것이 정상이다 |
 
-1. 공통 패키지 + LUAZ 촬영 도구
-2. S10 웹앱 (원격 제어, 자동 촬영, 실시간 검출)
-3. 캘리브레이션 + 품질 리포트 → 양쪽 `(K, D)`
-4. FOV 비교 → `LUAZ ⊆ S10` 게이트 → 판정 지표 → 설계 A/B 결정
-5. 변환 프로그램 (다음 회차)
+`python -m pytest` → 229 passed. 전부 카메라 없이 돈다.
+
+### 데이터: 아직 없음
+
+- LUAZ 미연결 (`Get-PnpDevice` 에서 `Web Camera` Status=Unknown)
+- S10 웹앱은 **폰에서 실행해 본 적이 없다.** `getUserMedia` 의 1920x1080 exact 가
+  통과하는지가 최대 미확인 항목이다
+- `data/`, `results/` 는 아직 생성되지 않았다
+- 3~4단계 검증은 전부 **합성 데이터**로 했다 (result.md 5, 6장)
+
+### 다음에 할 일
+
+[action.md](action.md) "실행 순서 한눈에" 의 **1번**: LUAZ 를 USB 에 꽂고
+`python src/capture_luaz.py --list-devices` 로 index 를 확인하는 것.
+
+설계 ②/③ 결정은 양쪽 `(K, D)` 가 나온 뒤 `run_fov_compare.py` 의 숫자를 보고
+**사람이** 한다. 코드가 먼저 고르지 않는다.

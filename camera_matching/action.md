@@ -23,7 +23,7 @@
 | 5 | `python src/path_check.py <웹앱 1장> <기본앱 1장>` | **첫 세션에만** | - | 차이 <= 1% | [8-2장](#8-2-촬영-경로-동일성-path_check) |
 | 6 | (노트북 화면에서 본 촬영) | S10 본 촬영 | `data/s10/<session_id>/` | 25~30장, 빈 셀 없음 | [9장](#9-s10-본-촬영-2530장) |
 | 7 | `python src/run_calibrate.py data/luaz/<session_id>` | LUAZ 세션이 생긴 뒤 | `results/luaz_intrinsics.json`<br>`results/reports/<session_id>.md` | 리포트 경고 해소 | [10~12장](#10-세션-하나로-k-d-구하기) |
-| 8 | `python src/run_calibrate.py data/s10/<session_id>` | S10 세션이 생긴 뒤 | `results/s10_intrinsics.json` + 리포트 | 리포트 경고 해소 | [10~12장](#10-세션-하나로-k-d-구하기) |
+| 8 | `python src/run_calibrate.py data/s10/<s1> data/s10/<s2>` | S10 세션이 생긴 뒤 (**여러 개면 다 넣는다**) | `results/s10_intrinsics.json` + 리포트 | 리포트 경고 해소 | [10~12장](#10-세션-하나로-k-d-구하기) |
 | 9 | `python src/run_fov_compare.py results/s10_intrinsics.json results/luaz_intrinsics.json` | 7, 8 이 **둘 다** 끝난 뒤 | `results/reports/fov_compare.md` + 히트맵 3장 | - (사람이 ②/③ 결정) | [14~16장](#14-두-intrinsics-로-지표-내기) |
 
 두 카메라는 서로 독립이다. **1~2(LUAZ)와 3~6(S10)은 순서를 바꿔도 되고**, 7과 8도 마찬가지다.
@@ -272,12 +272,24 @@ python src/path_check.py data/s10/<session_id>/frames/000.png camera_app.png
 
 # 캘리브레이션 (3단계)
 
-## 10. 세션 하나로 (K, D) 구하기
+## 10. 세션(들)로 (K, D) 구하기
 
 ```bash
 python src/run_calibrate.py data/luaz/<session_id>
-python src/run_calibrate.py data/s10/<session_id> --n-train 20 --seed 0
+python src/run_calibrate.py data/s10/<session1> data/s10/<session2> --n-train 40
 ```
+
+**세션을 여러 개 주면 전부 합쳐 한 번에 추정한다.** 한 카메라를 나눠 찍었을 때 쓴다.
+카메라 / 해상도 / 보드 규격이 하나라도 다르면 합치지 않고 멈춘다 (종료 코드 2).
+
+처리 순서는 네 단계다.
+
+1. 전체 프레임으로 **1차 추정** - 이 K 는 버린다. 목적은 프레임별 오차를 보는 것
+2. **프레임별 재투영 오차** 를 낸다
+3. 오차가 큰 프레임을 **이상치로 제거** (중앙값 + k*sigma, 기본 k=3)
+4. 남은 프레임으로 학습/홀드아웃을 나누고 **최종 추정**
+
+제거는 이 추정에서 빼는 것뿐이다. **PNG 도 meta.json 도 건드리지 않는다.**
 
 산출물
 
@@ -287,9 +299,13 @@ results/reports/<session_id>.md           표 + 해석
 results/reports/<session_id>_residuals.png 잔차 벡터 그림
 ```
 
-- 25~30장 찍었다면 `--n-train 20` 이 기본이다. 나머지가 전부 홀드아웃이 된다
+- 25~30장 찍었다면 `--n-train 20` 이 기본이다. 나머지가 전부 홀드아웃이 된다.
+  **합쳐서 60장이 넘으면 `--n-train` 을 올린다** (예: 63장 -> 40). 안 올리면 20장만
+  학습에 쓰고 나머지 40장이 전부 홀드아웃으로 간다
 - 홀드아웃이 0장이 되면 **중단한다** (종료 코드 2). `--n-train` 을 낮춘다
 - 같은 세션 + 같은 `--seed` 면 항상 같은 숫자가 나온다. 결과를 diff 할 수 있다
+- `--outlier-k 5` 로 덜 버리게, `--keep-all` 로 아예 안 버리게 할 수 있다
+  (프레임별 오차 표는 `--keep-all` 에서도 그대로 나온다)
 
 ## 11. 콘솔 요약에서 먼저 볼 것
 
@@ -312,6 +328,24 @@ results/reports/<session_id>_residuals.png 잔차 벡터 그림
 | FOV 두 값 | **다른 것이 정상이다.** 배럴 렌즈는 effective 가 nominal 보다 넓다 |
 
 **RMS 만 보고 판단하지 않는다.** 리포트의 네 항목을 같이 본다.
+
+## 11-1. 프레임별 오차 표를 먼저 본다 (리포트 0장)
+
+전체 RMS 하나로는 두 상황이 구분되지 않는다. **해야 할 일이 정반대다.**
+
+| 프레임별 표가 이러면 | 뜻 | 할 일 |
+|---|---|---|
+| 대부분 낮은데 **몇 장만** 크다 | 그 몇 장에 사고가 있었다 (흔들림, 보드 휨, 가장자리 벗어남) | 이상치 제거가 처리한다. 그대로 진행 |
+| **전부** 비슷하게 높다 | 촬영 조건 자체의 문제 | 제거로 해결되지 않는다. 다시 찍는다 |
+| 특정 **세션만** 높다 | 그 판의 조명·자세·초점이 달랐다 | 그 세션을 빼고 추정하거나 다시 찍는다 |
+
+- 중앙값을 본다. 중앙값이 0.3 px 을 넘으면 이상치 제거로는 해결되지 않는다
+- 세션이 여러 개면 세션별로 나눠 본다 (프레임 이름에 세션 id 가 붙어 있다)
+- `경계` 가 어떻게 나왔는지도 표에 있다 (중앙값, MAD, sigma)
+
+> 절반 이상이 나쁘면 **이상치 판정 자체가 작동하지 않는다.** 중앙값이 나쁜 쪽으로
+> 끌려가서 경계가 같이 올라가기 때문이다. 이때는 0장 제거로 나오는데, 그것이
+> "문제 없음"이 아니라 "판정 불가"라는 뜻이다. 중앙값을 직접 확인한다.
 
 ## 12. 리포트에서 볼 네 가지
 
