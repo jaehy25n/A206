@@ -11,7 +11,7 @@
 
 ## `CaptureScreen`의 예외
 
-`MainActivity.kt`의 `CaptureScreen`은 위 세 번째 규칙을 절반만 지킨다. 새로 만드는 화면의 기준으로 삼지 않는다.
+`CaptureScreen.kt`의 `CaptureScreen`은 위 세 번째 규칙을 절반만 지킨다. 새로 만드는 화면의 기준으로 삼지 않는다.
 
 **상태 hoisting은 지켜진다.** `CaptureScreen`이 상태를 소유하고, 자식 Composable은 값과 콜백만 받는다. 자식 쪽에 자체 상태가 없다.
 
