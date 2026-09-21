@@ -295,3 +295,27 @@ def containment(
         "h_ok": bool(h_margin >= 0.0),
         "v_ok": bool(v_margin >= 0.0),
     }
+
+
+# --- f_target 조정 (설계 ③) --------------------------------------------------
+
+
+def scale_focal(K_target: np.ndarray, scale: float) -> np.ndarray:
+    """K_target 의 fx, fy 만 배율을 곱한다 (주점은 고정).
+
+    설계 ③ 에서 목적지 화각을 좁히는 손잡이다. fx 를 키우면 화각이 좁아지고,
+    좁아진 만큼 목적지 픽셀이 전부 원본 안에서 값을 가져오게 되어
+    **valid pixel ratio 가 올라간다** (검은 영역이 준다).
+
+    공짜는 아니다. 같은 화면을 더 좁은 각도로 채우는 것이므로 **국소 확대가 커진다.**
+    두 지표가 반대로 움직이니 하나만 보고 정하면 안 된다.
+
+    주점(cx, cy)을 그대로 두는 이유: 이 연산은 "주점을 중심으로 한 줌" 이어야 한다.
+    주점까지 옮기면 화각을 좁히는 것이 아니라 다른 카메라가 된다.
+    """
+    if scale <= 0:
+        raise ValueError(f"배율은 양수여야 한다: {scale}")
+    out = np.array(K_target, dtype=np.float64, copy=True)
+    out[0, 0] *= scale
+    out[1, 1] *= scale
+    return out

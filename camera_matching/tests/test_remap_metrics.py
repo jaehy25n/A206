@@ -175,3 +175,53 @@ def test_not_contained_when_wider() -> None:
     assert out["h_ok"] is False
     assert out["v_ok"] is True
     assert out["h_margin"] == pytest.approx(-5.0)
+
+
+# --- f_target 조정 (설계 ③) --------------------------------------------------
+
+
+def test_scale_focal_touches_only_fx_fy() -> None:
+    """주점을 옮기면 화각을 좁히는 것이 아니라 다른 카메라가 된다."""
+    from camcal.remap_metrics import scale_focal
+
+    scaled = scale_focal(K, 1.10)
+    assert scaled[0, 0] == pytest.approx(K[0, 0] * 1.10)
+    assert scaled[1, 1] == pytest.approx(K[1, 1] * 1.10)
+    assert scaled[0, 2] == K[0, 2]
+    assert scaled[1, 2] == K[1, 2]
+    assert K[0, 0] == 500.0, "원본이 바뀌었다 (복사하지 않았다)"
+
+
+@pytest.mark.parametrize("scale", [0.0, -1.0])
+def test_scale_focal_rejects_nonpositive(scale: float) -> None:
+    from camcal.remap_metrics import scale_focal
+
+    with pytest.raises(ValueError):
+        scale_focal(K, scale)
+
+
+def test_raising_f_target_raises_valid_and_stretch_together() -> None:
+    """f_target 을 올리면 valid 는 오르고 stretch 도 **같이** 오른다.
+
+    둘이 반대로 움직인다는 것이 이 손잡이의 핵심 성질이다. 검은 영역을 줄이는
+    대가로 확대를 받는 거래이므로, 하나만 보고 올리면 안 된다.
+    (2026-09-21 실측에서도 배율 1.00 -> 1.10 에 valid 93.59% -> 98.77%,
+    stretch 95p 1.2346 -> 1.4955 로 같이 올랐다)
+    """
+    from camcal.remap_metrics import scale_focal
+
+    K_wide = K.copy()
+    K_wide[0, 0] *= 0.7
+    K_wide[1, 1] *= 0.7  # 원본보다 넓은 target -> 검은 영역이 생긴다
+
+    valids, stretches = [], []
+    for scale in (1.0, 1.2, 1.4):
+        K_target = scale_focal(K_wide, scale)
+        map_x, map_y = build_map_to_pinhole(K, BARREL_D, K_target, WIDTH, HEIGHT)
+        mask = valid_mask(map_x, map_y, WIDTH, HEIGHT)
+        _s, summary = local_stretch(map_x, map_y, mask)
+        valids.append(valid_ratio(map_x, map_y, WIDTH, HEIGHT))
+        stretches.append(summary["p95"])
+
+    assert valids[0] < valids[1] <= valids[2], f"valid 가 올라가지 않았다: {valids}"
+    assert stretches[0] < stretches[1] < stretches[2], f"stretch 가 같이 오르지 않았다: {stretches}"

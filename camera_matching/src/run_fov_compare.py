@@ -25,6 +25,8 @@ import numpy as np
 
 from camcal.console import setup_console
 from camcal.constants import (
+    F_TARGET_SCAN_MAX,
+    F_TARGET_SCAN_STEP,
     HEATMAP_DPI,
     HEATMAP_SIZE_IN,
     STRETCH_P95_OK,
@@ -35,9 +37,11 @@ from camcal.remap_metrics import (
     build_map_to_pinhole,
     containment,
     local_stretch,
+    scale_focal,
     valid_mask,
     valid_ratio,
 )
+from camcal.fov import fov_nominal
 from camcal.report import now_iso
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -111,6 +115,79 @@ def geometrically_suitable(result: dict[str, Any]) -> bool | None:
     if p95 is None:
         return None
     return bool(result["valid_ratio"] >= VALID_RATIO_OK and p95 <= STRETCH_P95_OK)
+
+
+# --- f_target 탐색 (설계 ③) --------------------------------------------------
+
+
+def scan_f_target(
+    src: dict[str, Any],
+    dst: dict[str, Any],
+    step: float = F_TARGET_SCAN_STEP,
+    max_scale: float = F_TARGET_SCAN_MAX,
+    target_valid: float = VALID_RATIO_OK,
+) -> dict[str, Any]:
+    """f_target 을 step 씩 올리며 valid pixel ratio 가 기준을 넘는 **최소 배율**을 찾는다.
+
+    설계 ③ 전용이다. 목적지가 가상 카메라라 화각을 우리가 정할 수 있고,
+    좁힐수록 검은 영역이 준다.
+
+    **최소값을 찾는 이유**: 더 올리면 valid 는 계속 좋아지지만 화각을 그만큼 버리고
+    국소 확대가 커진다. 기준을 넘기는 가장 덜 좁힌 값이 손해가 가장 적다.
+
+    두 변환(src -> target, dst -> target) **모두** 기준을 넘어야 통과로 본다.
+
+    Returns:
+        {"rows": [...], "chosen": 배율 | None, "target_valid": ...}
+        rows 의 각 항목: scale, fx, hfov, valid_src, valid_dst, stretch95_src,
+        stretch95_dst, ok
+    """
+    width, height = int(dst["resolution"][0]), int(dst["resolution"][1])
+    K_src, D_src = as_array(src["K"]), as_array(src["D"])
+    K_dst, D_dst = as_array(dst["K"]), as_array(dst["D"])
+    K_base = as_array(dst["fov_effective"]["K_prime"])
+
+    rows: list[dict[str, Any]] = []
+    chosen: float | None = None
+
+    scale = 1.0
+    while scale <= max_scale + 1e-9:
+        K_target = scale_focal(K_base, scale)
+        results = []
+        for K, D, size in (
+            (K_src, D_src, (int(src["resolution"][0]), int(src["resolution"][1]))),
+            (K_dst, D_dst, (width, height)),
+        ):
+            map_x, map_y = build_map_to_pinhole(K, D, K_target, width, height)
+            mask = valid_mask(map_x, map_y, size[0], size[1])
+            _stretch, summary = local_stretch(map_x, map_y, mask)
+            results.append((valid_ratio(map_x, map_y, size[0], size[1]), summary["p95"]))
+
+        (valid_src, p95_src), (valid_dst, p95_dst) = results
+        ok = valid_src >= target_valid and valid_dst >= target_valid
+        rows.append({
+            "scale": round(scale, 4),
+            "fx": float(K_target[0, 0]),
+            "hfov": fov_nominal(K_target, width, height)[0],
+            "valid_src": valid_src,
+            "valid_dst": valid_dst,
+            "stretch95_src": p95_src,
+            "stretch95_dst": p95_dst,
+            "ok": ok,
+        })
+        if ok and chosen is None:
+            chosen = round(scale, 4)
+            break
+        scale += step
+
+    return {
+        "rows": rows,
+        "chosen": chosen,
+        "target_valid": target_valid,
+        "step": step,
+        "max_scale": max_scale,
+        "K_base_fx": float(K_base[0, 0]),
+    }
 
 
 # --- 그림 ------------------------------------------------------------------
@@ -251,7 +328,9 @@ def render_report(ctx: dict[str, Any], out_dir: Path) -> Path:
     # --- 3, 4
     for key, title, note in (
         ("design3", "3. 설계 ③ 가상 카메라 = target",
-         f"`K_target` = {dst['camera']} 의 K' (alpha=0 유도값), `D_target` = **0**. "
+         f"`K_target` = {dst['camera']} 의 K' (alpha=0 유도값) x **{ctx['f_target_scale']:.2f}**, "
+         f"fx = {ctx['K_target'][0][0]:.1f}, 화각 H {ctx['target_fov']['h']:.2f} / "
+         f"V {ctx['target_fov']['v']:.2f} 도. `D_target` = **0**. "
          "공통 공간에 왜곡이 없어 직선이 직선으로 남는다. 대신 배포 시 "
          f"{dst['camera']} 영상도 매 프레임 변환해야 한다."),
         ("design2", "4. 설계 ② LUAZ 원본 = target",
@@ -280,6 +359,36 @@ def render_report(ctx: dict[str, Any], out_dir: Path) -> Path:
             add("회색은 원본 밖에서 가져와야 하는 영역이다 = 검은 영역이 생길 자리. "
                 "밝을수록 확대가 크고, 확대된 곳은 보간으로 뭉개진다.")
             add("")
+
+    # --- 4-1 f_target 탐색
+    scan = ctx.get("scan")
+    if scan:
+        add("## 4-1. f_target 탐색 (설계 ③ 전용)")
+        add("")
+        add(f"설계 ③ 은 목적지가 가상 카메라라 **화각을 우리가 정할 수 있다.** "
+            f"`f_target` 을 {scan['step'] * 100:.0f}% 씩 올리며 valid pixel ratio 가 "
+            f"{scan['target_valid'] * 100:.0f}% 를 넘는 **최소 배율**을 찾았다.")
+        add("")
+        add("| 배율 | fx | 화각 H (도) | valid src | valid dst | stretch 95p src | 판정 |")
+        add("|---|---|---|---|---|---|---|")
+        for row in scan["rows"]:
+            add(f"| {row['scale']:.2f} | {row['fx']:.1f} | {row['hfov']:.2f} | "
+                f"{row['valid_src'] * 100:.2f}% | {row['valid_dst'] * 100:.2f}% | "
+                f"{row['stretch95_src']:.4f} | {'**통과**' if row['ok'] else '-'} |")
+        add("")
+        if scan["chosen"] is None:
+            add(f"> **{scan['max_scale']:.2f} 배까지 올려도 valid 기준을 넘지 못했다.** "
+                "화각을 그 이상 버리는 것은 의미가 없다. 재촬영이 필요하다.")
+        else:
+            add(f"**선택: 배율 {scan['chosen']:.2f}.** 기준을 넘기는 가장 덜 좁힌 값이다. "
+                "더 올리면 valid 는 계속 좋아지지만 화각을 그만큼 버린다.")
+        add("")
+        add("> **valid 와 stretch 는 반대로 움직인다.** f_target 을 올리면 같은 화면을 "
+            "더 좁은 각도로 채우게 되므로 국소 확대가 **커진다**. 위 표에서 배율이 "
+            "오를수록 stretch 95p 가 함께 오르는 것이 그것이다. "
+            "검은 영역을 줄이는 대가로 확대를 받는 거래이므로, 둘 다 만족하는 값이 "
+            "없을 수 있다.")
+        add("")
 
     # --- 5
     add("## 5. 판정 참고")
@@ -326,8 +435,19 @@ def render_report(ctx: dict[str, Any], out_dir: Path) -> Path:
 # --- 조립 ------------------------------------------------------------------
 
 
-def compare(src: dict[str, Any], dst: dict[str, Any], out_dir: Path) -> dict[str, Any]:
-    """두 설계의 지표를 모두 계산하고 히트맵을 그린다."""
+def compare(
+    src: dict[str, Any],
+    dst: dict[str, Any],
+    out_dir: Path,
+    f_target_scale: float = 1.0,
+    scan: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """두 설계의 지표를 모두 계산하고 히트맵을 그린다.
+
+    Args:
+        f_target_scale: 설계 ③ 의 K_target 초점거리 배율 (1.0 = dst 의 K' 그대로).
+            올리면 화각이 좁아져 valid 가 오르고 stretch 가 커진다.
+    """
     src_size = (int(src["resolution"][0]), int(src["resolution"][1]))
     dst_size = (int(dst["resolution"][0]), int(dst["resolution"][1]))
     if src_size != dst_size:
@@ -339,7 +459,8 @@ def compare(src: dict[str, Any], dst: dict[str, Any], out_dir: Path) -> dict[str
 
     K_src, D_src = as_array(src["K"]), as_array(src["D"])
     K_dst, D_dst = as_array(dst["K"]), as_array(dst["D"])
-    K_prime = as_array(dst["fov_effective"]["K_prime"])  # 설계 ③ 의 K_target
+    K_prime_base = as_array(dst["fov_effective"]["K_prime"])
+    K_prime = scale_focal(K_prime_base, f_target_scale)  # 설계 ③ 의 K_target
 
     # 설계 ③: K_target = dst 의 K', D_target = 0
     design3 = [
@@ -388,12 +509,18 @@ def compare(src: dict[str, Any], dst: dict[str, Any], out_dir: Path) -> dict[str
         (src["fov_effective"]["h"], src["fov_effective"]["v"]),
     )
 
+    hfov_t, vfov_t = fov_nominal(K_prime, width, height)
     return {
         "src": src,
         "dst": dst,
         "gate": gate,
         "design3": design3,
         "design2": design2,
+        "f_target_scale": f_target_scale,
+        "K_target": K_prime.tolist(),
+        "K_target_base_fx": float(K_prime_base[0, 0]),
+        "target_fov": {"h": hfov_t, "v": vfov_t},
+        "scan": scan,
         "created_at": now_iso(),
     }
 
@@ -428,6 +555,19 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("src", type=Path, help="변환할 카메라의 intrinsics.json (보통 s10)")
     parser.add_argument("dst", type=Path, help="기준 카메라의 intrinsics.json (보통 luaz)")
     parser.add_argument(
+        "--f-target-scale",
+        type=float,
+        default=1.0,
+        help="설계 ③ 의 K_target 초점거리 배율 (1.0 = LUAZ 의 K' 그대로). "
+             "올리면 화각이 좁아져 valid 가 오르고 stretch 가 커진다",
+    )
+    parser.add_argument(
+        "--scan-f-target",
+        action="store_true",
+        help=f"f_target 을 {F_TARGET_SCAN_STEP * 100:.0f}%% 씩 올리며 "
+             f"valid >= {VALID_RATIO_OK * 100:.0f}%% 인 최소 배율을 찾아 그 값으로 리포트를 낸다",
+    )
+    parser.add_argument(
         "--out-dir",
         type=Path,
         default=PROJECT_ROOT / "results" / "reports",
@@ -444,7 +584,23 @@ def main(argv: list[str] | None = None) -> int:
     dst = load_intrinsics(args.dst)
     print(f"src {src['camera']} ({args.src})  ->  dst {dst['camera']} ({args.dst})")
 
-    ctx = compare(src, dst, args.out_dir)
+    scan = None
+    scale = args.f_target_scale
+    if args.scan_f_target:
+        print("f_target 탐색 중...")
+        scan = scan_f_target(src, dst)
+        for row in scan["rows"]:
+            print(f"  배율 {row['scale']:.2f}  fx {row['fx']:7.1f}  H {row['hfov']:5.2f} deg  "
+                  f"valid src {row['valid_src'] * 100:6.2f}%  dst {row['valid_dst'] * 100:6.2f}%  "
+                  f"stretch95 src {row['stretch95_src']:.4f}"
+                  + ("  <- 선택" if row["ok"] else ""))
+        if scan["chosen"] is None:
+            print(f"[경고] {scan['max_scale']:.2f} 배까지도 valid 기준 미달. 재촬영이 필요하다",
+                  file=sys.stderr)
+        else:
+            scale = scan["chosen"]
+
+    ctx = compare(src, dst, args.out_dir, f_target_scale=scale, scan=scan)
     report_path = render_report(ctx, args.out_dir)
     print_summary(ctx, report_path)
 

@@ -252,3 +252,62 @@ def test_design2_stretch_equals_focal_ratio_squared(tmp_path) -> None:
     design2 = ctx["design2"][0]
     expected = (1200.0 / 1000.0) ** 2
     assert design2["stretch"]["median"] == pytest.approx(expected, rel=0.01)
+
+
+# --- f_target 탐색 ----------------------------------------------------------
+
+
+def test_scan_finds_the_minimum_passing_scale(tmp_path) -> None:
+    """기준을 넘기는 **가장 덜 좁힌** 배율을 고른다. 더 올리면 화각만 버린다."""
+    src = make_intrinsics("s10", 1380.0, 1377.0, -0.11, 0.03)
+    dst = make_intrinsics("luaz", 1200.0, 1196.0, -0.05)  # 넓어서 검은 영역이 생긴다
+
+    scan = run_fov_compare.scan_f_target(src, dst, step=0.05, max_scale=1.6)
+    assert scan["rows"], "탐색 결과가 비었다"
+    if scan["chosen"] is not None:
+        # 선택된 행만 통과, 그 앞은 전부 미달이어야 한다 (최소값이므로)
+        for row in scan["rows"][:-1]:
+            assert row["ok"] is False
+        assert scan["rows"][-1]["ok"] is True
+        assert scan["rows"][-1]["scale"] == scan["chosen"]
+
+
+def test_scan_stops_at_max_and_says_so(tmp_path) -> None:
+    """상한까지 올려도 못 넘기면 chosen 은 None. 조용히 아무 값이나 고르지 않는다."""
+    src = make_intrinsics("s10", 3000.0, 3000.0, 0.0)  # 아주 좁게 본다
+    dst = make_intrinsics("luaz", 700.0, 700.0, 0.0)   # 아주 넓게 본다
+
+    scan = run_fov_compare.scan_f_target(src, dst, step=0.1, max_scale=1.3)
+    assert scan["chosen"] is None
+    assert len(scan["rows"]) >= 3
+
+
+def test_higher_scale_narrows_the_target_fov(tmp_path) -> None:
+    src = make_intrinsics("s10", 1380.0, 1377.0, -0.11)
+    dst = make_intrinsics("luaz", 1200.0, 1196.0, -0.05)
+    scan = run_fov_compare.scan_f_target(src, dst, step=0.05, max_scale=1.2)
+
+    hfovs = [row["hfov"] for row in scan["rows"]]
+    assert hfovs == sorted(hfovs, reverse=True), f"배율을 올렸는데 화각이 안 좁아졌다: {hfovs}"
+
+
+def test_scale_is_recorded_in_the_report(tmp_path, wide_src, narrow_dst) -> None:
+    """어떤 배율로 낸 숫자인지 리포트에 남아야 재현할 수 있다."""
+    src_path, dst_path = write_pair(tmp_path, wide_src, narrow_dst)
+    out_dir = tmp_path / "reports"
+    run_fov_compare.main(
+        [str(src_path), str(dst_path), "--out-dir", str(out_dir), "--f-target-scale", "1.15"]
+    )
+    md = (out_dir / "fov_compare.md").read_text(encoding="utf-8")
+    assert "x **1.15**" in md
+
+
+def test_scan_table_appears_in_the_report(tmp_path, wide_src, narrow_dst) -> None:
+    src_path, dst_path = write_pair(tmp_path, wide_src, narrow_dst)
+    out_dir = tmp_path / "reports"
+    run_fov_compare.main(
+        [str(src_path), str(dst_path), "--out-dir", str(out_dir), "--scan-f-target"]
+    )
+    md = (out_dir / "fov_compare.md").read_text(encoding="utf-8")
+    assert "## 4-1. f_target 탐색" in md
+    assert "반대로 움직인다" in md, "valid 와 stretch 의 상충을 설명해야 한다"
