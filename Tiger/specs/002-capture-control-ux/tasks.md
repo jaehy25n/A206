@@ -392,8 +392,9 @@ FR-016e~g 추가가 여기에 대응한다.
     `longPressOnAnUploadingSessionOffersNoEnabledDeleteAction`;
     `.\gradlew.bat connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.ssafy.s15p21a206.tiger.ui.session.SessionListScreenTest`
     (2026-09-18, `SM-G973N`, Android 12) 두 테스트 통과.
-  - 미해결: 같은 클래스의 `emptyListShowsStartCaptureAction`은 실패한다. 이 작업과 무관한 기존
-    결함이며 `origin/develop`에서도 동일하게 실패한다. S15P21A206-43으로 분리했다.
+  - 해결됨: 같은 클래스의 `emptyListShowsStartCaptureAction`은 이 작업과 무관한 기존 결함으로
+    실패하고 있었다. S15P21A206-43으로 분리했고, `fix/fab-accessible-name`이 develop에 병합된 뒤
+    rebase하면서 통과한다 (2026-09-21).
 - [X] T045 [S15P21A206-35] 되돌릴 수 없는 확인 판을 한 곳으로 모은다.
   - 구현: `ui/common/DestructiveConfirmationDialog.kt`. `CaptureStopConfirmation`과
     `SessionDeleteConfirmation`이 이 판을 쓴다. 확정 쪽은 채워진 error 버튼으로 통일했다.
@@ -406,8 +407,9 @@ FR-016e~g 추가가 여기에 대응한다.
     전에는 세션이 있는 Task만 홈에 나타나 도달할 수 없었다. 두 화면이 `EmptyListMessage`를
     공유하며, 비었을 때는 `LazyColumn` 대신 `Column`으로 남은 공간 가운데에 놓고 `bodyLarge`로 키운다.
   - 자동 검증: `.\gradlew.bat testDebugUnitTest`, `.\gradlew.bat lintDebug` 성공 (2026-09-18).
-  - 범위 한계: 빈 상태를 고정하는 계측 테스트가 없다. 홈 빈 상태를 검사하는
-    `emptyListShowsStartCaptureAction`은 S15P21A206-43 때문에 실패 중이라 근거로 쓸 수 없다.
+  - 계측 검증: 홈 빈 상태는 `emptyListShowsStartCaptureAction`이, Task 목록 빈 상태는 T054의
+    `anEmptyTaskSessionListExplainsHowToAddOne`이 고정한다. 둘 다 통과 (2026-09-21, `SM-G973N`).
+    앞의 것은 S15P21A206-43이 develop에 병합되기 전까지 실패해 근거로 쓸 수 없었다.
 - [X] T047 [S15P21A206-35] `specs/002-capture-control-ux/spec.md`에 위 변경을 반영한다.
   - 산출물: 2026-09-18 Clarifications 2건(목록 진입점, 밀어서 삭제를 쓰지 않는 이유),
     사용자 스토리 4의 인수 시나리오 11~12, FR-016 개정, FR-016e~g, 핵심 엔터티의 `Session 상세` 보강.
@@ -438,4 +440,10 @@ FR-016e~g 추가가 여기에 대응한다.
 - T054 구현: `SessionListScreenTest.anEmptyTaskSessionListExplainsHowToAddOne`이 Task Session 목록의
   빈 안내가 보이고 `0개의 Session`이 없는지 검사한다.
 - 자동 검증: `.\gradlew.bat ktlintCheck testDebugUnitTest lintDebug compileDebugAndroidTestKotlin` 성공
-  (2026-09-21). T054의 계측 실행은 기기가 붙는 T043 시점에 함께 돌린다.
+  (2026-09-21).
+- 계측 검증: `.\gradlew.bat connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.ssafy.s15p21a206.tiger.ui.session.SessionListScreenTest`
+  (2026-09-21, `SM-G973N`, Android 12). 6 tests, 0 failures. T054의
+  `anEmptyTaskSessionListExplainsHowToAddOne`을 포함한다.
+- `origin/develop`에 `fix/fab-accessible-name`이 병합되면서 S15P21A206-43이 해결됐다.
+  그동안 실패하던 `emptyListShowsStartCaptureAction`이 통과하므로, T046의 "홈 빈 상태를
+  검사하는 테스트를 근거로 쓸 수 없다"는 범위 한계는 해소됐다.
