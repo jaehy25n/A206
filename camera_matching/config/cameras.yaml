@@ -9,6 +9,12 @@ cameras:
     fps: 30
     backend: msmf          # msmf | dshow | any. 이 노트북에서 index 로 열리는 것은 msmf 뿐
 
+    # Windows 장치 이름 (Get-PnpDevice -Class Camera 의 FriendlyName).
+    # OpenCV 는 index 로만 열 수 있고 어느 장치인지 알려주지 않는다. 그래서 이 이름이
+    # 실제로 연결돼 있는지 따로 확인한다 - 안 그러면 내장 카메라를 열어놓고
+    # LUAZ 라고 믿게 된다 (2026-09-21 에 실제로 그랬다).
+    pnp_name: "Web Camera"
+
   s10:
     width: 1920
     height: 1080

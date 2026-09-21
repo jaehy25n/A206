@@ -31,6 +31,7 @@ import yaml
 
 from camcal import BoardSpec, Coverage, Session, draw_corners, find_corners
 from camcal.console import setup_console
+from camcal.devices import check_expected
 from camcal.constants import AUTO_INTERVAL_SEC, COVERAGE_GRID
 
 # --- 상수 (매직 넘버 금지) --------------------------------------------------
@@ -227,6 +228,16 @@ def list_devices(backend_name: str = "msmf") -> None:
     LUAZ 와 노트북 내장 카메라는 둘 다 1920x1080 을 받아주므로 해상도로는
     구분되지 않는다. 눈으로 확인하는 것이 유일한 방법이다.
     """
+    from camcal.devices import list_cameras
+
+    devices = list_cameras()
+    if devices is not None:
+        print("Windows 가 보고하는 카메라:")
+        for d in devices:
+            mark = "연결됨" if d.present else "**미연결**"
+            print(f"  {mark}  {d.name}")
+        print()
+
     backend = BACKENDS[backend_name]
     print(f"backend={backend_name}, index 0..{DEVICE_SCAN_RANGE - 1} 확인")
     for index in range(DEVICE_SCAN_RANGE):
@@ -454,6 +465,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="board.yaml 의 square_mm 이 실측값이 아니어도 진행한다 (시험 촬영 전용)",
     )
     parser.add_argument(
+        "--allow-wrong-camera",
+        action="store_true",
+        help="cameras.yaml 의 pnp_name 이 연결돼 있지 않아도 진행한다",
+    )
+    parser.add_argument(
         "--list-devices", action="store_true", help="카메라 index 를 미리보기로 확인하고 끝낸다"
     )
     return parser
@@ -489,6 +505,17 @@ def main(argv: list[str] | None = None) -> int:
         camera_config["device_index"] = args.device_index
     if args.backend is not None:
         camera_config["backend"] = args.backend
+
+    # OpenCV 는 index 로만 열 수 있고 어느 장치인지 알려주지 않는다.
+    # 기대한 카메라가 아예 안 꽂혀 있으면 index 0 은 다른 카메라다.
+    present, message = check_expected(camera_config.get("pnp_name"))
+    if present is False and not args.allow_wrong_camera:
+        print(f"[중단] {message}", file=sys.stderr)
+        print("  USB 를 다시 꽂거나, 다른 카메라를 쓰는 것이 맞다면 "
+              "--allow-wrong-camera 를 붙인다", file=sys.stderr)
+        return 2
+    if present is False:
+        print(f"[경고] {message} (--allow-wrong-camera 로 진행)", file=sys.stderr)
 
     try:
         cap, info = open_camera(camera_config)
