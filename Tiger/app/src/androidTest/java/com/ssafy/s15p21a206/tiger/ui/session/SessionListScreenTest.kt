@@ -126,6 +126,28 @@ class SessionListScreenTest {
         composeRule.onNodeWithText(string(R.string.session_delete)).assertIsNotEnabled()
     }
 
+    /**
+     * 마지막 세션을 지우면 닿게 되는 화면이다. 삭제를 붙이기 전에는 세션이 있는 Task만 홈에
+     * 나타나 도달할 수 없었다.
+     */
+    @Test
+    fun anEmptyTaskSessionListExplainsHowToAddOne() {
+        composeRule.setContent {
+            TaskSessionListScreen(
+                taskName = "Door opening",
+                sessions = emptyList(),
+                onBack = {},
+                onOpenSession = {},
+                onDeleteSession = {},
+                onStartCapture = {},
+            )
+        }
+
+        composeRule.onNodeWithText(string(R.string.task_session_list_empty)).assertIsDisplayed()
+        // 비어 있을 때는 바로 아래 안내가 같은 말을 하므로 개수를 세지 않는다.
+        composeRule.onNodeWithText(string(R.string.session_list_count, 0)).assertDoesNotExist()
+    }
+
     private fun summary() =
         SessionSummary(
             sessionId = "session-12345678",

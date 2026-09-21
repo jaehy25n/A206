@@ -415,10 +415,27 @@ FR-016e~g 추가가 여기에 대응한다.
 
 ## Phase 8: Convergence
 
-- [ ] T048 `contracts/capture-control-ui.md`의 화면·진입점 표에서 Session Detail의 "우측 상단 정보 아이콘"을 `세션 정보`·`세션 삭제`를 담은 헤더 메뉴로 고치고, Task Session 목록 행에 길게 눌러 여는 삭제 진입점을 적는다 per FR-016, FR-016e (contradicts)
-- [ ] T049 `contracts/capture-control-ui.md`에 삭제 동작 절을 추가한다. 기기에서만 지운다는 방침, 업로드 여부로 갈리는 확인 문구, 전송 중 금지, 색인 우선 삭제와 다음 실행 회수, 되돌릴 수 없는 확인 판의 공통 형태, 확인 판이 뜨는 동안 영상 재생을 멈춘다는 규칙을 포함한다 per FR-016, FR-016a, FR-016b, FR-016c, FR-016f (missing)
-- [ ] T050 `contracts/capture-control-ui.md`의 `조회 화면의 짜임`에서 "상세의 세션 정보는 상단 우측 아이콘으로 연다"를 메뉴로 접은 현재 짜임과 그 이유로 고치고, 목록 카드가 삭제 표를 상주시키지 않는다는 제약을 적는다 per FR-016, FR-016e (contradicts)
-- [ ] T051 `specs/002-capture-control-ux/plan.md`에 삭제의 설계 결정을 기록한다. 색인을 먼저 지우고 디렉터리를 지우는 순서, 실패 시 고아 디렉터리를 다음 실행이 회수하는 경로, 서버 DELETE API가 없다는 제약을 포함한다 per plan: 저장소 정책 (missing)
-- [ ] T052 `specs/002-capture-control-ux/data-model.md`에 삭제가 더한 DAO 연산(`CaptureSessionDao.delete`·`allSessionIds`, `EpisodeMarkerDao.deleteForSession`)과 고아 번들 회수 수명주기를 반영한다 per FR-016, FR-016c (missing)
-- [ ] T053 `specs/002-capture-control-ux/spec.md`의 성공 기준에 삭제 항목을 추가한다. 목록·번들·색인에서 사라지고 재실행 후에도 돌아오지 않는다는 측정 가능한 결과를 포함한다 per FR-016 계열 (missing)
-- [ ] T054 `app/src/androidTest/java/com/ssafy/s15p21a206/tiger/ui/session/SessionListScreenTest.kt`에 Task Session 목록의 빈 상태를 고정하는 계측 테스트를 추가한다. 홈 빈 상태를 보던 `emptyListShowsStartCaptureAction`은 S15P21A206-43이 해결될 때까지 근거로 쓸 수 없다 per FR-016g (partial)
+- [X] T048 `contracts/capture-control-ui.md`의 화면·진입점 표에서 Session Detail의 "우측 상단 정보 아이콘"을 `세션 정보`·`세션 삭제`를 담은 헤더 메뉴로 고치고, Task Session 목록 행에 길게 눌러 여는 삭제 진입점을 적는다 per FR-016, FR-016e (contradicts)
+- [X] T049 `contracts/capture-control-ui.md`에 삭제 동작 절을 추가한다. 기기에서만 지운다는 방침, 업로드 여부로 갈리는 확인 문구, 전송 중 금지, 색인 우선 삭제와 다음 실행 회수, 되돌릴 수 없는 확인 판의 공통 형태, 확인 판이 뜨는 동안 영상 재생을 멈춘다는 규칙을 포함한다 per FR-016, FR-016a, FR-016b, FR-016c, FR-016f (missing)
+- [X] T050 `contracts/capture-control-ui.md`의 `조회 화면의 짜임`에서 "상세의 세션 정보는 상단 우측 아이콘으로 연다"를 메뉴로 접은 현재 짜임과 그 이유로 고치고, 목록 카드가 삭제 표를 상주시키지 않는다는 제약을 적는다 per FR-016, FR-016e (contradicts)
+- [X] T051 `specs/002-capture-control-ux/plan.md`에 삭제의 설계 결정을 기록한다. 색인을 먼저 지우고 디렉터리를 지우는 순서, 실패 시 고아 디렉터리를 다음 실행이 회수하는 경로, 서버 DELETE API가 없다는 제약을 포함한다 per plan: 저장소 정책 (missing)
+- [X] T052 `specs/002-capture-control-ux/data-model.md`에 삭제가 더한 DAO 연산(`CaptureSessionDao.delete`·`allSessionIds`, `EpisodeMarkerDao.deleteForSession`)과 고아 번들 회수 수명주기를 반영한다 per FR-016, FR-016c (missing)
+- [X] T053 `specs/002-capture-control-ux/spec.md`의 성공 기준에 삭제 항목을 추가한다. 목록·번들·색인에서 사라지고 재실행 후에도 돌아오지 않는다는 측정 가능한 결과를 포함한다 per FR-016 계열 (missing)
+- [X] T054 `app/src/androidTest/java/com/ssafy/s15p21a206/tiger/ui/session/SessionListScreenTest.kt`에 Task Session 목록의 빈 상태를 고정하는 계측 테스트를 추가한다. 홈 빈 상태를 보던 `emptyListShowsStartCaptureAction`은 S15P21A206-43이 해결될 때까지 근거로 쓸 수 없다 per FR-016g (partial)
+
+### Phase 8 완료 증거 (2026-09-21)
+
+- T048·T049·T050 산출물: `contracts/capture-control-ui.md`. 진입점 표의 Session Detail 행을 헤더 메뉴로,
+  Task Session 목록 행에 길게 눌러 삭제를 적었다. `삭제 동작` 절을 새로 두어 기기 한정 방침, 확인 문구
+  분기, 전송 중 금지, 색인 우선 삭제와 고아 회수 순서, 확인 판의 공통 형태, 확인 중 재생 정지, 삭제 뒤
+  이동을 기록했다. `조회 화면의 짜임`에서 세션 정보 아이콘 서술을 메뉴로 고치고 목록 진입점·메뉴 위치·
+  빈 상태 규칙을 더했다.
+- T051 산출물: `plan.md` 요약에 삭제 방침과 색인 우선 삭제 순서를 두 저장소에 걸친 동작으로 설명하고,
+  제약에 `서버 DELETE API 없음`을 더했다.
+- T052 산출물: `data-model.md`의 `삭제 연산`·`고아 번들 수명주기` 절과 저장소 불변식 한 줄. DAO 연산
+  다섯과 `SessionDeleteResult` 세 값, 앱 시작 시 실행 순서를 적었다.
+- T053 산출물: `spec.md` 성공 기준 SC-010~012.
+- T054 구현: `SessionListScreenTest.anEmptyTaskSessionListExplainsHowToAddOne`이 Task Session 목록의
+  빈 안내가 보이고 `0개의 Session`이 없는지 검사한다.
+- 자동 검증: `.\gradlew.bat ktlintCheck testDebugUnitTest lintDebug compileDebugAndroidTestKotlin` 성공
+  (2026-09-21). T054의 계측 실행은 기기가 붙는 T043 시점에 함께 돌린다.
