@@ -457,9 +457,10 @@ FR-016e~g 추가가 여기에 대응한다.
   Time: 15.48 / OK (20 tests)
   ```
 
-  실행 방법: `.\gradlew.bat assembleDebug assembleDebugAndroidTest`로 APK를 만들고
-  `adb install -r`로 둘 다 깐 뒤
-  `adb shell am instrument -w com.ssafy.s15p21a206.tiger.test/androidx.test.runner.AndroidJUnitRunner`.
+  실행 방법은 `AGENTS.md`의 "계측 테스트 실행"에 있다. 요약하면 APK를 만들어 `adb install -r`로
+  한 번 깔고 `adb shell am instrument -w -r`로 반복 실행한다. 이 결과는 출력의 `OK (20 tests)`를
+  읽어 판정했다. `am instrument`는 테스트가 실패해도 exit code 0을 돌려주므로 종료 코드로
+  판정하지 않는다.
 
   `connectedDebugAndroidTest`는 이 기기에서 쓰지 않았다. 매 실행마다 APK를 다시 설치하는데
   앱 APK가 42MB라 기기에서 dex2oat이 수 분씩 걸린다. 32분을 기다려도 테스트가 시작되지 않았고,
