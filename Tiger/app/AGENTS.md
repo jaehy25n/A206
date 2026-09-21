@@ -59,7 +59,7 @@ Room Flow에서 목록이 나오고 화면은 값과 콜백만 받는다. 상태
 
 **상태 hoisting은 지켜진다.** `CaptureScreen`이 상태를 소유하고, 자식 Composable은 값과 콜백만 받는다. 자식 쪽에 자체 상태가 없다.
 
-**"렌더링과 사용자 이벤트 처리로 한정"은 지켜지지 않는다.** `CaptureScreen`은 Room 데이터베이스와 `SessionRepository`, `OkHttpClient`·`SessionUploadService`를 직접 만들고 `repository.save`를 직접 호출한다.
+**"렌더링과 사용자 이벤트 처리로 한정"은 지켜지지 않는다.** `CaptureScreen`은 `repository.save`를 직접 호출하고, 내보내기·전송·삭제와 `NavHost`를 함께 들고 있다.
 
 ### composition에 묶여 있어 올릴 수 없는 것
 
@@ -70,18 +70,14 @@ Room Flow에서 목록이 나오고 화면은 값과 콜백만 받는다. 상태
 - ARCore `requestInstall`과 수집 화면의 방향 고정은 Activity를 필요로 한다.
 - `CapturePreviewController`의 preflight가 `previewSurface`를 클로저로 잡는다.
 
-### 데이터·업로드 계층이 여기 있는 이유
+### 데이터·업로드 계층은 올렸다 (해결)
 
-이쪽은 위 이유에 해당하지 않는다. Room도 OkHttp도 Activity와 무관하며, 여기에 있는 것은 누적된 결과다.
+Room 데이터베이스와 `SessionRepository`, `SessionUploadService`는 `TigerApplication`이 소유한다. `CaptureScreen`은 받아 쓰기만 한다.
 
-2026-09-17에는 "현재 동작에 결함이 없으므로 미룬다"는 판단으로 두었다. **그 전제는 사실이 아니다.**
+2026-09-17에는 "현재 동작에 결함이 없으므로 미룬다"고 두었으나 그 전제가 사실이 아니었다. `configChanges`에 `uiMode`·`locale`·`fontScale`·`density`가 없어, 다크 모드 전환만으로 Activity가 재생성되고 `remember`가 다시 돌아 인스턴스가 하나씩 더 생겼다. 닫는 경로는 없었다.
 
-`MainActivity`의 `configChanges`에 `uiMode`·`locale`·`fontScale`·`density`가 없다. 시스템 다크 모드 전환, 언어 변경, 글꼴 크기 변경은 Activity를 재생성하고, 새 composition에서 `remember`가 다시 돌아 두 번째 Room 인스턴스와 두 번째 `OkHttpClient`가 생긴다. 앞의 것을 닫는 경로가 없다.
+이 계층을 다시 화면 안으로 내리지 않는다. 회귀는 계측 `ApplicationScopedDependencyTest`가 잡는다.
 
-크래시는 아니다. Room은 첫 쿼리까지 연결을 열지 않고 OkHttp의 유휴 스레드는 60초면 회수된다. 남는 것은 같은 파일을 보는 연결 풀 둘과 회수되지 않는 Room 인스턴스다. 그래도 "인스턴스가 하나만 생긴다"는 틀렸다.
+### 남은 것
 
-분리 비용도 과하게 잡혀 있었다. 생성 위치를 올려도 `repository` 인스턴스의 동일성과 수명이 유지되면 카메라와 ARCore의 동작은 바뀌지 않는다. 기기에서 확인할 것은 업로드 경로와 Activity 재생성 경로다.
-
-### 예정된 작업
-
-Room 데이터베이스와 `OkHttpClient` 생성을 `Application`으로 올린다. 위 결함을 없애는 것이 하나이고, 화면을 수집과 조회로 가르면 `repository`를 양쪽이 쓰게 되어 어느 한쪽에 둘 수 없다는 것이 다른 하나다. 화면 분리의 선행조건이다.
+`CaptureScreen`은 아직 앱 루트이면서 수집 화면이다. `NavHost`와 조회 흐름의 운용(내보내기·전송·삭제)을 함께 들고 있고, 수집 마감이 `navController`를 직접 민다. 위 "Presentation 계층"의 결정에 따라 `TigerApp`과 `CaptureWorkspace`로 가른다. 그때 이 예외 절은 없어진다.
