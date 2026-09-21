@@ -34,6 +34,7 @@ from camcal.constants import PNG_WRITE_PARAMS
 from camcal.remap_metrics import (
     build_map_to_distorted,
     build_map_to_pinhole,
+    crop_box,
     valid_mask,
     valid_ratio,
 )
@@ -57,10 +58,6 @@ REMAP_INTERPOLATION = cv2.INTER_LINEAR
 #: 눈으로도 코드로도 구분할 수 있다.
 BORDER_VALUE = (0, 0, 0)
 
-#: --crop 으로 잘라내고 남아야 하는 최소 넓이 비율. 이보다 작으면 조용히
-#: 작은 이미지를 내놓지 않고 멈춘다.
-MIN_CROP_AREA_RATIO = 0.10
-
 
 # --- 매핑 --------------------------------------------------------------------
 
@@ -80,67 +77,6 @@ def build_map(
     if target.design == DESIGN_PINHOLE:
         return build_map_to_pinhole(K_src, D_src, target.K, width, height)
     return build_map_to_distorted(K_src, D_src, target.K, target.D, width, height)
-
-
-def _largest_rect_in_histogram(heights: np.ndarray) -> tuple[int, int, int]:
-    """히스토그램에서 최대 넓이 직사각형 (넓이, 시작 x, 폭).
-
-    막대를 왼쪽부터 훑으며, 지금 막대보다 높은 막대들은 여기서 끝나므로 꺼내
-    넓이를 잰다. 꺼낸 막대의 시작 위치를 물려받아 왼쪽으로 확장한다.
-    """
-    stack: list[tuple[int, int]] = []  # (시작 index, 높이)
-    best = (0, 0, 0)
-    for i in range(len(heights) + 1):
-        h = int(heights[i]) if i < len(heights) else 0
-        start = i
-        while stack and stack[-1][1] >= h:
-            index, height = stack.pop()
-            width = i - index
-            area = height * width
-            if area > best[0]:
-                best = (area, index, width)
-            start = index
-        stack.append((start, h))
-    return best
-
-
-def crop_box(mask: np.ndarray) -> tuple[int, int, int, int]:
-    """유효 영역에 **내접하는 최대 직사각형** (x, y, w, h).
-
-    검은 테두리는 왜곡 때문에 곡선이다. 그래서 "완전히 유효한 행"이 하나도 없는
-    경우가 보통이고, 행/열 단위로 자르는 방식은 통하지 않는다 (2026-09-21 테스트에서
-    걸렸다). 히스토그램 방식으로 진짜 최대 사각형을 구한다.
-
-    Raises:
-        ValueError: 남는 사각형이 프레임의 MIN_CROP_AREA_RATIO 보다 작을 때.
-            그만큼 잘라내야 한다면 두 카메라가 애초에 맞지 않는 것이고,
-            조용히 작은 이미지를 내놓으면 그 사실이 묻힌다.
-    """
-    mask = np.asarray(mask, dtype=bool)
-    height, width = mask.shape
-    heights = np.zeros(width, dtype=np.int32)
-    best = (0, 0, 0, 0)  # (area, x, y, w) 에서 h 는 area/w
-
-    for row in range(height):
-        heights = np.where(mask[row], heights + 1, 0)
-        area, x, w = _largest_rect_in_histogram(heights)
-        if area > best[0]:
-            h = area // w
-            best = (area, x, row - h + 1, w)
-
-    area, x, y, w = best
-    if area == 0:
-        raise ValueError("유효한 픽셀이 하나도 없다. intrinsics 와 target 을 확인한다")
-    h = area // w
-
-    ratio = area / float(height * width)
-    if ratio < MIN_CROP_AREA_RATIO:
-        raise ValueError(
-            f"잘라내고 남는 영역이 프레임의 {ratio * 100:.1f}% 뿐이다 "
-            f"(기준 {MIN_CROP_AREA_RATIO * 100:.0f}%). 두 카메라의 화각이 너무 어긋난다. "
-            "--crop 없이 검은 영역을 그대로 두거나, f_target 을 올린다"
-        )
-    return (int(x), int(y), int(w), int(h))
 
 
 def remap_image(
