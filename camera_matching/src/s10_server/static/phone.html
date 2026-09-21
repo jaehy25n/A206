@@ -209,8 +209,8 @@ async function tryManual(track) {
   const result = { capabilities: caps, applied: {}, failed: {} };
   const wanted = {
     focusMode: "manual",
-    exposureMode: "manual",
-    whiteBalanceMode: "manual",
+    //exposureMode: "manual",
+    //whiteBalanceMode: "manual",
   };
   for (const [key, value] of Object.entries(wanted)) {
     if (!caps[key] || !caps[key].includes(value)) {
