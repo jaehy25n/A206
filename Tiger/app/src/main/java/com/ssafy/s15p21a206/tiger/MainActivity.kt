@@ -1,11 +1,8 @@
 package com.ssafy.s15p21a206.tiger
 
 import android.Manifest
-import android.app.Activity
 import android.content.Context
-import android.content.ContextWrapper
 import android.content.Intent
-import android.content.pm.ActivityInfo
 import android.graphics.Matrix
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraCharacteristics
@@ -15,7 +12,6 @@ import android.os.Bundle
 import android.os.SystemClock
 import android.view.Surface
 import android.view.TextureView
-import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -33,23 +29,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SnackbarHost
@@ -63,12 +52,10 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,8 +68,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -91,12 +76,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.media3.common.MediaItem
-import androidx.media3.common.Player
-import androidx.media3.common.VideoSize
-import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.PlayerView
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -144,20 +123,15 @@ import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceControls
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceExitControls
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceResolution
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspaceStatus
-import com.ssafy.s15p21a206.tiger.ui.common.ListSectionHeader
-import com.ssafy.s15p21a206.tiger.ui.common.MetaText
-import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeader
-import com.ssafy.s15p21a206.tiger.ui.common.SupportingText
-import com.ssafy.s15p21a206.tiger.ui.session.SessionDeleteAction
-import com.ssafy.s15p21a206.tiger.ui.session.SessionDeleteConfirmation
-import com.ssafy.s15p21a206.tiger.ui.session.SessionDetailPresentation
+import com.ssafy.s15p21a206.tiger.ui.common.LockLandscapeWhileVisible
+import com.ssafy.s15p21a206.tiger.ui.common.findActivity
+import com.ssafy.s15p21a206.tiger.ui.session.SessionDetailScreen
 import com.ssafy.s15p21a206.tiger.ui.session.SessionListScreen
 import com.ssafy.s15p21a206.tiger.ui.session.TaskSessionListScreen
-import com.ssafy.s15p21a206.tiger.ui.session.VideoResolutionState
-import com.ssafy.s15p21a206.tiger.ui.session.rememberVideoResolution
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerTheme
 import com.ssafy.s15p21a206.tiger.ui.upload.cancelUploadOnStop
-import com.ssafy.s15p21a206.tiger.ui.upload.labelRes
+import com.ssafy.s15p21a206.tiger.ui.video.FullScreenVideoScreen
+import com.ssafy.s15p21a206.tiger.ui.video.rememberSharedVideoPlayer
 import com.ssafy.s15p21a206.tiger.upload.SessionUploadRequestFactory
 import com.ssafy.s15p21a206.tiger.upload.SessionUploadService
 import com.ssafy.s15p21a206.tiger.upload.SessionUploader
@@ -170,7 +144,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import okhttp3.OkHttpClient
-import java.io.File
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -1154,544 +1127,6 @@ private fun RecordingResolutionPicker(
     }
 }
 
-@Suppress("FunctionName")
-@Composable
-private fun SessionDetailScreen(
-    summary: com.ssafy.s15p21a206.tiger.episode.SessionSummary?,
-    onBack: () -> Unit,
-    onUpload: () -> Unit,
-    exportState: ExportState,
-    exportMessage: String?,
-    onExport: () -> Unit,
-    onDelete: () -> Unit,
-    deleteFailureReason: String?,
-    uploadFailureReason: String?,
-    sharedPlayer: SharedVideoPlayer,
-    onOpenFullscreenVideo: () -> Unit,
-) {
-    var showSessionInfo by remember { mutableStateOf(false) }
-    var pendingDelete by remember { mutableStateOf<SessionDeleteAction?>(null) }
-    val presentation = summary?.let(SessionDetailPresentation::from)
-    // 재생 영역 높이와 전송·내보내기 상태에 따라 내용이 화면을 넘는다. 스크롤이 없으면 잘린다.
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-    ) {
-        NavigationHeader(
-            // 어느 세션인지는 본문의 이름표가 말한다. 헤더에는 뒤로 가기와 메뉴만 남긴다.
-            title = "",
-            onBack = onBack,
-        ) {
-            if (summary != null) {
-                SessionDetailMenu(
-                    deleteAction = presentation?.deleteAction,
-                    onOpenSessionInfo = { showSessionInfo = true },
-                    onRequestDelete = { pendingDelete = it },
-                )
-            }
-        }
-        if (summary == null) {
-            Text(
-                text = stringResource(R.string.session_detail_unavailable),
-                modifier = Modifier.padding(horizontal = DETAIL_CONTENT_PADDING),
-            )
-        } else if (presentation != null) {
-            // 영상은 좌우 여백 없이 화면 폭을 다 쓴다. 16:9 안에 컨트롤이 오버레이로 놓이므로
-            // 여백을 주면 재생 영역만 줄고 얻는 것이 없다.
-            SessionVideoPreview(summary.bundlePath, sharedPlayer, onOpenFullscreenVideo)
-            Column(
-                modifier =
-                    Modifier.padding(
-                        start = DETAIL_CONTENT_PADDING,
-                        end = DETAIL_CONTENT_PADDING,
-                        top = DETAIL_VIDEO_GAP,
-                        bottom = DETAIL_CONTENT_PADDING,
-                    ),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                // 목록 화면의 이름표와 같은 짜임이다. 이 화면의 이름은 언제 찍은 것인지이고,
-                // ID는 그것을 특정해 주지 않으므로 딸린 줄로 내린다.
-                ListSectionHeader(
-                    title =
-                        java.text.DateFormat
-                            .getDateTimeInstance()
-                            .format(java.util.Date(summary.recordingStartEpochMs)),
-                    supporting = stringResource(R.string.session_list_short_id, summary.sessionId.take(8)),
-                )
-                // 전송 상태는 이름에 딸린 정보가 아니라 지금 무엇을 할 수 있는지를 말하므로,
-                // 아래 버튼과 한 묶음이 되도록 이름표에서 떼어 놓고 옅게 두지 않는다.
-                //
-                // 아직 올리지 않았다는 것은 업로드 버튼이 이미 말한다. 그 상태에서만 나오는
-                // 버튼이므로 같은 말을 한 줄 더 적지 않는다. 나머지 셋은 각자 할 말이 있다.
-                if (summary.uploadState != UploadState.LOCAL_ONLY) {
-                    Text(
-                        text = stringResource(summary.uploadState.labelRes),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                }
-                // 무엇이 막았는지 알아야 다시 걸어 볼지 판단할 수 있다. 앱을 다시 켜면 남지 않는다.
-                // 전송 실패는 기록하는 컬럼이 없다.
-                if (summary.uploadState == UploadState.FAILED && uploadFailureReason != null) {
-                    SupportingText(uploadFailureReason)
-                }
-                // 지우지 못했으면 화면이 그대로 남는다. 아무 말이 없으면 눌리지 않은 것처럼 보인다.
-                if (deleteFailureReason != null) {
-                    SupportingText(deleteFailureReason)
-                }
-                if (presentation.uploadAction != null) {
-                    Button(onClick = onUpload) {
-                        Text(
-                            stringResource(
-                                if (presentation.uploadAction ==
-                                    SessionDetailPresentation.UploadAction.Retry
-                                ) {
-                                    R.string.upload_retry
-                                } else {
-                                    R.string.upload_session
-                                },
-                            ),
-                        )
-                    }
-                }
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ExportControls(exportState, exportMessage, onExport)
-                }
-            }
-        }
-    }
-    if (showSessionInfo && presentation != null && summary != null) {
-        SessionInfoSheet(
-            summary = summary,
-            durationSeconds = presentation.durationSeconds,
-            onDismiss = { showSessionInfo = false },
-        )
-    }
-    // 삭제를 묻는 동안은 영상을 멈춘다. 되돌릴 수 없는 확인을 받는데 뒤에서 소리가 계속 나면
-    // 무엇을 묻고 있는지 흐려진다.
-    //
-    // 확인을 누르면 재생기가 연 그 파일이 곧 사라진다. unlink 자체는 열린 파일에도 안전하지만,
-    // 멈춰 두면 재생기가 파일을 다시 열 일이 없어 사라진 뒤에 읽으려 드는 경우가 생기지 않는다.
-    LaunchedEffect(pendingDelete) {
-        if (pendingDelete != null) sharedPlayer.pause()
-    }
-    pendingDelete?.let { action ->
-        SessionDeleteConfirmation(
-            action = action,
-            onConfirm = {
-                pendingDelete = null
-                onDelete()
-            },
-            onDismiss = { pendingDelete = null },
-        )
-    }
-}
-
-/**
- * 세션 정보와 삭제를 담는 헤더 메뉴다.
- *
- * 둘 다 이 화면의 주 동작이 아니다. 본문의 전송 버튼이 주 동작을 맡고 있고, 이쪽은 확인하거나
- * 정리하러 들어왔을 때만 찾는다. 제목이 없는 헤더에 흐린 글리프를 나란히 세우면 둘 다 무엇인지
- * 추측해야 하는 표가 된다. 메뉴로 접으면 글자로 이름이 붙고 헤더에는 뒤로 가기만 남는다.
- *
- * 삭제는 되돌릴 수 없으므로 메뉴를 여는 한 단계가 더 있는 편이 낫다. 업로드가 번들을 읽고 있는
- * 동안은 누를 수 없으며, 흐린 아이콘과 달리 흐린 글자는 무엇이 막혔는지를 스스로 말한다.
- */
-@Composable
-@Suppress("FunctionName")
-private fun SessionDetailMenu(
-    deleteAction: SessionDeleteAction?,
-    onOpenSessionInfo: () -> Unit,
-    onRequestDelete: (SessionDeleteAction) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    Box {
-        IconButton(onClick = { expanded = true }) {
-            Icon(
-                painter = painterResource(R.drawable.ic_more_actions),
-                contentDescription = stringResource(R.string.session_detail_more_actions),
-                // 뒤로 가기와 같은 급으로 보이지 않도록 글리프를 작게, 색은 옅게 둔다.
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(HEADER_MENU_ICON_SIZE),
-            )
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            DropdownMenuItem(
-                // `DropdownMenuItem`이 상속시키는 `labelLarge`는 Medium이다. 항목이 둘뿐이라
-                // 굵기로 무게를 더 실을 이유가 없고, 삭제 항목의 error 색만으로 충분히 구분된다.
-                text = { Text(stringResource(R.string.session_info_title), fontWeight = MENU_ITEM_FONT_WEIGHT) },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_session_info),
-                        // 이름은 바로 옆 글자가 말한다. 아이콘까지 읽히면 같은 말을 두 번 한다.
-                        contentDescription = null,
-                    )
-                },
-                onClick = {
-                    expanded = false
-                    onOpenSessionInfo()
-                },
-            )
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.session_delete), fontWeight = MENU_ITEM_FONT_WEIGHT) },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_session_delete),
-                        contentDescription = null,
-                    )
-                },
-                enabled = deleteAction != null,
-                // 되돌릴 수 없는 항목은 error 색으로 둬서 위 항목과 성격이 다름을 보인다.
-                // 글자와 글리프가 같은 색이어야 한 덩어리로 읽힌다.
-                colors =
-                    MenuDefaults.itemColors(
-                        textColor = MaterialTheme.colorScheme.error,
-                        leadingIconColor = MaterialTheme.colorScheme.error,
-                    ),
-                onClick = {
-                    expanded = false
-                    deleteAction?.let(onRequestDelete)
-                },
-            )
-        }
-    }
-}
-
-/**
- * 세션을 특정해 주지 않는 값들을 담는 시트다.
- *
- * Episode 수·길이·해상도·전체 ID는 세션을 고를 때가 아니라 확인하러 들어왔을 때만 필요하다.
- * 사진 앱이 ⓘ 뒤에 두는 것과 같은 성격이라 상세 본문에서 빼고 여기로 옮겼다.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-@Suppress("FunctionName")
-private fun SessionInfoSheet(
-    summary: com.ssafy.s15p21a206.tiger.episode.SessionSummary,
-    durationSeconds: Long,
-    onDismiss: () -> Unit,
-) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.session_info_title),
-                style = MaterialTheme.typography.titleMedium,
-            )
-            SessionInfoRow(stringResource(R.string.session_info_id), summary.sessionId)
-            SessionInfoRow(
-                label = stringResource(R.string.session_info_captured_at),
-                value =
-                    java.text.DateFormat
-                        .getDateTimeInstance()
-                        .format(java.util.Date(summary.recordingStartEpochMs)),
-            )
-            SessionInfoRow(
-                label = stringResource(R.string.session_info_episodes),
-                value = stringResource(R.string.session_info_episode_count, summary.completedEpisodeCount),
-            )
-            SessionInfoRow(
-                label = stringResource(R.string.session_info_duration),
-                value = stringResource(R.string.session_detail_duration, durationSeconds),
-            )
-            SessionInfoRow(
-                label = stringResource(R.string.session_info_resolution),
-                value =
-                    when (val resolution = rememberVideoResolution(summary.bundlePath)) {
-                        is VideoResolutionState.Available ->
-                            stringResource(R.string.session_detail_resolution, resolution.width, resolution.height)
-                        VideoResolutionState.Loading -> stringResource(R.string.session_detail_resolution_loading)
-                        VideoResolutionState.Unavailable -> stringResource(R.string.session_detail_resolution_unavailable)
-                    },
-            )
-        }
-    }
-}
-
-@Composable
-@Suppress("FunctionName")
-private fun SessionInfoRow(
-    label: String,
-    value: String,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        MetaText(label)
-        Text(text = value, style = MaterialTheme.typography.bodyLarge)
-    }
-}
-
-@Composable
-@Suppress("FunctionName")
-private fun SessionVideoPreview(
-    bundlePath: String,
-    sharedPlayer: SharedVideoPlayer,
-    onOpenFullscreenVideo: () -> Unit,
-) {
-    val videoFile = remember(bundlePath) { File(bundlePath, SessionBundle.MAIN_VIDEO_FILE) }
-    val videoDescription = stringResource(R.string.session_detail_video_content_description)
-    if (!videoFile.isFile || videoFile.length() == 0L) {
-        // 영상은 화면 폭을 다 쓰지만 이 문구는 본문이다. 여백 없이 두면 화면 왼쪽 끝에 붙는다.
-        Text(
-            text = stringResource(R.string.session_detail_video_unavailable),
-            modifier = Modifier.padding(horizontal = DETAIL_CONTENT_PADDING),
-        )
-        return
-    }
-    val player = sharedPlayer.playerFor(videoFile)
-    VideoPlayer(
-        player = player,
-        fullscreen = false,
-        onFullscreenClick = onOpenFullscreenVideo,
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .aspectRatio(rememberVideoAspectRatio(player))
-                .semantics { contentDescription = videoDescription },
-    )
-}
-
-@Composable
-@Suppress("FunctionName")
-private fun FullScreenVideoScreen(
-    bundlePath: String?,
-    sharedPlayer: SharedVideoPlayer,
-    onBack: () -> Unit,
-) {
-    val videoFile = bundlePath?.let { File(it, SessionBundle.MAIN_VIDEO_FILE) }
-    val playable = videoFile?.isFile == true && videoFile.length() > 0L
-    var landscapeLocked by remember { mutableStateOf(false) }
-    // 재생할 영상이 없으면 컨트롤이 뜨지 않으므로, 뒤로 가기가 사라지지 않게 처음부터 보이게 둔다.
-    var controlsVisible by remember { mutableStateOf(true) }
-    LockLandscapeWhilePlaying(landscapeLocked)
-    Box(Modifier.fillMaxSize().background(Color.Black)) {
-        if (playable) {
-            VideoPlayer(
-                player = sharedPlayer.playerFor(videoFile),
-                fullscreen = true,
-                onFullscreenClick = onBack,
-                modifier = Modifier.fillMaxSize(),
-                onControlsVisibilityChanged = { controlsVisible = it },
-            )
-        } else {
-            Text(
-                text = stringResource(R.string.session_detail_video_unavailable),
-                color = Color.White,
-                modifier = Modifier.align(Alignment.Center),
-            )
-        }
-        if (controlsVisible) {
-            // 검은 배경은 화면 끝까지 채우되 컨트롤만 시스템 바를 피한다. 가로로 눕히면 컷아웃이
-            // 좌우로 오므로 상단 여백만으로는 모자란다.
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier.align(Alignment.TopStart).safeDrawingPadding(),
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_navigation_back),
-                    contentDescription = stringResource(R.string.navigation_back),
-                    tint = Color.White,
-                )
-            }
-            if (playable) {
-                LandscapeLockButton(
-                    landscapeLocked = landscapeLocked,
-                    onToggle = { landscapeLocked = !landscapeLocked },
-                    modifier = Modifier.align(Alignment.TopEnd).safeDrawingPadding(),
-                )
-            }
-        }
-    }
-}
-
-/**
- * 가로 고정을 켜고 끄는 플레이어 컨트롤이다. Media3는 회전 버튼을 제공하지 않아 직접 만든다.
- */
-@Composable
-@Suppress("FunctionName")
-private fun LandscapeLockButton(
-    landscapeLocked: Boolean,
-    onToggle: () -> Unit,
-    modifier: Modifier,
-) {
-    IconButton(
-        onClick = onToggle,
-        modifier =
-            modifier.background(
-                color = if (landscapeLocked) Color.White.copy(alpha = 0.24f) else Color.Transparent,
-                shape = CircleShape,
-            ),
-    ) {
-        Icon(
-            painter = painterResource(R.drawable.ic_screen_rotation),
-            contentDescription =
-                stringResource(
-                    if (landscapeLocked) {
-                        R.string.session_video_unlock_landscape
-                    } else {
-                        R.string.session_video_lock_landscape
-                    },
-                ),
-            tint = Color.White,
-        )
-    }
-}
-
-/**
- * 수집 화면이 보이는 동안 한쪽 가로로 고정하고, 벗어나면 원래 설정으로 되돌린다.
- *
- * Camera 파이프라인이 가로 기준이고 ARCore에 알리는 표시 회전도 고정값이라, 수집 중에 방향이
- * 바뀌면 프리뷰가 돌아간다.
- */
-@Composable
-@Suppress("FunctionName")
-private fun LockLandscapeWhileVisible() {
-    val activity = LocalContext.current.findActivity() ?: return
-    DisposableEffect(activity) {
-        val previous = activity.requestedOrientation
-        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-        onDispose { activity.requestedOrientation = previous }
-    }
-}
-
-/**
- * 전체화면 재생의 방향 정책을 반영한다.
- *
- * 앱은 manifest에서 세로로 묶여 있으므로 기기를 눕혀도 화면이 돌지 않는다. 사용자가 회전 버튼으로
- * 가로 고정을 켤 때만 가로로 묶고, 끄면 진입 시점 설정으로 돌아간다. 화면을 벗어날 때도 같다.
- */
-@Composable
-@Suppress("FunctionName")
-private fun LockLandscapeWhilePlaying(landscapeLocked: Boolean) {
-    val activity = LocalContext.current.findActivity() ?: return
-    val entryOrientation = remember(activity) { activity.requestedOrientation }
-    DisposableEffect(activity, entryOrientation) {
-        onDispose { activity.requestedOrientation = entryOrientation }
-    }
-    LaunchedEffect(activity, landscapeLocked, entryOrientation) {
-        activity.requestedOrientation =
-            if (landscapeLocked) {
-                ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            } else {
-                entryOrientation
-            }
-    }
-}
-
-// PlayerView는 Media3의 unstable API다. 앱이 직접 쓰는 유일한 지점이라 여기서만 opt-in한다.
-@androidx.annotation.OptIn(UnstableApi::class)
-@Composable
-@Suppress("FunctionName")
-private fun VideoPlayer(
-    player: ExoPlayer,
-    fullscreen: Boolean,
-    onFullscreenClick: () -> Unit,
-    modifier: Modifier,
-    onControlsVisibilityChanged: (Boolean) -> Unit = {},
-) {
-    // listener를 factory에서 한 번만 걸기 때문에, 콜백은 최신 값을 따라가게 감싼다.
-    val currentFullscreenClick by rememberUpdatedState(onFullscreenClick)
-    val currentControlsVisibilityChanged by rememberUpdatedState(onControlsVisibilityChanged)
-    AndroidView(
-        factory = { viewContext ->
-            PlayerView(viewContext).apply {
-                // 버튼 상태를 먼저 맞추고 listener를 건다. `setFullscreenButtonState`는 상태만
-                // 바꾸지 않고 listener까지 호출하므로, 순서를 바꾸면 전체화면에 들어가자마자
-                // 콜백이 불려 곧바로 상세 화면으로 되돌아간다.
-                setFullscreenButtonState(fullscreen)
-                // 전체화면 버튼과 콜백만 Media3가 주고, 화면 전환은 앱이 한다.
-                setFullscreenButtonClickListener { currentFullscreenClick() }
-                setControllerVisibilityListener(
-                    PlayerView.ControllerVisibilityListener { visibility ->
-                        currentControlsVisibilityChanged(visibility == View.VISIBLE)
-                    },
-                )
-            }
-        },
-        update = { view -> view.player = player },
-        onRelease = { view -> view.player = null },
-        modifier = modifier,
-    )
-}
-
-/**
- * 영상의 가로세로 비율을 따라간다. 회전 metadata가 적용된 크기를 쓰므로, `video_rotation_degrees`가
- * 90인 기존 수집분은 세로 비율로 나온다.
- */
-@Composable
-private fun rememberVideoAspectRatio(player: ExoPlayer): Float {
-    var aspectRatio by remember(player) { mutableFloatStateOf(DEFAULT_VIDEO_ASPECT_RATIO) }
-    DisposableEffect(player) {
-        fun apply(videoSize: VideoSize) {
-            if (videoSize.width > 0 && videoSize.height > 0) {
-                aspectRatio = videoSize.width * videoSize.pixelWidthHeightRatio / videoSize.height
-            }
-        }
-        apply(player.videoSize)
-        val listener =
-            object : Player.Listener {
-                override fun onVideoSizeChanged(videoSize: VideoSize) = apply(videoSize)
-            }
-        player.addListener(listener)
-        onDispose { player.removeListener(listener) }
-    }
-    return aspectRatio
-}
-
-/** 영상 크기를 아직 모를 때 쓰는 비율. 크기를 알게 되면 즉시 교체된다. */
-private const val DEFAULT_VIDEO_ASPECT_RATIO = 16f / 9f
-
-/**
- * 상세 화면과 전체화면이 같은 ExoPlayer를 쓰게 한다.
- *
- * 두 화면은 서로 다른 destination이라 Composable이 새로 만들어지지만, 재생기는 이 객체가 들고
- * 있으므로 화면을 오갈 때도 재생 위치가 유지된다.
- */
-private class SharedVideoPlayer(
-    private val context: Context,
-) {
-    private var player: ExoPlayer? = null
-    private var preparedPath: String? = null
-
-    /** 같은 파일이면 쓰던 재생기를 그대로 준다. 다른 파일이면 그 파일로 다시 적재한다. */
-    fun playerFor(videoFile: File): ExoPlayer {
-        val current = player ?: ExoPlayer.Builder(context).build().also { player = it }
-        val path = videoFile.absolutePath
-        if (preparedPath != path) {
-            current.setMediaItem(MediaItem.fromUri(Uri.fromFile(videoFile)))
-            current.prepare()
-            preparedPath = path
-        }
-        return current
-    }
-
-    /**
-     * 재생을 멈춘다. 적재한 파일은 그대로 두므로 다시 누르면 이어서 재생한다.
-     *
-     * 화면을 덮는 판이 뜨는 동안 쓴다. 놓지 않고 멈추기만 하는 이유는, 놓으면 판 뒤의 재생 영역이
-     * 빈 화면이 되어 무엇을 덮고 있는지 알 수 없게 되기 때문이다.
-     */
-    fun pause() {
-        player?.pause()
-    }
-
-    fun release() {
-        player?.release()
-        player = null
-        preparedPath = null
-    }
-}
-
-@Composable
-private fun rememberSharedVideoPlayer(): SharedVideoPlayer {
-    val context = LocalContext.current.applicationContext
-    val sharedPlayer = remember(context) { SharedVideoPlayer(context) }
-    DisposableEffect(sharedPlayer) { onDispose(sharedPlayer::release) }
-    return sharedPlayer
-}
-
 /**
  * 유휴 프리뷰의 회전을 맞춘다.
  *
@@ -1726,73 +1161,10 @@ private fun applyIdlePreviewTransform(
     )
 }
 
-private fun Context.findActivity(): Activity? =
-    when (this) {
-        is Activity -> this
-        is ContextWrapper -> baseContext.findActivity()
-        else -> null
-    }
-
 private fun Context.openArCoreStore() {
     val marketIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.ar.core"))
     val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.google.ar.core"))
     startActivity(if (marketIntent.resolveActivity(packageManager) != null) marketIntent else webIntent)
-}
-
-@Suppress("FunctionName")
-@Composable
-internal fun ExportControls(
-    state: ExportState,
-    failureReason: String?,
-    onSelectTree: () -> Unit,
-) {
-    // 아직 내보내지 않았다는 것은 바로 아래 버튼이 이미 말한다. 그 상태에서만 나오는 버튼이므로
-    // 같은 말을 한 줄 더 적지 않는다. 진행·완료는 버튼이 사라지는 자리라 문구가 유일한 신호이고,
-    // 실패는 버튼이 옮기지 못하는 이유를 담는다.
-    val label =
-        when (state) {
-            ExportState.NOT_EXPORTED -> null
-            ExportState.EXPORTING -> stringResource(R.string.export_exporting)
-            ExportState.EXPORTED -> stringResource(R.string.export_exported)
-            ExportState.EXPORT_FAILED -> stringResource(R.string.export_failed, failureReason.orEmpty())
-        }
-    if (label != null) Text(label)
-    if (state != ExportState.EXPORTED && state != ExportState.EXPORTING) {
-        Button(onClick = onSelectTree) {
-            Text(
-                stringResource(
-                    if (state ==
-                        ExportState.EXPORT_FAILED
-                    ) {
-                        R.string.export_retry
-                    } else {
-                        R.string.export_select_tree
-                    },
-                ),
-            )
-        }
-    }
-}
-
-@Suppress("FunctionName")
-@Composable
-internal fun UploadControls(
-    state: UploadState,
-    onUpload: () -> Unit,
-) {
-    val label =
-        when (state) {
-            UploadState.LOCAL_ONLY -> stringResource(R.string.upload_local_only)
-            UploadState.UPLOADING -> stringResource(R.string.upload_in_progress)
-            UploadState.UPLOADED -> stringResource(R.string.upload_completed)
-            UploadState.FAILED -> stringResource(R.string.upload_failed)
-        }
-    Text(label)
-    if (state == UploadState.LOCAL_ONLY || state == UploadState.FAILED) {
-        Button(onClick = onUpload) {
-            Text(stringResource(if (state == UploadState.FAILED) R.string.upload_retry else R.string.upload_session))
-        }
-    }
 }
 
 // Tracking 판정 주기. 안정화(1초)와 유실(0.5초) 임계값보다 충분히 촘촘해야 마감 시점이 제때 발화한다.
@@ -1800,20 +1172,3 @@ private const val TRACKING_TICK_MS = 100L
 
 /** 프리뷰와 영상의 가로세로 비. 두 녹화 해상도 모두 16:9라 선택과 무관하게 같다. */
 private const val PREVIEW_ASPECT_RATIO = 16f / 9f
-
-/** 세션 상세 본문의 여백. 영상은 화면 폭을 다 쓰므로 이 여백은 그 아래 내용에만 적용된다. */
-private val DETAIL_CONTENT_PADDING = 16.dp
-
-/** 영상과 본문 사이 간격. 좌우 여백보다 넓어야 영상이 끝나고 설명이 시작되는 것으로 읽힌다. */
-private val DETAIL_VIDEO_GAP = 24.dp
-
-/**
- * 헤더 메뉴 버튼의 글리프 크기.
- *
- * 헤더에서 뒤로 가기와 나란히 서지만 같은 급의 동작은 아니다. 기본 24dp보다 작게 두어 있는 줄만
- * 알면 되는 단추로 남긴다. 터치 영역은 `IconButton`의 48dp를 그대로 둔다.
- */
-private val HEADER_MENU_ICON_SIZE = 20.dp
-
-/** 헤더 메뉴 항목의 글자 굵기. `labelLarge`의 Medium에서 한 단계 내린 값이다. */
-private val MENU_ITEM_FONT_WEIGHT = FontWeight.Normal

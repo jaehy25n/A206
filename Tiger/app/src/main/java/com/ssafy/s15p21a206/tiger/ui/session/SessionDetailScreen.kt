@@ -1,0 +1,365 @@
+package com.ssafy.s15p21a206.tiger.ui.session
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.ssafy.s15p21a206.tiger.R
+import com.ssafy.s15p21a206.tiger.episode.ExportState
+import com.ssafy.s15p21a206.tiger.episode.SessionBundle
+import com.ssafy.s15p21a206.tiger.episode.SessionSummary
+import com.ssafy.s15p21a206.tiger.episode.UploadState
+import com.ssafy.s15p21a206.tiger.ui.common.ListSectionHeader
+import com.ssafy.s15p21a206.tiger.ui.common.MetaText
+import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeader
+import com.ssafy.s15p21a206.tiger.ui.common.SupportingText
+import com.ssafy.s15p21a206.tiger.ui.upload.labelRes
+import com.ssafy.s15p21a206.tiger.ui.video.SharedVideoPlayer
+import com.ssafy.s15p21a206.tiger.ui.video.VideoPlayer
+import com.ssafy.s15p21a206.tiger.ui.video.rememberVideoAspectRatio
+import java.io.File
+
+@Suppress("FunctionName")
+@Composable
+internal fun SessionDetailScreen(
+    summary: SessionSummary?,
+    onBack: () -> Unit,
+    onUpload: () -> Unit,
+    exportState: ExportState,
+    exportMessage: String?,
+    onExport: () -> Unit,
+    onDelete: () -> Unit,
+    deleteFailureReason: String?,
+    uploadFailureReason: String?,
+    sharedPlayer: SharedVideoPlayer,
+    onOpenFullscreenVideo: () -> Unit,
+) {
+    var showSessionInfo by remember { mutableStateOf(false) }
+    var pendingDelete by remember { mutableStateOf<SessionDeleteAction?>(null) }
+    val presentation = summary?.let(SessionDetailPresentation::from)
+    // 재생 영역 높이와 전송·내보내기 상태에 따라 내용이 화면을 넘는다. 스크롤이 없으면 잘린다.
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+    ) {
+        NavigationHeader(
+            // 어느 세션인지는 본문의 이름표가 말한다. 헤더에는 뒤로 가기와 메뉴만 남긴다.
+            title = "",
+            onBack = onBack,
+        ) {
+            if (summary != null) {
+                SessionDetailMenu(
+                    deleteAction = presentation?.deleteAction,
+                    onOpenSessionInfo = { showSessionInfo = true },
+                    onRequestDelete = { pendingDelete = it },
+                )
+            }
+        }
+        if (summary == null) {
+            Text(
+                text = stringResource(R.string.session_detail_unavailable),
+                modifier = Modifier.padding(horizontal = DETAIL_CONTENT_PADDING),
+            )
+        } else if (presentation != null) {
+            // 영상은 좌우 여백 없이 화면 폭을 다 쓴다. 16:9 안에 컨트롤이 오버레이로 놓이므로
+            // 여백을 주면 재생 영역만 줄고 얻는 것이 없다.
+            SessionVideoPreview(summary.bundlePath, sharedPlayer, onOpenFullscreenVideo)
+            Column(
+                modifier =
+                    Modifier.padding(
+                        start = DETAIL_CONTENT_PADDING,
+                        end = DETAIL_CONTENT_PADDING,
+                        top = DETAIL_VIDEO_GAP,
+                        bottom = DETAIL_CONTENT_PADDING,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                // 목록 화면의 이름표와 같은 짜임이다. 이 화면의 이름은 언제 찍은 것인지이고,
+                // ID는 그것을 특정해 주지 않으므로 딸린 줄로 내린다.
+                ListSectionHeader(
+                    title =
+                        java.text.DateFormat
+                            .getDateTimeInstance()
+                            .format(java.util.Date(summary.recordingStartEpochMs)),
+                    supporting = stringResource(R.string.session_list_short_id, summary.sessionId.take(8)),
+                )
+                // 전송 상태는 이름에 딸린 정보가 아니라 지금 무엇을 할 수 있는지를 말하므로,
+                // 아래 버튼과 한 묶음이 되도록 이름표에서 떼어 놓고 옅게 두지 않는다.
+                //
+                // 아직 올리지 않았다는 것은 업로드 버튼이 이미 말한다. 그 상태에서만 나오는
+                // 버튼이므로 같은 말을 한 줄 더 적지 않는다. 나머지 셋은 각자 할 말이 있다.
+                if (summary.uploadState != UploadState.LOCAL_ONLY) {
+                    Text(
+                        text = stringResource(summary.uploadState.labelRes),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                }
+                // 무엇이 막았는지 알아야 다시 걸어 볼지 판단할 수 있다. 앱을 다시 켜면 남지 않는다.
+                // 전송 실패는 기록하는 컬럼이 없다.
+                if (summary.uploadState == UploadState.FAILED && uploadFailureReason != null) {
+                    SupportingText(uploadFailureReason)
+                }
+                // 지우지 못했으면 화면이 그대로 남는다. 아무 말이 없으면 눌리지 않은 것처럼 보인다.
+                if (deleteFailureReason != null) {
+                    SupportingText(deleteFailureReason)
+                }
+                if (presentation.uploadAction != null) {
+                    Button(onClick = onUpload) {
+                        Text(
+                            stringResource(
+                                if (presentation.uploadAction ==
+                                    SessionDetailPresentation.UploadAction.Retry
+                                ) {
+                                    R.string.upload_retry
+                                } else {
+                                    R.string.upload_session
+                                },
+                            ),
+                        )
+                    }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ExportControls(exportState, exportMessage, onExport)
+                }
+            }
+        }
+    }
+    if (showSessionInfo && presentation != null && summary != null) {
+        SessionInfoSheet(
+            summary = summary,
+            durationSeconds = presentation.durationSeconds,
+            onDismiss = { showSessionInfo = false },
+        )
+    }
+    // 삭제를 묻는 동안은 영상을 멈춘다. 되돌릴 수 없는 확인을 받는데 뒤에서 소리가 계속 나면
+    // 무엇을 묻고 있는지 흐려진다.
+    //
+    // 확인을 누르면 재생기가 연 그 파일이 곧 사라진다. unlink 자체는 열린 파일에도 안전하지만,
+    // 멈춰 두면 재생기가 파일을 다시 열 일이 없어 사라진 뒤에 읽으려 드는 경우가 생기지 않는다.
+    LaunchedEffect(pendingDelete) {
+        if (pendingDelete != null) sharedPlayer.pause()
+    }
+    pendingDelete?.let { action ->
+        SessionDeleteConfirmation(
+            action = action,
+            onConfirm = {
+                pendingDelete = null
+                onDelete()
+            },
+            onDismiss = { pendingDelete = null },
+        )
+    }
+}
+
+/**
+ * 세션 정보와 삭제를 담는 헤더 메뉴다.
+ *
+ * 둘 다 이 화면의 주 동작이 아니다. 본문의 전송 버튼이 주 동작을 맡고 있고, 이쪽은 확인하거나
+ * 정리하러 들어왔을 때만 찾는다. 제목이 없는 헤더에 흐린 글리프를 나란히 세우면 둘 다 무엇인지
+ * 추측해야 하는 표가 된다. 메뉴로 접으면 글자로 이름이 붙고 헤더에는 뒤로 가기만 남는다.
+ *
+ * 삭제는 되돌릴 수 없으므로 메뉴를 여는 한 단계가 더 있는 편이 낫다. 업로드가 번들을 읽고 있는
+ * 동안은 누를 수 없으며, 흐린 아이콘과 달리 흐린 글자는 무엇이 막혔는지를 스스로 말한다.
+ */
+@Composable
+@Suppress("FunctionName")
+private fun SessionDetailMenu(
+    deleteAction: SessionDeleteAction?,
+    onOpenSessionInfo: () -> Unit,
+    onRequestDelete: (SessionDeleteAction) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                painter = painterResource(R.drawable.ic_more_actions),
+                contentDescription = stringResource(R.string.session_detail_more_actions),
+                // 뒤로 가기와 같은 급으로 보이지 않도록 글리프를 작게, 색은 옅게 둔다.
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(HEADER_MENU_ICON_SIZE),
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                // `DropdownMenuItem`이 상속시키는 `labelLarge`는 Medium이다. 항목이 둘뿐이라
+                // 굵기로 무게를 더 실을 이유가 없고, 삭제 항목의 error 색만으로 충분히 구분된다.
+                text = { Text(stringResource(R.string.session_info_title), fontWeight = MENU_ITEM_FONT_WEIGHT) },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_session_info),
+                        // 이름은 바로 옆 글자가 말한다. 아이콘까지 읽히면 같은 말을 두 번 한다.
+                        contentDescription = null,
+                    )
+                },
+                onClick = {
+                    expanded = false
+                    onOpenSessionInfo()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.session_delete), fontWeight = MENU_ITEM_FONT_WEIGHT) },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_session_delete),
+                        contentDescription = null,
+                    )
+                },
+                enabled = deleteAction != null,
+                // 되돌릴 수 없는 항목은 error 색으로 둬서 위 항목과 성격이 다름을 보인다.
+                // 글자와 글리프가 같은 색이어야 한 덩어리로 읽힌다.
+                colors =
+                    MenuDefaults.itemColors(
+                        textColor = MaterialTheme.colorScheme.error,
+                        leadingIconColor = MaterialTheme.colorScheme.error,
+                    ),
+                onClick = {
+                    expanded = false
+                    deleteAction?.let(onRequestDelete)
+                },
+            )
+        }
+    }
+}
+
+/**
+ * 세션을 특정해 주지 않는 값들을 담는 시트다.
+ *
+ * Episode 수·길이·해상도·전체 ID는 세션을 고를 때가 아니라 확인하러 들어왔을 때만 필요하다.
+ * 사진 앱이 ⓘ 뒤에 두는 것과 같은 성격이라 상세 본문에서 빼고 여기로 옮겼다.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+@Suppress("FunctionName")
+private fun SessionInfoSheet(
+    summary: SessionSummary,
+    durationSeconds: Long,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.session_info_title),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            SessionInfoRow(stringResource(R.string.session_info_id), summary.sessionId)
+            SessionInfoRow(
+                label = stringResource(R.string.session_info_captured_at),
+                value =
+                    java.text.DateFormat
+                        .getDateTimeInstance()
+                        .format(java.util.Date(summary.recordingStartEpochMs)),
+            )
+            SessionInfoRow(
+                label = stringResource(R.string.session_info_episodes),
+                value = stringResource(R.string.session_info_episode_count, summary.completedEpisodeCount),
+            )
+            SessionInfoRow(
+                label = stringResource(R.string.session_info_duration),
+                value = stringResource(R.string.session_detail_duration, durationSeconds),
+            )
+            SessionInfoRow(
+                label = stringResource(R.string.session_info_resolution),
+                value =
+                    when (val resolution = rememberVideoResolution(summary.bundlePath)) {
+                        is VideoResolutionState.Available ->
+                            stringResource(R.string.session_detail_resolution, resolution.width, resolution.height)
+                        VideoResolutionState.Loading -> stringResource(R.string.session_detail_resolution_loading)
+                        VideoResolutionState.Unavailable -> stringResource(R.string.session_detail_resolution_unavailable)
+                    },
+            )
+        }
+    }
+}
+
+@Composable
+@Suppress("FunctionName")
+private fun SessionInfoRow(
+    label: String,
+    value: String,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        MetaText(label)
+        Text(text = value, style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+@Composable
+@Suppress("FunctionName")
+private fun SessionVideoPreview(
+    bundlePath: String,
+    sharedPlayer: SharedVideoPlayer,
+    onOpenFullscreenVideo: () -> Unit,
+) {
+    val videoFile = remember(bundlePath) { File(bundlePath, SessionBundle.MAIN_VIDEO_FILE) }
+    val videoDescription = stringResource(R.string.session_detail_video_content_description)
+    if (!videoFile.isFile || videoFile.length() == 0L) {
+        // 영상은 화면 폭을 다 쓰지만 이 문구는 본문이다. 여백 없이 두면 화면 왼쪽 끝에 붙는다.
+        Text(
+            text = stringResource(R.string.session_detail_video_unavailable),
+            modifier = Modifier.padding(horizontal = DETAIL_CONTENT_PADDING),
+        )
+        return
+    }
+    val player = sharedPlayer.playerFor(videoFile)
+    VideoPlayer(
+        player = player,
+        fullscreen = false,
+        onFullscreenClick = onOpenFullscreenVideo,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(rememberVideoAspectRatio(player))
+                .semantics { contentDescription = videoDescription },
+    )
+}
+
+/** 세션 상세 본문의 여백. 영상은 화면 폭을 다 쓰므로 이 여백은 그 아래 내용에만 적용된다. */
+private val DETAIL_CONTENT_PADDING = 16.dp
+
+/** 영상과 본문 사이 간격. 좌우 여백보다 넓어야 영상이 끝나고 설명이 시작되는 것으로 읽힌다. */
+private val DETAIL_VIDEO_GAP = 24.dp
+
+/**
+ * 헤더 메뉴 버튼의 글리프 크기.
+ *
+ * 헤더에서 뒤로 가기와 나란히 서지만 같은 급의 동작은 아니다. 기본 24dp보다 작게 두어 있는 줄만
+ * 알면 되는 단추로 남긴다. 터치 영역은 `IconButton`의 48dp를 그대로 둔다.
+ */
+private val HEADER_MENU_ICON_SIZE = 20.dp
+
+/** 헤더 메뉴 항목의 글자 굵기. `labelLarge`의 Medium에서 한 단계 내린 값이다. */
+private val MENU_ITEM_FONT_WEIGHT = FontWeight.Normal
