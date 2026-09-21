@@ -399,8 +399,13 @@ FR-016e~g 추가가 여기에 대응한다.
   - 구현: `ui/common/DestructiveConfirmationDialog.kt`. `CaptureStopConfirmation`과
     `SessionDeleteConfirmation`이 이 판을 쓴다. 확정 쪽은 채워진 error 버튼으로 통일했다.
     세션 삭제만 빨간 글씨 `TextButton`이라 같은 무게의 결정이 다르게 보였다.
-  - 자동 검증: `.\gradlew.bat testDebugUnitTest`, `.\gradlew.bat lintDebug` 성공 (2026-09-18).
-    판의 생김새 자체를 고정하는 테스트는 없다. 두 화면이 한 Composable을 쓰므로 갈라질 수 없다.
+  - 자동 검증: `.\gradlew.bat ktlintCheck testDebugUnitTest lintDebug compileDebugAndroidTestKotlin`
+    성공 (2026-09-21).
+  - 남은 검증: `CaptureControlStateScreenTest.stop_confirmation_explains_upload_and_separates_cancel_from_confirm`이
+    `CaptureStopConfirmation`의 메시지·취소·확정을 고정한다. 이 task가 그 Composable의 속을
+    `DestructiveConfirmationDialog`로 바꿨으므로 기기에서 다시 돌려야 한다. 문구 리소스
+    (`capture_stop_message`·`capture_stop_confirm`·`action_cancel`)와 콜백은 그대로 넘기므로
+    통과할 것으로 보지만 확인하지 않았다.
 - [X] T046 [S15P21A206-35] 빈 목록 안내를 고쳐 쓰고 Task Session 목록에도 둔다.
   - 구현: `session_list_empty`가 FAB 이름을 불러 준다(`새 세션을 눌러 추가하세요`).
     `task_session_list_empty`를 추가했다. 마지막 세션을 삭제하면 닿게 되는 상태로, 삭제를 붙이기
