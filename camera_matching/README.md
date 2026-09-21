@@ -95,12 +95,14 @@ second/
 │   ├── path_check.py       웹앱 vs 기본 앱 촬영 경로 동일성 확인
 │   ├── run_calibrate.py    세션 → (K, D) + 품질 리포트
 │   ├── run_fov_compare.py  두 카메라 비교 → ②/③ 판정 지표
-│   └── run_remap.py        영상을 공통 target 공간으로 변환 (5단계)
+│   ├── run_remap.py        이미지/세션을 공통 target 공간으로 변환 (5단계)
+│   ├── run_video_remap.py  웹캠/동영상을 실시간 변환 (5단계)
+│   └── check_align.py      자로 잰 거리로 fx 검증
 ├── tests/
 ├── data/<camera>/<session_id>/   frames/*.png + meta.json
 ├── results/                <camera>_intrinsics.json, target_space.json, reports/
 ├── docs/
-│   ├── calibration_theory.pdf
+│   ├── REPORT.md           진행 보고 (팀 공유용)
 │   └── REVIEW_PROTOCOL.md  코드 검수 방식
 ├── prompts/                Claude Code 위임 프롬프트 원본
 └── legacy/                 1회차. 읽기 전용
@@ -171,6 +173,7 @@ AI 리뷰는 지적을 끝없이 낸다. 그래서 리뷰 자체를 검증 대�
 각 단계는 `prompts/`의 해당 프롬프트로 위임하고, 끝나면 `docs/REVIEW_PROTOCOL.md`로 검수한다.
 
 **실행할 파일과 순서는 [action.md](action.md)의 "실행 순서 한눈에" 표가 정본이다.**
-직접 실행하는 파일은 `src/` 바로 아래 7개뿐이다: `capture_luaz.py`, `run_s10_server.py`,
-`preflight_jitter.py`, `path_check.py`, `run_calibrate.py`, `run_fov_compare.py`, `run_remap.py`.
+직접 실행하는 파일은 `src/` 바로 아래 9개뿐이다: `capture_luaz.py`, `run_s10_server.py`,
+`preflight_jitter.py`, `path_check.py`, `run_calibrate.py`, `run_fov_compare.py`,
+`run_remap.py`, `run_video_remap.py`, `check_align.py`.
 `src/camcal/`과 `src/s10_server/`는 이들이 불러 쓰는 패키지라 직접 실행하지 않는다.

@@ -10,12 +10,12 @@
 
 ## 실행 순서 한눈에
 
-**직접 실행하는 파일은 `src/` 바로 아래 7개뿐이다.** 나머지(`src/camcal/`, `src/s10_server/`)는
+**직접 실행하는 파일은 `src/` 바로 아래 9개뿐이다.** 나머지(`src/camcal/`, `src/s10_server/`)는
 이들이 불러 쓰는 패키지라 직접 실행하지 않는다. 표의 순서대로 내려간다.
 
 | # | 실행 | 언제 | 산출물 | 넘어가는 조건 | 상세 |
 |---|---|---|---|---|---|
-| 0 | `pip install -r requirements.txt`<br>`python -m pytest` | 맨 처음 1회 | - | `229 passed` | [1장](#1-설치와-테스트-촬영-전-1회) |
+| 0 | `pip install -r requirements.txt`<br>`python -m pytest` | 맨 처음 1회 | - | `324 passed` | [1장](#1-설치와-테스트-촬영-전-1회) |
 | 1 | `python src/capture_luaz.py --list-devices` | LUAZ 꽂은 뒤 | - | 어느 index 가 LUAZ 인지 눈으로 확인 | [3장](#3-luaz-연결-확인) |
 | 2 | `python src/capture_luaz.py` | LUAZ 촬영 | `data/luaz/<session_id>/` | 25~30장, 커버리지 빈 셀 없음 | [4장](#4-촬영) |
 | 3 | `python src/run_s10_server.py` | S10 촬영 (서버는 켜 둔 채로 4~6 진행) | - | 폰 접속, 1920x1080 확인 | [6~7장](#6-서버-띄우기) |
@@ -26,22 +26,27 @@
 | 8 | `python src/run_calibrate.py data/s10/<s1> data/s10/<s2>` | S10 세션이 생긴 뒤 (**여러 개면 다 넣는다**) | `results/s10_intrinsics.json` + 리포트 | 리포트 경고 해소 | [10~12장](#10-세션-하나로-k-d-구하기) |
 | 9 | `python src/run_fov_compare.py results/s10_intrinsics.json results/luaz_intrinsics.json --scan-f-target` | 7, 8 이 **둘 다** 끝난 뒤 | `results/reports/fov_compare.md` + 히트맵 3장 | - (사람이 ②/③ 결정) | [14~16장](#14-두-intrinsics-로-지표-내기) |
 | 10 | `python src/run_remap.py --design 3 --f-target-scale 1.10 --reference ... -o out/...` | ②/③ 를 정한 뒤 | `results/target_space.json` + 변환된 PNG | 육안 확인 | [18장](#18-영상을-공통-공간으로-옮긴다) |
+| 11 | `python src/run_video_remap.py ...` 또는 `FrameRemapper` 를 import | 운용 | 변환된 영상 | - | [21장](#21-영상을-실시간으로-변환한다-운용) |
 
 두 카메라는 서로 독립이다. **1~2(LUAZ)와 3~6(S10)은 순서를 바꿔도 되고**, 7과 8도 마찬가지다.
 9만 둘 다 끝나야 돌아간다.
 
 ```
-capture_luaz.py ──> data/luaz/<id>/ ──> run_calibrate.py ──> results/luaz_intrinsics.json ─┐ \
+capture_luaz.py ──> data/luaz/<id>/ ──> run_calibrate.py ──> results/luaz_intrinsics.json ─┐
                                                                                             ├─> run_fov_compare.py
-run_s10_server.py ─> data/s10/<id>/ ──> run_calibrate.py ──> results/s10_intrinsics.json  ─┘ \
-                          │ \
+run_s10_server.py ─> data/s10/<id>/ ──> run_calibrate.py ──> results/s10_intrinsics.json  ─┘
+                          │
                           └─> preflight_jitter.py, path_check.py  (첫 세션 확인용, 곁가지)
 ```
 
-### 지금 어디인가 (2026-09-18)
+### 지금 어디인가 (2026-09-21)
 
-0 까지 끝났다. **다음은 1번** - LUAZ 를 USB 에 꽂고 `--list-devices` 로 index 를 확인하는 것이다.
-(현재 `Web Camera` Status=Unknown 으로 LUAZ 가 인식되지 않은 상태다. [result.md](result.md) 1장)
+**10번까지 끝났다.** 양쪽 (K, D) 와 공통 규격(`results/target_space.json`, 설계 ③)이
+나와 있고, 변환 프로그램도 동작한다 (21장).
+
+다만 **값이 품질 기준에 못 미친다** (재투영 오차 0.39~0.47 px, 목표 < 0.3).
+원인은 촬영 조건이고 재촬영이 필요하다. 자세한 것은
+[docs/REPORT.md](docs/REPORT.md) 5장, [result.md](result.md) 8~10장.
 
 ---
 
@@ -65,7 +70,7 @@ pip install -r requirements.txt
 python -m pytest
 ```
 
-- 확인할 것: `225 passed` (2026-09-18 기준). 이 테스트는 카메라 없이 돈다
+- 확인할 것: `324 passed` (2026-09-21 기준). 이 테스트는 카메라 없이 돈다
 - 실패하면: 촬영을 시작하지 않는다. 검출기나 세션 저장이 깨진 채로 찍으면 전부 다시 찍어야 한다
 
 ---
@@ -206,7 +211,7 @@ python src/run_s10_server.py
    (자체 서명 인증서라 정상이다. HTTP 로는 카메라를 아예 열 수 없다)
 3. 카메라 권한 허용
 4. 카메라 목록에서 **후면 메인**을 고른다. 초록 테두리가 후면으로 추정되는 것들이다
-   - **초광각·망원을 고르면 화각이 달라져 세션 전체를 다시 찍어야 한다.** \
+   - **초광각·망원을 고르면 화각이 달라져 세션 전체를 다시 찍어야 한다.**
      라벨을 반드시 확인한다
    - 고른 카메라는 이 폰에 기억된다. 바꾸려면 폰 화면 아래 "카메라 선택 다시 하기"
 5. 폰 화면이 `연결됨 · 1920×1080 · 노트북에서 조작한다` 한 줄이 되면 준비 끝
@@ -215,7 +220,7 @@ python src/run_s10_server.py
   **다른 해상도로 대신 찍지 않는다.** 다른 카메라를 고르거나 폰 설정을 확인한다
 - 노트북 화면 "연결 상태" 에서 확인할 것:
   - 폰 = 연결됨, 실제 해상도 = 1920 × 1080
-  - manual 제약: 적용된 항목과 미지원 항목. **미지원은 정상이다** (기기마다 다르다). \
+  - manual 제약: 적용된 항목과 미지원 항목. **미지원은 정상이다** (기기마다 다르다).
     무엇이 지원됐는지가 meta.json 에 남는 것이 중요하다
 
 ## 8. 본 촬영 전 두 가지 확인 (첫 세션에만)
@@ -260,7 +265,7 @@ python src/path_check.py data/s10/<session_id>/frames/000.png camera_app.png
    - 커버리지 3×3 격자가 전부 초록이 될 때까지 (빈 셀이 `없음` 이 될 때까지)
    - 기울이기 좌/우/상/하 각 2장 이상, 25~50도
    - 거리 근/중/원 각 2장 이상
-   - `마지막 업로드 프레임` 이 FAIL 로 계속 뜨면 보드가 화면을 벗어났거나 \
+   - `마지막 업로드 프레임` 이 FAIL 로 계속 뜨면 보드가 화면을 벗어났거나
      너무 기울었다. 검출 실패 프레임은 저장되지 않는다 (업로드 / 미검출 카운터로 확인)
 4. 저장 25~30장이 되면 `자동 정지` → `세션 종료`
 5. 종료 시 표시되는 session_id, 장수, 커버리지를 [result.md](result.md) 에 적는다
@@ -413,7 +418,7 @@ results/reports/stretch_design2_0.png   s10  -> luaz 원본
   여유가 1도 미만이면 가장자리가 위태롭다
 - **불통과**: **설계 ② 는 불가능하다.** LUAZ 가 S10 보다 넓으면 S10 에 없는 픽셀을
   요구하게 되고, 없는 픽셀은 만들 수 없다. 설계 ③ 도 `f_target` 을 올려 화각을 좁혀야 한다
-  - 이 경우 먼저 의심할 것: S10 이 후면 **메인**이 맞는가 (초광각을 고르면 반대로 넓다), \
+  - 이 경우 먼저 의심할 것: S10 이 후면 **메인**이 맞는가 (초광각을 고르면 반대로 넓다),
     S10 쪽에 EIS 크롭이 걸려 있지 않은가 (8-1 로 확인)
 
 ### 15-2. 두 설계의 숫자 (3, 4장)
@@ -523,7 +528,44 @@ python src/run_s10_server.py --with-luaz
 
 ---
 
-## 20. 기록
+## 21. 영상을 실시간으로 변환한다 (운용)
+
+### 21-1. 다른 프로그램에 붙일 때 — 이게 제품이다
+
+```python
+from camcal.stream import FrameRemapper
+
+remapper = FrameRemapper.from_files("results/luaz_intrinsics.json")
+print(remapper.describe())        # luaz: 1920x1080 -> 1920x1080 (설계 3, 유효 100.00%)
+
+while True:
+    ok, frame = cap.read()
+    out = remapper.apply(frame)   # 이것이 전부
+```
+
+- 맵은 **한 번만** 계산한다. `apply()` 는 표를 찾을 뿐이라 1080p 에서 **3.7 ms**
+- 입력 크기가 만들 때와 다르면 **예외**. 조용히 늘려 쓰지 않는다
+- 캘리브레이션과 다른 해상도로 받으려면 `input_size=(w, h)` 를 준다.
+  종횡비가 같으면 정확히 처리하고, 다르면 (크롭이므로) 거부한다
+
+### 21-2. 실행기로 바로 볼 때
+
+```bash
+# 웹캠 실시간 -> 창
+python src/run_video_remap.py --camera-index 0 --intrinsics results/luaz_intrinsics.json --side-by-side
+
+# 동영상 -> 동영상
+python src/run_video_remap.py in.mp4 --intrinsics results/s10_intrinsics.json -o out.mp4
+
+# 이미지 폴더 -> 이미지 폴더
+python src/run_video_remap.py frames/ --intrinsics results/s10_intrinsics.json -o out/
+```
+
+`--crop` 을 붙이면 검은 영역을 잘라낸다. `q` 로 종료.
+
+---
+
+## 22. 기록
 
 - 각 단계에서 나온 수치·판단은 그 자리에서 [result.md](result.md) 에 추가한다
 - 세션을 하나 찍을 때마다: session_id, 장수, 커버리지, 조명·거리 조건, 실측 `square_mm`
