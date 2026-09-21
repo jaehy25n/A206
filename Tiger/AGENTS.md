@@ -10,12 +10,49 @@
 .\gradlew.bat assembleDebug
 ```
 
-`connectedDebugAndroidTest`는 연결된 실제 기기 또는 에뮬레이터가 있을 때만 실행한다.
-
 화면(Composable)·문자열 리소스·접근성 속성을 바꾼 작업은 Merge Request 전에 기기 또는
-에뮬레이터를 붙여 `connectedDebugAndroidTest`를 직접 실행한다. 이 검사는 기기가 필요해 hook에
-들어가 있지 않으므로, 돌리지 않으면 아무도 돌리지 않는다. 실행하지 못했다면 그 사실을 MR에
-적는다.
+에뮬레이터를 붙여 계측 테스트를 직접 실행한다. 이 검사는 기기가 필요해 hook에 들어가 있지
+않으므로, 돌리지 않으면 아무도 돌리지 않는다. 실행하지 못했다면 그 사실을 MR에 적는다.
+
+### 계측 테스트 실행
+
+`connectedDebugAndroidTest`를 쓰지 않는다. 이 태스크는 실행할 때마다 APK를 다시 설치하는데,
+debug APK가 42MB이고 그중 41MB가 dex라 기기에서 처리하는 데 수 분씩 걸린다. 2026-09-21에
+`SM-G973N`에서 32분을 기다려도 테스트가 시작되지 않았다. 전송이 느린 것은 아니다
+(`adb push`는 74MB/s로 측정됐다).
+
+설치를 한 번만 하고 실행을 반복한다.
+
+```powershell
+.\gradlew.bat assembleDebug assembleDebugAndroidTest
+adb install -r app\build\outputs\apk\debug\app-debug.apk
+adb install -r app\build\outputs\apk\androidTest\debug\app-debug-androidTest.apk
+adb shell am instrument -w com.ssafy.s15p21a206.tiger.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+같은 기기에서 전체 20개가 15초에 끝나며, 마지막 줄이 `OK (20 tests)`다. 클래스나 메서드만
+고르려면 `-e class`를 준다.
+
+```powershell
+adb shell am instrument -w -e class "com.ssafy.s15p21a206.tiger.ui.session.SessionListScreenTest" `
+  com.ssafy.s15p21a206.tiger.test/androidx.test.runner.AndroidJUnitRunner
+adb shell am instrument -w -e class "com.ssafy.s15p21a206.tiger.ui.session.SessionListScreenTest#anEmptyTaskSessionListExplainsHowToAddOne" `
+  com.ssafy.s15p21a206.tiger.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+`-w`는 끝날 때까지 기다린다는 뜻이다. 빼면 명령이 즉시 돌아오고 결과를 볼 수 없다. 사람이 읽을
+때는 위 형태를 쓰고, 출력을 기계로 파싱할 때만 `-r`을 더한다. `-r`을 주면 점과 `OK (N tests)`
+대신 `INSTRUMENTATION_STATUS` 블록이 나온다.
+
+두 가지를 주의한다.
+
+- **소스를 고쳤으면 반드시 다시 설치한다.** 설치를 건너뛰면 옛 APK를 검사하고 통과로 오인한다.
+  `assembleDebug assembleDebugAndroidTest`가 `UP-TO-DATE`로 끝나는지 보고 APK가 최신인지 확인한다.
+- **`am instrument`는 테스트가 실패해도 exit code 0을 돌려준다.** `$?`나 `$LASTEXITCODE`로 판정하지
+  않는다. 기본 출력에서는 마지막의 `OK (N tests)` 또는 `FAILURES!!!`를, `-r`을 준 경우에는
+  `INSTRUMENTATION_STATUS_CODE`(0=통과, -1=오류, -2=실패)를 읽는다.
+
+기기 없이 도는 검사(`testDebugUnitTest`, `lintDebug`)로 계측 테스트를 대신했다고 보고하지 않는다.
 
 ## 프로젝트 규칙
 
