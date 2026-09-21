@@ -295,3 +295,70 @@ def test_pages_served(client, path: str) -> None:
     resp = client.get(path)
     assert resp.status_code == 200
     assert "<html" in resp.text
+
+
+# --- 라이브 비교 (/compare) --------------------------------------------------
+
+
+def test_compare_page_is_served(client) -> None:
+    resp = client.get("/compare")
+    assert resp.status_code == 200
+    assert "<html" in resp.text
+
+
+def test_live_status_says_what_is_missing(client) -> None:
+    """변환이 안 되면 **왜** 안 되는지 화면이 알 수 있어야 한다."""
+    status = client.get("/api/live/status").json()
+    assert status["luaz"]["connected"] is False
+    assert status["s10"]["preview"] is False
+    assert status["target"]["ready"] is False
+    assert status["intrinsics"] == []
+
+
+def test_live_luaz_without_camera(client) -> None:
+    resp = client.get("/api/live/luaz.jpg")
+    assert resp.status_code == 503
+    assert "LUAZ" in resp.json()["detail"]
+
+
+def test_live_s10_without_preview(client) -> None:
+    resp = client.get("/api/live/s10.jpg")
+    assert resp.status_code == 503
+    assert "프리뷰" in resp.json()["detail"]
+
+
+def test_preview_is_kept_for_compare(client) -> None:
+    """비교 화면은 마지막 프리뷰를 다시 꺼내 쓴다. 중계만 하고 버리면 안 된다."""
+    import cv2
+    import numpy as np
+
+    frame = np.full((180, 320, 3), 90, dtype=np.uint8)
+    ok, buf = cv2.imencode(".jpg", frame)
+    assert ok
+
+    with client.websocket_connect("/ws/preview") as preview:
+        preview.send_bytes(buf.tobytes())
+        # 서버가 받아 보관할 시간을 준다 (같은 이벤트 루프라 한 번 왕복시킨다)
+        for _ in range(20):
+            if client.get("/api/live/status").json()["s10"]["preview"]:
+                break
+
+    assert client.state.last_preview_jpeg is not None
+    resp = client.get("/api/live/s10.jpg?remap=0")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"] == "image/jpeg"
+
+
+def test_live_frames_are_not_cached(client) -> None:
+    """브라우저가 캐시하면 화면이 멈춘 것처럼 보인다."""
+    import cv2
+    import numpy as np
+
+    ok, buf = cv2.imencode(".jpg", np.zeros((180, 320, 3), dtype=np.uint8))
+    with client.websocket_connect("/ws/preview") as preview:
+        preview.send_bytes(buf.tobytes())
+        for _ in range(20):
+            if client.get("/api/live/status").json()["s10"]["preview"]:
+                break
+    resp = client.get("/api/live/s10.jpg?remap=0")
+    assert resp.headers.get("cache-control") == "no-store"

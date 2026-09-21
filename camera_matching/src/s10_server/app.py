@@ -34,9 +34,14 @@ from starlette.concurrency import run_in_threadpool
 
 from camcal import BoardSpec, Coverage, Session, draw_corners, find_corners
 from camcal.console import setup_console
+from camcal.devices import check_expected
 from camcal.constants import COVERAGE_GRID
 
+from camcal.target_space import TARGET_SPACE_FILENAME, TargetSpace
+from capture_luaz import load_camera_config
+
 from .certs import cert_san_ips, ensure_certs, lan_ip
+from .live import LuazCamera, build_view_map, encode_jpeg, fit_view
 
 # --- 상수 -------------------------------------------------------------------
 
@@ -108,6 +113,31 @@ class ServerState:
 
         self.phone_ws: WebSocket | None = None
         self.laptop_ws: set[WebSocket] = set()
+
+        # --- 라이브 비교 (/compare) ---
+        #: 마지막 폰 프리뷰 JPEG (원본 그대로). 비교 화면이 이걸 변환해 쓴다.
+        self.last_preview_jpeg: bytes | None = None
+        self.luaz: Any = None            # LuazCamera | None
+        self.luaz_error: str | None = None
+        self.luaz_pnp_name: str | None = None
+        self.target: TargetSpace | None = None
+        self.target_error: str | None = None
+        self.intrinsics: dict[str, dict[str, Any]] = {}
+        #: 변환 맵 캐시. {(카메라, 원본 폭, 원본 높이): (map_x, map_y)}
+        self._view_maps: dict[tuple[str, int, int], tuple[Any, Any]] = {}
+
+    def view_map(self, camera: str, source_size: tuple[int, int]):
+        """비교 화면용 변환 맵. 한 번 만들면 캐시한다 (프레임마다 만들면 느리다)."""
+        key = (camera, source_size[0], source_size[1])
+        if key not in self._view_maps:
+            if self.target is None or camera not in self.intrinsics:
+                return None
+            from .live import VIEW_HEIGHT, VIEW_WIDTH
+
+            self._view_maps[key] = build_view_map(
+                self.intrinsics[camera], self.target, VIEW_WIDTH, VIEW_HEIGHT, source_size
+            )
+        return self._view_maps[key]
 
     # --- 세션 ---------------------------------------------------------------
 
@@ -324,6 +354,102 @@ def create_app(state: ServerState) -> FastAPI:
     async def laptop_page() -> Response:
         return FileResponse(STATIC_DIR / "laptop.html")
 
+    @app.get("/compare")
+    async def compare_page() -> Response:
+        return FileResponse(STATIC_DIR / "compare.html")
+
+    # --- 라이브 비교 ---
+
+    def _remapped(camera: str, frame: np.ndarray, remap: bool) -> bytes:
+        """프레임 한 장을 비교 화면 크기로 맞추고, 필요하면 target 공간으로 옮긴다."""
+        if not remap:
+            return encode_jpeg(fit_view(frame))
+        maps = state.view_map(camera, (frame.shape[1], frame.shape[0]))
+        if maps is None:
+            # 변환할 수 없으면 원본을 주되, 화면이 그 사실을 알 수 있게 헤더로 알린다
+            return encode_jpeg(fit_view(frame))
+        # 맵은 **이 프레임 크기**를 원본으로 삼아 만들어졌다 (view_map 의 source_size).
+        # 축소본에 적용하면 좌표가 원본 스케일이라 좌상단에 뭉친다 (2026-09-21에 겪음).
+        # 그러니 프레임을 그대로 넣는다. 출력은 맵 크기(VIEW_WIDTH x VIEW_HEIGHT)다.
+        warped = cv2.remap(
+            frame, maps[0], maps[1], cv2.INTER_LINEAR,
+            borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0),
+        )
+        return encode_jpeg(warped)
+
+    @app.get("/api/live/luaz.jpg")
+    async def live_luaz(remap: int = 1) -> Response:
+        if state.luaz is None:
+            raise HTTPException(
+                status_code=503,
+                detail=state.luaz_error or "LUAZ 가 연결되지 않았다 (--with-luaz 로 서버를 띄운다)",
+            )
+        try:
+            frame = await run_in_threadpool(state.luaz.read)
+            state.luaz_error = None
+        except RuntimeError as exc:
+            # 읽기 실패는 보통 USB 가 빠진 것이다. 상태에 남겨 화면이 알 수 있게 한다
+            # ("연결됨" 이라고만 떠 있어 원인을 찾는 데 한참 걸린 적이 있다).
+            state.luaz_error = str(exc)
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        jpeg = await run_in_threadpool(_remapped, "luaz", frame, bool(remap))
+        return Response(content=jpeg, media_type="image/jpeg",
+                        headers={"Cache-Control": "no-store"})
+
+    @app.get("/api/live/s10.jpg")
+    async def live_s10(remap: int = 1) -> Response:
+        if state.last_preview_jpeg is None:
+            raise HTTPException(status_code=503, detail="폰 프리뷰가 아직 오지 않았다")
+        raw = state.last_preview_jpeg
+        if not remap:
+            return Response(content=raw, media_type="image/jpeg",
+                            headers={"Cache-Control": "no-store"})
+
+        def work() -> bytes:
+            frame = cv2.imdecode(np.frombuffer(raw, np.uint8), cv2.IMREAD_COLOR)
+            if frame is None:
+                raise RuntimeError("프리뷰 JPEG 를 디코드하지 못했다")
+            maps = state.view_map("s10", (frame.shape[1], frame.shape[0]))
+            if maps is None:
+                return encode_jpeg(fit_view(frame))
+            warped = cv2.remap(frame, maps[0], maps[1], cv2.INTER_LINEAR,
+                               borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0))
+            return encode_jpeg(warped)
+
+        try:
+            return Response(content=await run_in_threadpool(work),
+                            media_type="image/jpeg",
+                            headers={"Cache-Control": "no-store"})
+        except RuntimeError as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    @app.get("/api/live/status")
+    async def live_status() -> JSONResponse:
+        """비교 화면이 무엇을 보고 있는지. 변환이 안 되면 그 이유를 그대로 준다."""
+        present, device_message = check_expected(state.luaz_pnp_name)
+        return JSONResponse({
+            "luaz": {
+                # "열려 있다" 와 "그 장치가 꽂혀 있다" 는 다르다. 둘 다 보여준다.
+                "opened": state.luaz is not None,
+                "connected": state.luaz is not None and present is not False,
+                "device_present": present,
+                "device_message": device_message,
+                "error": state.luaz_error,
+                "resolution": list(state.luaz.resolution) if state.luaz else None,
+            },
+            "s10": {
+                "preview": state.last_preview_jpeg is not None,
+                "connected": state.phone_connected,
+            },
+            "target": {
+                "ready": state.target is not None,
+                "error": state.target_error,
+                "describe": state.target.describe() if state.target else None,
+                "design": state.target.design if state.target else None,
+            },
+            "intrinsics": sorted(state.intrinsics),
+        })
+
     # --- 상태 ---
 
     @app.get("/api/status")
@@ -460,11 +586,12 @@ def create_app(state: ServerState) -> FastAPI:
 
     @app.websocket("/ws/preview")
     async def ws_preview(ws: WebSocket) -> None:
-        """폰 → 서버 프리뷰 JPEG. 노트북들에게 그대로 중계한다."""
+        """폰 → 서버 프리뷰 JPEG. 노트북들에게 중계하고, 비교 화면용으로 보관한다."""
         await ws.accept()
         try:
             while True:
                 jpeg = await ws.receive_bytes()
+                state.last_preview_jpeg = jpeg
                 await state.push_preview(jpeg)
         except WebSocketDisconnect:
             pass
@@ -489,6 +616,57 @@ def create_app(state: ServerState) -> FastAPI:
 # --- CLI --------------------------------------------------------------------
 
 
+def _setup_live(state: ServerState, args: argparse.Namespace) -> None:
+    """비교 화면(/compare)에 필요한 것들을 준비한다. 없으면 없는 대로 두고 알린다.
+
+    여기서 실패해도 **서버는 뜬다.** 촬영이 주 기능이고 비교는 덤이므로,
+    비교가 안 된다고 촬영까지 막으면 안 된다. 대신 이유를 화면에 그대로 띄운다.
+    """
+    results_dir = PROJECT_ROOT / "results"
+
+    try:
+        state.target = TargetSpace.load(results_dir / TARGET_SPACE_FILENAME)
+        print(f"target 공간: {state.target.describe()}")
+    except (FileNotFoundError, ValueError) as exc:
+        state.target_error = str(exc)
+        print(
+            f"[알림] target 공간 없음 - /compare 에서 원본만 본다: {exc}",
+            file=sys.stderr,
+        )
+
+    for camera in ("s10", "luaz"):
+        path = results_dir / f"{camera}_intrinsics.json"
+        if path.exists():
+            with path.open("r", encoding="utf-8") as fp:
+                state.intrinsics[camera] = json.load(fp)
+    if state.intrinsics:
+        print(f"intrinsics: {', '.join(sorted(state.intrinsics))}")
+
+    if not args.with_luaz:
+        return
+    config = load_camera_config(args.config_dir / "cameras.yaml", "luaz")
+    if args.luaz_index is not None:
+        config["device_index"] = args.luaz_index
+    state.luaz_pnp_name = config.get("pnp_name")
+
+    present, message = check_expected(state.luaz_pnp_name)
+    if present is False:
+        print(
+            f"[경고] {message}",
+            f"  index {config['device_index']} 로 열리는 것은 다른 카메라일 수 있다."
+            " /compare 에도 표시된다",
+            sep="\n",
+            file=sys.stderr,
+        )
+    try:
+        state.luaz = LuazCamera(config)
+        print(f"LUAZ open: index={config['device_index']} "
+              f"{state.luaz.resolution[0]}x{state.luaz.resolution[1]}")
+    except RuntimeError as exc:
+        state.luaz_error = str(exc)
+        print(f"[경고] {exc}", file=sys.stderr)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="S10 원격 촬영 서버 (HTTPS)")
     parser.add_argument("--port", type=int, default=DEFAULT_PORT)
@@ -496,6 +674,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--certs-dir", type=Path, default=PROJECT_ROOT / "certs")
     parser.add_argument("--config-dir", type=Path, default=PROJECT_ROOT / "config")
     parser.add_argument("--data-root", type=Path, default=PROJECT_ROOT / "data")
+    parser.add_argument(
+        "--with-luaz",
+        action="store_true",
+        help="LUAZ(USB)를 열어 /compare 에서 S10 과 나란히 본다. "
+             "촬영 도구(capture_luaz.py)와 동시에 쓸 수 없다",
+    )
+    parser.add_argument(
+        "--luaz-index", type=int, default=None, help="--with-luaz 의 카메라 index 덮어쓰기"
+    )
     parser.add_argument(
         "--allow-unmeasured-square",
         action="store_true",
@@ -529,11 +716,13 @@ def main(argv: list[str] | None = None) -> int:
         print("[경고] LAN IP 를 찾지 못했다. Wi-Fi 연결을 확인한다 - 폰이 접속할 수 없다", file=sys.stderr)
 
     state = ServerState(board, args.data_root, args.allow_unmeasured_square)
+    _setup_live(state, args)
     app = create_app(state)
 
     print()
     print(f"  폰에서 열기   https://{ip}:{args.port}/phone")
     print(f"  노트북에서 열기 https://localhost:{args.port}/laptop")
+    print(f"  라이브 비교     https://localhost:{args.port}/compare")
     print()
     print("  자체 서명 인증서다. 폰 브라우저의 경고는 '고급 → 계속'으로 통과한다.")
     print()
