@@ -139,6 +139,18 @@ interface CaptureSessionDao {
 
     @Query("SELECT COALESCE(MAX(displayNumber), 0) + 1 FROM sessions")
     suspend fun nextDisplayNumber(): Int
+
+    @Query("DELETE FROM sessions WHERE sessionId = :sessionId")
+    suspend fun delete(sessionId: String)
+
+    /**
+     * 색인이 아는 모든 Session의 id. 마감 여부를 가리지 않는다.
+     *
+     * 고아 번들 회수에 쓴다. 아직 마감되지 않은 Session의 디렉터리를 고아로 오인해 지우면 수집
+     * 중인 데이터가 사라지므로, `COMPLETED`만 세어서는 안 된다.
+     */
+    @Query("SELECT sessionId FROM sessions")
+    suspend fun allSessionIds(): List<String>
 }
 
 @Dao
@@ -148,6 +160,9 @@ interface EpisodeMarkerDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(marker: EpisodeMarkerEntity)
+
+    @Query("DELETE FROM episode_markers WHERE sessionId = :sessionId")
+    suspend fun deleteForSession(sessionId: String)
 }
 
 @Dao

@@ -14,17 +14,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
@@ -42,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ssafy.s15p21a206.tiger.R
 import com.ssafy.s15p21a206.tiger.episode.RecordingResolution
+import com.ssafy.s15p21a206.tiger.ui.common.DestructiveConfirmationDialog
 import com.ssafy.s15p21a206.tiger.ui.theme.CaptureControlDisabled
 import com.ssafy.s15p21a206.tiger.ui.theme.CaptureDestructive
 import com.ssafy.s15p21a206.tiger.ui.theme.CaptureFullScreenScrim
@@ -240,21 +237,12 @@ fun CaptureStopConfirmation(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.capture_stop_title)) },
-        text = { Text(stringResource(R.string.capture_stop_message)) },
-        confirmButton = {
-            Button(
-                onClick = onConfirm,
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError,
-                    ),
-            ) { Text(stringResource(R.string.capture_stop_confirm)) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+    DestructiveConfirmationDialog(
+        title = stringResource(R.string.capture_stop_title),
+        message = stringResource(R.string.capture_stop_message),
+        confirmLabel = stringResource(R.string.capture_stop_confirm),
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
     )
 }
 

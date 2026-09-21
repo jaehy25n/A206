@@ -10,7 +10,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.nio.file.Files
 
@@ -126,10 +129,111 @@ class SessionRepositoryTest {
         }
     }
 
+    @Test
+    fun `deleting a session removes its index row, markers and bundle`() {
+        runBlocking {
+            val root = Files.createTempDirectory("session-store").toFile()
+            val store = SessionBundleStore(root)
+            val directory = store.completedDirectory("target").apply { mkdirs() }
+            directory.resolve(SessionBundle.MAIN_VIDEO_FILE).writeText("video")
+            val dao = FakeSessionDao(listOf(session("target", directory.path)))
+            val markerDao = FakeMarkerDao(mutableListOf(marker("episode", "target")))
+            val repository = SessionRepository(dao, markerDao, store)
+
+            assertEquals(SessionDeleteResult.DELETED, repository.delete("target"))
+
+            assertNull(dao.session("target"))
+            assertEquals(emptyList<EpisodeMarkerEntity>(), markerDao.markers)
+            assertFalse(directory.exists())
+            assertEquals(emptyList<CaptureSession>(), repository.observeCompleted().first())
+            root.deleteRecursively()
+        }
+    }
+
+    /** 삭제는 기기 저장 공간을 비우는 동작이다. 업로드가 읽고 있는 번들은 그 대상이 아니다. */
+    @Test
+    fun `deleting a session that is uploading is refused`() {
+        runBlocking {
+            val root = Files.createTempDirectory("session-store").toFile()
+            val store = SessionBundleStore(root)
+            val directory = store.completedDirectory("uploading").apply { mkdirs() }
+            val dao = FakeSessionDao(listOf(session("uploading", directory.path).copy(uploadState = "UPLOADING")))
+            val repository = SessionRepository(dao, FakeMarkerDao(), store)
+
+            assertEquals(SessionDeleteResult.UPLOAD_IN_PROGRESS, repository.delete("uploading"))
+
+            assertNotNull(dao.session("uploading"))
+            assertTrue(directory.exists())
+            root.deleteRecursively()
+        }
+    }
+
+    /**
+     * 색인을 먼저 지우는 순서 때문에, 디렉터리 삭제가 실패해도 목록에는 남지 않는다.
+     * 남은 디렉터리는 고아이며 다음 실행이 회수한다.
+     */
+    @Test
+    fun `a bundle left behind by a failed delete is purged on the next run`() {
+        runBlocking {
+            val root = Files.createTempDirectory("session-store").toFile()
+            val store = SessionBundleStore(root)
+            val orphan = store.completedDirectory("orphan").apply { mkdirs() }
+            val kept = store.completedDirectory("kept").apply { mkdirs() }
+            val repository = SessionRepository(FakeSessionDao(listOf(session("kept", kept.path))), FakeMarkerDao(), store)
+
+            repository.purgeOrphanBundles()
+
+            assertFalse(orphan.exists())
+            assertTrue(kept.exists())
+            root.deleteRecursively()
+        }
+    }
+
+    /** 아직 마감되지 않은 Session의 번들은 색인에 행이 있으므로 고아가 아니다. */
+    @Test
+    fun `purging orphan bundles keeps bundles of sessions that are not completed yet`() {
+        runBlocking {
+            val root = Files.createTempDirectory("session-store").toFile()
+            val store = SessionBundleStore(root)
+            val inFlight = store.completedDirectory("in-flight").apply { mkdirs() }
+            val dao = FakeSessionDao(listOf(session("in-flight", inFlight.path).copy(recordingState = "FINALIZING")))
+            val repository = SessionRepository(dao, FakeMarkerDao(), store)
+
+            repository.purgeOrphanBundles()
+
+            assertTrue(inFlight.exists())
+            root.deleteRecursively()
+        }
+    }
+
+    /** 지운 Session은 staging 구제 경로로도 되살아나지 않는다. 색인에 행이 없으면 구제 대상이 아니다. */
+    @Test
+    fun `a deleted session does not come back through staging recovery`() {
+        runBlocking {
+            val root = Files.createTempDirectory("session-store").toFile()
+            val store = SessionBundleStore(root)
+            val bundle = store.createStagingBundle(1).also(::fillBundle)
+            val dao = FakeSessionDao(listOf(session(bundle.sessionId, bundle.directory.path).copy(recordingState = "INTERRUPTED")))
+            val repository = SessionRepository(dao, FakeMarkerDao(), store)
+
+            repository.delete(bundle.sessionId)
+            repository.recoverInterruptedStaging()
+
+            assertNull(dao.session(bundle.sessionId))
+            assertEquals(emptyList<CaptureSession>(), repository.observeCompleted().first())
+            root.deleteRecursively()
+        }
+    }
+
     private fun session(
         id: String,
         path: String,
     ) = CaptureSessionEntity(id, 1, "COMPLETED", "LOCAL_ONLY", 1, 2, path)
+
+    private fun marker(
+        episodeId: String,
+        sessionId: String,
+    ) = EpisodeMarkerEntity(episodeId, sessionId, 1, 2, "task", "object", "COMPLETED")
 
     private class FakeSessionDao(
         sessions: List<CaptureSessionEntity>,
@@ -189,11 +293,26 @@ class SessionRepositoryTest {
         }
 
         override suspend fun nextDisplayNumber(): Int = (values.values.maxOfOrNull(CaptureSessionEntity::displayNumber) ?: 0) + 1
+
+        override suspend fun delete(sessionId: String) {
+            values.remove(sessionId)
+        }
+
+        override suspend fun allSessionIds(): List<String> = values.keys.toList()
     }
 
-    private class FakeMarkerDao : EpisodeMarkerDao {
-        override fun observeForSession(sessionId: String): Flow<List<EpisodeMarkerEntity>> = flowOf(emptyList())
+    private class FakeMarkerDao(
+        val markers: MutableList<EpisodeMarkerEntity> = mutableListOf(),
+    ) : EpisodeMarkerDao {
+        override fun observeForSession(sessionId: String): Flow<List<EpisodeMarkerEntity>> =
+            flowOf(markers.filter { it.sessionId == sessionId })
 
-        override suspend fun upsert(marker: EpisodeMarkerEntity) = Unit
+        override suspend fun upsert(marker: EpisodeMarkerEntity) {
+            markers += marker
+        }
+
+        override suspend fun deleteForSession(sessionId: String) {
+            markers.removeAll { it.sessionId == sessionId }
+        }
     }
 }

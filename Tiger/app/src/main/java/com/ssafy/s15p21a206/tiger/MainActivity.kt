@@ -42,10 +42,13 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -79,6 +82,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -127,6 +131,7 @@ import com.ssafy.s15p21a206.tiger.episode.SafDocumentTreeGateway
 import com.ssafy.s15p21a206.tiger.episode.SessionBundle
 import com.ssafy.s15p21a206.tiger.episode.SessionBundleExporter
 import com.ssafy.s15p21a206.tiger.episode.SessionBundleStore
+import com.ssafy.s15p21a206.tiger.episode.SessionDeleteResult
 import com.ssafy.s15p21a206.tiger.episode.SessionRepository
 import com.ssafy.s15p21a206.tiger.episode.TrackingState
 import com.ssafy.s15p21a206.tiger.episode.UploadState
@@ -143,6 +148,8 @@ import com.ssafy.s15p21a206.tiger.ui.common.ListSectionHeader
 import com.ssafy.s15p21a206.tiger.ui.common.MetaText
 import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeader
 import com.ssafy.s15p21a206.tiger.ui.common.SupportingText
+import com.ssafy.s15p21a206.tiger.ui.session.SessionDeleteAction
+import com.ssafy.s15p21a206.tiger.ui.session.SessionDeleteConfirmation
 import com.ssafy.s15p21a206.tiger.ui.session.SessionDetailPresentation
 import com.ssafy.s15p21a206.tiger.ui.session.SessionListScreen
 import com.ssafy.s15p21a206.tiger.ui.session.TaskSessionListScreen
@@ -326,6 +333,7 @@ fun CaptureScreen() {
     var capturing by remember { mutableStateOf(false) }
     var uploadJob by remember { mutableStateOf<Job?>(null) }
     var uploadFailureReason by remember { mutableStateOf<String?>(null) }
+    var deleteFailureReason by remember { mutableStateOf<String?>(null) }
     var showStopConfirmation by remember { mutableStateOf(false) }
     var showCaptureMetadataDialog by remember { mutableStateOf(false) }
     var trackingReady by remember { mutableStateOf(false) }
@@ -385,10 +393,15 @@ fun CaptureScreen() {
     val arCoreInstallMessage = stringResource(R.string.arcore_install_requested)
     val arCoreSessionStartFailed = stringResource(R.string.arcore_session_start_failed)
     val uploadEndpointMissing = stringResource(R.string.upload_endpoint_missing)
+    val deleteUploadInProgressMessage = stringResource(R.string.session_delete_upload_in_progress)
+    val deleteFailedMessage = stringResource(R.string.session_delete_failed)
     LaunchedEffect(repository) {
         repository.recoverInterruptedStaging()
         repository.failInterruptedUploads()
         repository.normalizeDisplayNumbers()
+        // 구제가 끝난 뒤에 회수한다. 구제가 staging에서 옮겨 온 번들은 색인에 행이 있으므로
+        // 고아가 아니지만, 순서를 뒤집으면 옮겨지기 전 상태를 보고 판단하게 된다.
+        repository.purgeOrphanBundles()
     }
     val treePicker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
@@ -653,6 +666,35 @@ fun CaptureScreen() {
         launchUpload(service, sessionId)
     }
 
+    /**
+     * Session을 기기에서 지우고 목록으로 돌아간다.
+     *
+     * 지운 세션의 상세에 남아 있을 이유가 없다. 색인에서 사라지므로 화면은 "찾을 수 없음"이 된다.
+     * 업로드가 진행 중이라 거절당하면 상세에 머무르고 이유만 본문에 남긴다.
+     */
+    fun deleteSession(sessionId: String) {
+        scope.launch {
+            val result =
+                runCatching { withContext(Dispatchers.IO) { repository.delete(sessionId) } }
+                    .getOrElse {
+                        deleteFailureReason = deleteFailedMessage
+                        return@launch
+                    }
+            when (result) {
+                // 디렉터리가 남았더라도 목록과 색인에서는 사라졌다. 남은 것은 다음 실행이 회수한다.
+                SessionDeleteResult.DELETED, SessionDeleteResult.BUNDLE_RETAINED -> {
+                    deleteFailureReason = null
+                    // 상세에서 지웠으면 그 화면은 이제 "찾을 수 없음"이 되므로 나간다. 목록에서
+                    // 지웠으면 목록에 머무른다. 카드는 Flow가 갱신하면서 스스로 사라진다.
+                    if (currentEntry?.destination?.hasRoute<SessionDetailRoute>() == true) {
+                        navController.popBackStack()
+                    }
+                }
+                SessionDeleteResult.UPLOAD_IN_PROGRESS -> deleteFailureReason = deleteUploadInProgressMessage
+            }
+        }
+    }
+
     /** 이미 그 세션의 상세에 있으므로 목적지를 다시 쌓지 않고 전송만 새로 건다. */
     fun retryUpload(sessionId: String) {
         val service = uploadService
@@ -765,6 +807,7 @@ fun CaptureScreen() {
                         sessions = completedSummaries.filter { it.taskName.trim() == route.taskName },
                         onBack = navController::popBackStack,
                         onOpenSession = { sessionId -> navController.navigate(SessionDetailRoute(sessionId)) },
+                        onDeleteSession = ::deleteSession,
                         // 이름 없는 Task 묶음은 이름이 빈 세션들이라 채울 것이 없다. 빈 채로 연다.
                         onStartCapture = { startCapture(route.taskName) },
                     )
@@ -783,6 +826,8 @@ fun CaptureScreen() {
                             pendingSessionId = route.sessionId
                             treePicker.launch(null)
                         },
+                        onDelete = { deleteSession(route.sessionId) },
+                        deleteFailureReason = deleteFailureReason,
                         sharedPlayer = sharedVideoPlayer,
                         onOpenFullscreenVideo = { navController.navigate(SessionVideoRoute(route.sessionId)) },
                         uploadFailureReason = uploadFailureReason,
@@ -1118,11 +1163,15 @@ private fun SessionDetailScreen(
     exportState: ExportState,
     exportMessage: String?,
     onExport: () -> Unit,
+    onDelete: () -> Unit,
+    deleteFailureReason: String?,
     uploadFailureReason: String?,
     sharedPlayer: SharedVideoPlayer,
     onOpenFullscreenVideo: () -> Unit,
 ) {
     var showSessionInfo by remember { mutableStateOf(false) }
+    var pendingDelete by remember { mutableStateOf<SessionDeleteAction?>(null) }
+    val presentation = summary?.let(SessionDetailPresentation::from)
     // 재생 영역 높이와 전송·내보내기 상태에 따라 내용이 화면을 넘는다. 스크롤이 없으면 잘린다.
     Column(
         modifier =
@@ -1131,21 +1180,16 @@ private fun SessionDetailScreen(
                 .verticalScroll(rememberScrollState()),
     ) {
         NavigationHeader(
-            // 어느 세션인지는 본문의 이름표가 말한다. 헤더에는 뒤로 가기와 정보만 남긴다.
+            // 어느 세션인지는 본문의 이름표가 말한다. 헤더에는 뒤로 가기와 메뉴만 남긴다.
             title = "",
             onBack = onBack,
         ) {
-            // 사진 앱이 크기·형식·촬영 설정을 ⓘ 뒤 시트로 미뤄 두는 자리다. 뒤로 가기와 같은 급으로
-            // 보이지 않도록 글리프를 작게, 색은 옅게 둔다.
             if (summary != null) {
-                IconButton(onClick = { showSessionInfo = true }) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_session_info),
-                        contentDescription = stringResource(R.string.session_info_title),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(SESSION_INFO_ICON_SIZE),
-                    )
-                }
+                SessionDetailMenu(
+                    deleteAction = presentation?.deleteAction,
+                    onOpenSessionInfo = { showSessionInfo = true },
+                    onRequestDelete = { pendingDelete = it },
+                )
             }
         }
         if (summary == null) {
@@ -1153,8 +1197,7 @@ private fun SessionDetailScreen(
                 text = stringResource(R.string.session_detail_unavailable),
                 modifier = Modifier.padding(horizontal = DETAIL_CONTENT_PADDING),
             )
-        } else {
-            val presentation = SessionDetailPresentation.from(summary)
+        } else if (presentation != null) {
             // 영상은 좌우 여백 없이 화면 폭을 다 쓴다. 16:9 안에 컨트롤이 오버레이로 놓이므로
             // 여백을 주면 재생 영역만 줄고 얻는 것이 없다.
             SessionVideoPreview(summary.bundlePath, sharedPlayer, onOpenFullscreenVideo)
@@ -1193,6 +1236,10 @@ private fun SessionDetailScreen(
                 if (summary.uploadState == UploadState.FAILED && uploadFailureReason != null) {
                     SupportingText(uploadFailureReason)
                 }
+                // 지우지 못했으면 화면이 그대로 남는다. 아무 말이 없으면 눌리지 않은 것처럼 보인다.
+                if (deleteFailureReason != null) {
+                    SupportingText(deleteFailureReason)
+                }
                 if (presentation.uploadAction != null) {
                     Button(onClick = onUpload) {
                         Text(
@@ -1214,12 +1261,100 @@ private fun SessionDetailScreen(
             }
         }
     }
-    if (showSessionInfo && summary != null) {
+    if (showSessionInfo && presentation != null && summary != null) {
         SessionInfoSheet(
             summary = summary,
-            durationSeconds = SessionDetailPresentation.from(summary).durationSeconds,
+            durationSeconds = presentation.durationSeconds,
             onDismiss = { showSessionInfo = false },
         )
+    }
+    // 삭제를 묻는 동안은 영상을 멈춘다. 되돌릴 수 없는 확인을 받는데 뒤에서 소리가 계속 나면
+    // 무엇을 묻고 있는지 흐려진다.
+    //
+    // 확인을 누르면 재생기가 연 그 파일이 곧 사라진다. unlink 자체는 열린 파일에도 안전하지만,
+    // 멈춰 두면 재생기가 파일을 다시 열 일이 없어 사라진 뒤에 읽으려 드는 경우가 생기지 않는다.
+    LaunchedEffect(pendingDelete) {
+        if (pendingDelete != null) sharedPlayer.pause()
+    }
+    pendingDelete?.let { action ->
+        SessionDeleteConfirmation(
+            action = action,
+            onConfirm = {
+                pendingDelete = null
+                onDelete()
+            },
+            onDismiss = { pendingDelete = null },
+        )
+    }
+}
+
+/**
+ * 세션 정보와 삭제를 담는 헤더 메뉴다.
+ *
+ * 둘 다 이 화면의 주 동작이 아니다. 본문의 전송 버튼이 주 동작을 맡고 있고, 이쪽은 확인하거나
+ * 정리하러 들어왔을 때만 찾는다. 제목이 없는 헤더에 흐린 글리프를 나란히 세우면 둘 다 무엇인지
+ * 추측해야 하는 표가 된다. 메뉴로 접으면 글자로 이름이 붙고 헤더에는 뒤로 가기만 남는다.
+ *
+ * 삭제는 되돌릴 수 없으므로 메뉴를 여는 한 단계가 더 있는 편이 낫다. 업로드가 번들을 읽고 있는
+ * 동안은 누를 수 없으며, 흐린 아이콘과 달리 흐린 글자는 무엇이 막혔는지를 스스로 말한다.
+ */
+@Composable
+@Suppress("FunctionName")
+private fun SessionDetailMenu(
+    deleteAction: SessionDeleteAction?,
+    onOpenSessionInfo: () -> Unit,
+    onRequestDelete: (SessionDeleteAction) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                painter = painterResource(R.drawable.ic_more_actions),
+                contentDescription = stringResource(R.string.session_detail_more_actions),
+                // 뒤로 가기와 같은 급으로 보이지 않도록 글리프를 작게, 색은 옅게 둔다.
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(HEADER_MENU_ICON_SIZE),
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                // `DropdownMenuItem`이 상속시키는 `labelLarge`는 Medium이다. 항목이 둘뿐이라
+                // 굵기로 무게를 더 실을 이유가 없고, 삭제 항목의 error 색만으로 충분히 구분된다.
+                text = { Text(stringResource(R.string.session_info_title), fontWeight = MENU_ITEM_FONT_WEIGHT) },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_session_info),
+                        // 이름은 바로 옆 글자가 말한다. 아이콘까지 읽히면 같은 말을 두 번 한다.
+                        contentDescription = null,
+                    )
+                },
+                onClick = {
+                    expanded = false
+                    onOpenSessionInfo()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.session_delete), fontWeight = MENU_ITEM_FONT_WEIGHT) },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_session_delete),
+                        contentDescription = null,
+                    )
+                },
+                enabled = deleteAction != null,
+                // 되돌릴 수 없는 항목은 error 색으로 둬서 위 항목과 성격이 다름을 보인다.
+                // 글자와 글리프가 같은 색이어야 한 덩어리로 읽힌다.
+                colors =
+                    MenuDefaults.itemColors(
+                        textColor = MaterialTheme.colorScheme.error,
+                        leadingIconColor = MaterialTheme.colorScheme.error,
+                    ),
+                onClick = {
+                    expanded = false
+                    deleteAction?.let(onRequestDelete)
+                },
+            )
+        }
     }
 }
 
@@ -1532,6 +1667,16 @@ private class SharedVideoPlayer(
         return current
     }
 
+    /**
+     * 재생을 멈춘다. 적재한 파일은 그대로 두므로 다시 누르면 이어서 재생한다.
+     *
+     * 화면을 덮는 판이 뜨는 동안 쓴다. 놓지 않고 멈추기만 하는 이유는, 놓으면 판 뒤의 재생 영역이
+     * 빈 화면이 되어 무엇을 덮고 있는지 알 수 없게 되기 때문이다.
+     */
+    fun pause() {
+        player?.pause()
+    }
+
     fun release() {
         player?.release()
         player = null
@@ -1663,9 +1808,12 @@ private val DETAIL_CONTENT_PADDING = 16.dp
 private val DETAIL_VIDEO_GAP = 24.dp
 
 /**
- * 세션 정보 버튼의 글리프 크기.
+ * 헤더 메뉴 버튼의 글리프 크기.
  *
  * 헤더에서 뒤로 가기와 나란히 서지만 같은 급의 동작은 아니다. 기본 24dp보다 작게 두어 있는 줄만
  * 알면 되는 단추로 남긴다. 터치 영역은 `IconButton`의 48dp를 그대로 둔다.
  */
-private val SESSION_INFO_ICON_SIZE = 20.dp
+private val HEADER_MENU_ICON_SIZE = 20.dp
+
+/** 헤더 메뉴 항목의 글자 굵기. `labelLarge`의 Medium에서 한 단계 내린 값이다. */
+private val MENU_ITEM_FONT_WEIGHT = FontWeight.Normal

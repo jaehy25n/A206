@@ -2,10 +2,13 @@ package com.ssafy.s15p21a206.tiger.ui.session
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import com.ssafy.s15p21a206.tiger.R
 import com.ssafy.s15p21a206.tiger.episode.SessionSummary
 import com.ssafy.s15p21a206.tiger.episode.UploadState
@@ -57,6 +60,7 @@ class SessionListScreenTest {
                 sessions = listOf(summary),
                 onBack = {},
                 onOpenSession = { selectedSessionId = it },
+                onDeleteSession = {},
                 onStartCapture = {},
             )
         }
@@ -66,6 +70,82 @@ class SessionListScreenTest {
         composeRule.onNodeWithText(string(R.string.upload_failed)).assertIsDisplayed()
         composeRule.onNodeWithContentDescription(sessionLabel).performClick()
         assertEquals(summary.sessionId, selectedSessionId)
+    }
+
+    /** 삭제는 카드에 표를 두지 않고 길게 누르기에 숨긴다. 확인을 거치지 않으면 지워지지 않는다. */
+    @Test
+    fun longPressDeletesASessionOnlyAfterConfirmation() {
+        val summary = summary()
+        var deletedSessionId: String? = null
+        val captureTime = DateFormat.getDateTimeInstance().format(Date(summary.recordingStartEpochMs))
+        val sessionLabel = string(R.string.session_list_item_content_description, captureTime)
+
+        composeRule.setContent {
+            TaskSessionListScreen(
+                taskName = summary.taskName,
+                sessions = listOf(summary),
+                onBack = {},
+                onOpenSession = {},
+                onDeleteSession = { deletedSessionId = it },
+                onStartCapture = {},
+            )
+        }
+
+        composeRule.onNodeWithContentDescription(sessionLabel).performTouchInput { longClick() }
+        composeRule.onNodeWithText(string(R.string.session_delete)).performClick()
+        // 확인 판이 뜨고, 취소하면 아무것도 지워지지 않는다.
+        composeRule.onNodeWithText(string(R.string.session_delete_message_only_copy)).assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.action_cancel)).performClick()
+        assertEquals(null, deletedSessionId)
+
+        composeRule.onNodeWithContentDescription(sessionLabel).performTouchInput { longClick() }
+        composeRule.onNodeWithText(string(R.string.session_delete)).performClick()
+        composeRule.onNodeWithText(string(R.string.action_delete)).performClick()
+        assertEquals(summary.sessionId, deletedSessionId)
+    }
+
+    /** 업로드가 번들을 읽고 있는 동안은 지울 수 없다. */
+    @Test
+    fun longPressOnAnUploadingSessionOffersNoEnabledDeleteAction() {
+        val summary = summary().copy(uploadState = UploadState.UPLOADING)
+        val captureTime = DateFormat.getDateTimeInstance().format(Date(summary.recordingStartEpochMs))
+        val sessionLabel = string(R.string.session_list_item_content_description, captureTime)
+
+        composeRule.setContent {
+            TaskSessionListScreen(
+                taskName = summary.taskName,
+                sessions = listOf(summary),
+                onBack = {},
+                onOpenSession = {},
+                onDeleteSession = {},
+                onStartCapture = {},
+            )
+        }
+
+        composeRule.onNodeWithContentDescription(sessionLabel).performTouchInput { longClick() }
+        composeRule.onNodeWithText(string(R.string.session_delete)).assertIsNotEnabled()
+    }
+
+    /**
+     * 마지막 세션을 지우면 닿게 되는 화면이다. 삭제를 붙이기 전에는 세션이 있는 Task만 홈에
+     * 나타나 도달할 수 없었다.
+     */
+    @Test
+    fun anEmptyTaskSessionListExplainsHowToAddOne() {
+        composeRule.setContent {
+            TaskSessionListScreen(
+                taskName = "Door opening",
+                sessions = emptyList(),
+                onBack = {},
+                onOpenSession = {},
+                onDeleteSession = {},
+                onStartCapture = {},
+            )
+        }
+
+        composeRule.onNodeWithText(string(R.string.task_session_list_empty)).assertIsDisplayed()
+        // 비어 있을 때는 바로 아래 안내가 같은 말을 하므로 개수를 세지 않는다.
+        composeRule.onNodeWithText(string(R.string.session_list_count, 0)).assertDoesNotExist()
     }
 
     private fun summary() =

@@ -1,24 +1,36 @@
 package com.ssafy.s15p21a206.tiger.ui.session
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -27,7 +39,11 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.round
 import com.ssafy.s15p21a206.tiger.R
 import com.ssafy.s15p21a206.tiger.episode.SessionSummary
 import com.ssafy.s15p21a206.tiger.ui.common.ListSectionHeader
@@ -56,34 +72,39 @@ fun SessionListScreen(
             (NavigationHeaderTitleCenter - sectionTitleLineHeight.toDp() / 2).coerceAtLeast(0.dp)
         }
     Box(modifier = modifier.fillMaxSize()) {
-        // 이름표를 목록 바깥에 두면 홀로 뜬 머리띠가 되고, FAB가 아래로 내려간 뒤로는 같은 줄에
-        // 짝이 될 것도 없다. 목록의 첫 항목으로 넣어 카드와 같은 기둥 안에서 함께 흐르게 한다.
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            // 아래 여백은 FAB가 마지막 카드를 가리지 않을 만큼 둔다.
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = sectionTopPadding, bottom = 88.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            item(key = HOME_SECTION_KEY) {
+        if (taskGroups.isEmpty()) {
+            // 비어 있으면 목록이 아니다. 이름표는 제자리에 두고 안내만 남은 공간 가운데로 보낸다.
+            // 목록 항목처럼 왼쪽 위에 붙여 두면 채워질 자리를 기다리는 빈 행으로 읽힌다.
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(start = 16.dp, end = 16.dp, top = sectionTopPadding, bottom = FAB_CLEARANCE),
+            ) {
                 ListSectionHeader(
                     modifier = Modifier.padding(bottom = SECTION_HEADER_BOTTOM_PADDING),
                     title = stringResource(R.string.session_list_title),
-                    // 비어 있을 때는 바로 아래 안내가 같은 말을 하므로 세지 않는다.
-                    supporting =
-                        taskGroups.size
-                            .takeIf { it > 0 }
-                            ?.let { stringResource(R.string.task_list_count, it) },
+                    // 비어 있을 때는 아래 안내가 같은 말을 하므로 세지 않는다.
+                    supporting = null,
                 )
+                EmptyListMessage(stringResource(R.string.session_list_empty), Modifier.weight(1f))
             }
-            if (taskGroups.isEmpty()) {
-                item(key = HOME_EMPTY_KEY) {
-                    Text(
-                        text = stringResource(R.string.session_list_empty),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        } else {
+            // 이름표를 목록 바깥에 두면 홀로 뜬 머리띠가 되고, FAB가 아래로 내려간 뒤로는 같은 줄에
+            // 짝이 될 것도 없다. 목록의 첫 항목으로 넣어 카드와 같은 기둥 안에서 함께 흐르게 한다.
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                // 아래 여백은 FAB가 마지막 카드를 가리지 않을 만큼 둔다.
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = sectionTopPadding, bottom = FAB_CLEARANCE),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                item(key = HOME_SECTION_KEY) {
+                    ListSectionHeader(
+                        modifier = Modifier.padding(bottom = SECTION_HEADER_BOTTOM_PADDING),
+                        title = stringResource(R.string.session_list_title),
+                        supporting = stringResource(R.string.task_list_count, taskGroups.size),
                     )
                 }
-            } else {
                 items(taskGroups.entries.toList(), key = { it.key }) { (taskName, taskSessions) ->
                     val label = taskName.ifBlank { unknownTask }
                     TaskSummaryItem(label, taskSessions.size) { onOpenTask(taskName) }
@@ -154,8 +175,32 @@ private fun NewSessionFab(
 private val SECTION_HEADER_BOTTOM_PADDING = 8.dp
 
 private const val HOME_SECTION_KEY = "home-section"
-private const val HOME_EMPTY_KEY = "home-empty"
 private const val TASK_SESSIONS_SECTION_KEY = "task-sessions-section"
+
+/** FAB가 마지막 카드나 안내를 가리지 않도록 목록 아래에 두는 여백. */
+private val FAB_CLEARANCE = 88.dp
+
+/**
+ * 목록이 비었을 때 남은 공간 가운데에 놓는 안내다.
+ *
+ * 목록 항목처럼 왼쪽 위에 붙여 두면 곧 채워질 자리를 기다리는 빈 행으로 읽힌다. 화면에 혼자 있는
+ * 문장이므로 카드 안 메타 정보와 같은 크기일 이유도 없다.
+ */
+@Composable
+@Suppress("FunctionName")
+private fun EmptyListMessage(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
 
 /** 카드가 안쪽에 두는 여백. 카드 바깥의 글자를 카드 안 글자와 맞출 때 같은 값을 쓴다. */
 private val CARD_CONTENT_PADDING = 16.dp
@@ -167,6 +212,7 @@ fun TaskSessionListScreen(
     sessions: List<SessionSummary>,
     onBack: () -> Unit,
     onOpenSession: (String) -> Unit,
+    onDeleteSession: (String) -> Unit,
     onStartCapture: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -176,24 +222,42 @@ fun TaskSessionListScreen(
             // 이름은 아래 이름표가 말하므로 헤더에는 뒤로 가기만 남긴다. 60dp 안에서 같은 이름을 두 번
             // 읽게 할 이유가 없다.
             NavigationHeader(title = "", onBack = onBack)
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                // 홈과 달리 이 화면에는 헤더가 얹히므로 위 여백을 적게 둔다. 헤더가 이미 아래로
-                // 여백을 두고 있어, 여기서 16dp를 더 띄우면 이름표가 화면 한참 아래에서 시작한다.
-                //
-                // 아래 여백은 홈과 같은 이유로 FAB가 마지막 카드를 가리지 않을 만큼 둔다.
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                item(key = TASK_SESSIONS_SECTION_KEY) {
+            // 마지막 세션을 지우면 이 화면이 빈 채로 남는다. 삭제하기 전에는 세션이 있는 Task만
+            // 홈에 나타나 이 상태에 닿을 수 없었다. 홈과 같은 짜임으로 안내를 가운데에 둔다.
+            if (sessions.isEmpty()) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = FAB_CLEARANCE),
+                ) {
                     ListSectionHeader(
                         modifier = Modifier.padding(bottom = SECTION_HEADER_BOTTOM_PADDING),
                         title = title,
-                        supporting = stringResource(R.string.session_list_count, sessions.size),
+                        supporting = null,
                     )
+                    EmptyListMessage(stringResource(R.string.task_session_list_empty), Modifier.weight(1f))
                 }
-                items(sessions, key = SessionSummary::sessionId) { summary ->
-                    SessionSummaryItem(summary, onOpenSession)
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    // 홈과 달리 이 화면에는 헤더가 얹히므로 위 여백을 적게 둔다. 헤더가 이미 아래로
+                    // 여백을 두고 있어, 여기서 16dp를 더 띄우면 이름표가 화면 한참 아래에서 시작한다.
+                    //
+                    // 아래 여백은 홈과 같은 이유로 FAB가 마지막 카드를 가리지 않을 만큼 둔다.
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = FAB_CLEARANCE),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    item(key = TASK_SESSIONS_SECTION_KEY) {
+                        ListSectionHeader(
+                            modifier = Modifier.padding(bottom = SECTION_HEADER_BOTTOM_PADDING),
+                            title = title,
+                            supporting = stringResource(R.string.session_list_count, sessions.size),
+                        )
+                    }
+                    items(sessions, key = SessionSummary::sessionId) { summary ->
+                        SessionSummaryItem(summary, onOpenSession, onDeleteSession)
+                    }
                 }
             }
         }
@@ -228,29 +292,107 @@ private fun TaskSummaryItem(
     }
 }
 
+/**
+ * 목록의 Session 카드다. 열기는 탭, 삭제는 길게 누르기에 둔다.
+ *
+ * 카드마다 삭제 표를 상주시키지 않는다. 이 목록의 주 동작은 여는 것이고, 모든 행에 부수 동작이
+ * 붙으면 목록이 점으로 얼룩진다. 길게 누르기는 안드로이드에서 항목별 동작을 여는 관용구다.
+ *
+ * 밀어서 삭제는 쓰지 않는다. 그 제스처는 실행취소가 따라온다는 약속을 달고 다니는데, 여기서는
+ * 번들을 실제로 지우므로 되돌릴 수 없다. 확인 판을 붙이면 제스처의 약속을 깨고, 붙이지 않으면
+ * 스크롤 오조작이 그대로 영구 삭제가 된다.
+ *
+ * 발견성은 상세 화면의 메뉴가 담당한다. 여기 제스처는 아는 사람을 위한 지름길이다.
+ */
 @Composable
 @Suppress("FunctionName")
 private fun SessionSummaryItem(
     summary: SessionSummary,
     onOpenSession: (String) -> Unit,
+    onDeleteSession: (String) -> Unit,
 ) {
     val captureTime =
         java.text.DateFormat
             .getDateTimeInstance()
             .format(java.util.Date(summary.recordingStartEpochMs))
     val sessionLabel = stringResource(R.string.session_list_item_content_description, captureTime)
-    Card(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .semantics { contentDescription = sessionLabel }
-                .clickable(role = Role.Button) { onOpenSession(summary.sessionId) },
-    ) {
-        Column(modifier = Modifier.padding(CARD_CONTENT_PADDING), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(text = captureTime, style = MaterialTheme.typography.titleMedium)
-            SupportingText(stringResource(summary.uploadState.labelRes))
-            MetaText(stringResource(R.string.session_list_episode_count, summary.completedEpisodeCount))
-            MetaText(stringResource(R.string.session_list_short_id, summary.sessionId.take(8)))
+    val deleteAction = SessionDeleteAction.from(summary.uploadState)
+    var menuExpanded by remember { mutableStateOf(false) }
+    var pendingDelete by remember { mutableStateOf<SessionDeleteAction?>(null) }
+    // 길게 누른 지점. 메뉴는 카드가 아니라 이 지점에 건다.
+    var pressPosition by remember { mutableStateOf(IntOffset.Zero) }
+    Box {
+        Card(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .semantics { contentDescription = sessionLabel }
+                    // 누른 자리를 기록만 하고 소비하지 않는다. Initial pass에서 보기만 하므로
+                    // 아래 `combinedClickable`의 탭·길게 누르기와 ripple이 그대로 동작한다.
+                    .pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent(PointerEventPass.Initial)
+                                if (event.type == PointerEventType.Press) {
+                                    pressPosition =
+                                        event.changes
+                                            .first()
+                                            .position
+                                            .round()
+                                }
+                            }
+                        }
+                    }.combinedClickable(
+                        role = Role.Button,
+                        onLongClickLabel = stringResource(R.string.session_delete),
+                        onLongClick = { menuExpanded = true },
+                        onClick = { onOpenSession(summary.sessionId) },
+                    ),
+        ) {
+            Column(modifier = Modifier.padding(CARD_CONTENT_PADDING), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(text = captureTime, style = MaterialTheme.typography.titleMedium)
+                SupportingText(stringResource(summary.uploadState.labelRes))
+                MetaText(stringResource(R.string.session_list_episode_count, summary.completedEpisodeCount))
+                MetaText(stringResource(R.string.session_list_short_id, summary.sessionId.take(8)))
+            }
         }
+        // 메뉴는 누른 손가락 자리에서 열린다. 카드를 앵커로 쓰면 폭이 화면을 꽉 채우므로 어디를
+        // 눌렀든 카드 왼쪽 아래 구석에서 열려, 방금 건드린 곳과 메뉴가 멀리 떨어진다.
+        // 크기 0짜리 앵커를 누른 지점에 두고 거기에 건다.
+        Box(modifier = Modifier.offset { pressPosition }) {
+            DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.session_delete), fontWeight = FontWeight.Normal) },
+                    leadingIcon = {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_session_delete),
+                            // 이름은 바로 옆 글자가 말한다. 아이콘까지 읽히면 같은 말을 두 번 한다.
+                            contentDescription = null,
+                        )
+                    },
+                    // 업로드가 번들을 읽고 있는 동안은 지울 수 없다. 이유는 카드의 전송 상태가 말한다.
+                    enabled = deleteAction != null,
+                    colors =
+                        MenuDefaults.itemColors(
+                            textColor = MaterialTheme.colorScheme.error,
+                            leadingIconColor = MaterialTheme.colorScheme.error,
+                        ),
+                    onClick = {
+                        menuExpanded = false
+                        pendingDelete = deleteAction
+                    },
+                )
+            }
+        }
+    }
+    pendingDelete?.let { action ->
+        SessionDeleteConfirmation(
+            action = action,
+            onConfirm = {
+                pendingDelete = null
+                onDeleteSession(summary.sessionId)
+            },
+            onDismiss = { pendingDelete = null },
+        )
     }
 }

@@ -304,3 +304,167 @@ T014·T015·T016·T028의 완료 증거는 `AppDestination` sealed 목적지와 
     목적지 안의 `BackHandler`가 `NavHost`의 pop보다 우선한다는 가정이 실기기에서 확인되었다.
   - 범위 한계: 프레임워크 동작만 고정한다. `MainActivity`의 배선을 검증하지 않으므로 T038의 실기기
     확인을 대신하지 않는다.
+
+## 추가 범위 (2026-09-18, S15P21A206-35)
+
+Session을 기기에서 지우는 범위를 FR-016·FR-016a~d로 명세에 추가했다. 서버에 DELETE API가 없으므로
+삭제는 기기의 색인과 번들에만 미친다.
+
+- [X] T040 [S15P21A206-35] `app/src/main/java/com/ssafy/s15p21a206/tiger/data/local/TigerDatabase.kt`,
+  `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/EpisodeBundleStore.kt`,
+  `app/src/main/java/com/ssafy/s15p21a206/tiger/episode/SessionRepository.kt`에 Session 단위 삭제와
+  고아 번들 회수를 구현한다.
+  - 구현: `CaptureSessionDao.delete`·`allSessionIds`, `EpisodeMarkerDao.deleteForSession`,
+    `SessionBundleStore.deleteCompletedBundle`·`orphanCompletedBundles`,
+    `SessionRepository.delete`·`purgeOrphanBundles`와 `SessionDeleteResult`. 색인(마커·세션 행)을
+    먼저 지우고 디렉터리를 지우므로, 디렉터리 삭제가 실패해도 목록에는 고아가 남지 않는다.
+    `UPLOADING` 상태는 거절한다.
+  - production 호출 경로: `MainActivity.kt`의 `CaptureScreen`이 `deleteSession(sessionId)`에서
+    `repository.delete`를, 시작 `LaunchedEffect(repository)`에서 `repository.purgeOrphanBundles()`를
+    호출한다. 회수는 `recoverInterruptedStaging()` 뒤에 돈다.
+  - 자동 검증: `SessionRepositoryTest.deleting a session removes its index row, markers and bundle`,
+    `deleting a session that is uploading is refused`,
+    `a bundle left behind by a failed delete is purged on the next run`,
+    `purging orphan bundles keeps bundles of sessions that are not completed yet`,
+    `a deleted session does not come back through staging recovery`;
+    `.\gradlew.bat testDebugUnitTest` 성공 (2026-09-18).
+- [X] T041 [S15P21A206-35] `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/session/SessionDetailPresentation.kt`,
+  `app/src/main/java/com/ssafy/s15p21a206/tiger/MainActivity.kt`,
+  `app/src/main/res/values/strings.xml`,
+  `app/src/main/res/drawable/ic_session_delete.xml`에 상세 화면의 삭제 진입점과 확인 흐름을 붙인다.
+  - 구현: `SessionDeleteAction`이 업로드 상태로 확인 문구를 가르고(`UPLOADED`는 `DeleteLocalCopy`,
+    `LOCAL_ONLY`·`FAILED`는 `DeleteOnlyCopy`, `UPLOADING`은 `null`), `SessionDetailScreen`의
+    헤더 메뉴가 `SessionDeleteConfirmation`을 띄운다. 삭제하면 `popBackStack()`으로 돌아가고,
+    거절당하면 상세에 사유만 남는다. 문구는 전부 `strings.xml`에 있다.
+  - 이후 변경(T044): 진입점이 삭제 아이콘에서 `세션 정보`·`세션 삭제`를 담은 헤더 메뉴로 바뀌었고,
+    `SessionDeleteAction`과 확인 판은 목록과 공유하려고 `ui/session/SessionDelete.kt`로 옮겼다.
+  - production 호출 경로: `NavHost`의 `composable<SessionDetailRoute>`가 `onDelete`에
+    `deleteSession(route.sessionId)`를 넘긴다.
+  - 자동 검증: `SessionDetailScreenTest.delete confirmation distinguishes an uploaded session from the only copy`,
+    `a session that is uploading exposes no delete action`;
+    `.\gradlew.bat testDebugUnitTest`, `.\gradlew.bat lintDebug` 성공 (2026-09-18).
+- [X] T042 [S15P21A206-35] `specs/002-capture-control-ux/spec.md`에 삭제 범위를 반영한다.
+  - 산출물: 2026-09-18 Clarifications 두 항목, 사용자 스토리 4의 인수 시나리오 8~10, 엣지 케이스 3건,
+    FR-016·FR-016a~d, 핵심 엔터티의 `Session 상세` 서술.
+  - 검토 기준: 삭제가 서버 사본에 미치지 않는다는 방침, 확인 문구가 업로드 여부로 갈린다는 점,
+    전송 중 삭제 금지, 색인 우선 삭제와 다음 실행 회수, 구제 경로로 되살아나지 않음이 모두 명세에 있다.
+- [X] T043 [S15P21A206-35] 재생 중인 영상을 담은 Session을 실기기에서 삭제해 본다.
+  - 자동화할 수 없는 이유: 상세 화면의 `ExoPlayer`가 `main_rgb.mp4`를 연 채로 그 파일이 사라진다.
+    POSIX는 열린 파일의 unlink를 허용하므로 삭제 자체는 성공하지만, 파일이 사라진 뒤 재생기가
+    어떻게 반응하는지는 실제 decoder로 돌려 봐야 안다. 단위 테스트에는 재생기가 없다.
+  - 위험은 줄여 뒀다: 확인 판이 뜨면 `SharedVideoPlayer.pause()`로 재생을 멈추므로, 파일이
+    사라질 때 재생기가 읽는 중이 아니다. 다만 파일을 연 채로 멈춰 있을 뿐 닫은 것은 아니라
+    남은 경로가 완전히 없어지지는 않았다.
+  - 절차: 상세 화면에서 영상을 재생한 상태로 메뉴에서 삭제하고, 확인 판이 뜰 때 재생이 멈추는지,
+    목록으로 돌아간 뒤 앱이 살아 있고 소리가 남지 않는지, logcat에 재생기 예외가 없는지 본다.
+    이어서 `adb shell run-as <pkg> ls files/capture/completed`로 디렉터리가 사라졌는지 함께 확인한다.
+  - 실제 검증: 2026-09-21 사용자가 실기기에서 확인했다. 세부 관측 항목은 사용자가 직접 보았고
+    이 기록은 그 보고에 따른다.
+  - 번들 디렉터리 삭제 자체는 실기기 검증 사유가 아니다 (2026-09-18 사용자 지적).
+    `SessionRepositoryTest.deleting a session removes its index row, markers and bundle`이 실제 파일을
+    만들고 `assertFalse(directory.exists())`까지 본다. `File.deleteRecursively()`에 안드로이드만의
+    실패 모드가 없고, 테스트가 도는 Windows 쪽이 열린 파일을 못 지워 더 엄격하다.
+    다만 `AGENTS.md`가 저장소의 실기기 동작을 단위 테스트로 검증했다고 보고하지 말라고 하므로,
+    이 task가 닫히기 전까지 삭제는 "단위 테스트로만 덮었고 실기기 확인은 하지 않았다"로 보고한다.
+  - 범위에서 제외한 것 (2026-09-18 사용자 지적):
+    - **전송 중 삭제 차단**: 사용자가 도달할 수 없는 경로다. 상세·목록 양쪽 메뉴 항목이 `UPLOADING`이면
+      비활성이고, 업로드를 시작하는 경로가 모두 사용자 조작이라 확인 판이 열려 있는 동안 걸릴 수 없다.
+      비활성 상태 자체는 기기가 필요 없으며
+      `SessionListScreenTest.longPressOnAnUploadingSessionOffersNoEnabledDeleteAction`과
+      `SessionDetailScreenTest.a session that is uploading exposes no delete action`이 고정한다.
+    - **재실행 후 되살아나지 않음**: 되살릴 수 있는 경로는 `recoverInterruptedStaging()` 하나이고
+      Room 행이 없으면 대상이 아니다.
+      `SessionRepositoryTest.a deleted session does not come back through staging recovery`가 고정한다.
+      나머지는 SQLite가 DELETE를 유지하느냐의 문제라 이 코드가 관여하지 않는다.
+
+## 추가 범위 (2026-09-18, S15P21A206-35 후속 정비)
+
+삭제를 실기기에서 확인하는 과정에서 진입점·확인 판·빈 상태를 다시 잡았다. FR-016 갱신과
+FR-016e~g 추가가 여기에 대응한다.
+
+- [X] T044 [S15P21A206-35] 상세 헤더의 아이콘 둘을 메뉴 하나로 접고, 목록 카드에 길게 눌러 삭제를 붙인다.
+  - 구현: `MainActivity.kt`의 `SessionDetailMenu`(⋮ → `세션 정보`·`세션 삭제`),
+    `SessionListScreen.kt`의 `SessionSummaryItem`이 `combinedClickable`의 `onLongClick`으로
+    메뉴를 연다. 메뉴는 누른 지점에 둔 크기 0짜리 앵커에 건다. 좌표는 `PointerEventPass.Initial`에서
+    기록만 하고 소비하지 않아 탭·ripple·접근성 동작이 유지된다. `SessionDeleteAction`과
+    `SessionDeleteConfirmation`은 상세·목록이 같은 판단을 하도록 `ui/session/SessionDelete.kt`에 둔다.
+  - production 호출 경로: `NavHost`의 `composable<TaskSessionsRoute>`가 `onDeleteSession`에
+    `deleteSession`을 넘긴다. `deleteSession`은 상세에 있을 때만 `popBackStack()`한다.
+  - 자동 검증: `SessionListScreenTest.longPressDeletesASessionOnlyAfterConfirmation`,
+    `longPressOnAnUploadingSessionOffersNoEnabledDeleteAction`;
+    `.\gradlew.bat connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.ssafy.s15p21a206.tiger.ui.session.SessionListScreenTest`
+    (2026-09-18, `SM-G973N`, Android 12) 두 테스트 통과.
+  - 해결됨: 같은 클래스의 `emptyListShowsStartCaptureAction`은 이 작업과 무관한 기존 결함으로
+    실패하고 있었다. S15P21A206-43으로 분리했고, `fix/fab-accessible-name`이 develop에 병합된 뒤
+    rebase하면서 통과한다 (2026-09-21).
+- [X] T045 [S15P21A206-35] 되돌릴 수 없는 확인 판을 한 곳으로 모은다.
+  - 구현: `ui/common/DestructiveConfirmationDialog.kt`. `CaptureStopConfirmation`과
+    `SessionDeleteConfirmation`이 이 판을 쓴다. 확정 쪽은 채워진 error 버튼으로 통일했다.
+    세션 삭제만 빨간 글씨 `TextButton`이라 같은 무게의 결정이 다르게 보였다.
+  - 자동 검증: `.\gradlew.bat ktlintCheck testDebugUnitTest lintDebug compileDebugAndroidTestKotlin`
+    성공 (2026-09-21).
+  - 계측 검증: `CaptureControlStateScreenTest.stop_confirmation_explains_upload_and_separates_cancel_from_confirm`이
+    `CaptureStopConfirmation`의 메시지·취소·확정을 고정한다. 이 task가 그 Composable의 속을
+    `DestructiveConfirmationDialog`로 바꿨으므로 기기에서 다시 돌렸고 통과한다
+    (2026-09-21, `SM-G973N`, Android 12).
+- [X] T046 [S15P21A206-35] 빈 목록 안내를 고쳐 쓰고 Task Session 목록에도 둔다.
+  - 구현: `session_list_empty`가 FAB 이름을 불러 준다(`새 세션을 눌러 추가하세요`).
+    `task_session_list_empty`를 추가했다. 마지막 세션을 삭제하면 닿게 되는 상태로, 삭제를 붙이기
+    전에는 세션이 있는 Task만 홈에 나타나 도달할 수 없었다. 두 화면이 `EmptyListMessage`를
+    공유하며, 비었을 때는 `LazyColumn` 대신 `Column`으로 남은 공간 가운데에 놓고 `bodyLarge`로 키운다.
+  - 자동 검증: `.\gradlew.bat testDebugUnitTest`, `.\gradlew.bat lintDebug` 성공 (2026-09-18).
+  - 계측 검증: 홈 빈 상태는 `emptyListShowsStartCaptureAction`이, Task 목록 빈 상태는 T054의
+    `anEmptyTaskSessionListExplainsHowToAddOne`이 고정한다. 둘 다 통과 (2026-09-21, `SM-G973N`).
+    앞의 것은 S15P21A206-43이 develop에 병합되기 전까지 실패해 근거로 쓸 수 없었다.
+- [X] T047 [S15P21A206-35] `specs/002-capture-control-ux/spec.md`에 위 변경을 반영한다.
+  - 산출물: 2026-09-18 Clarifications 2건(목록 진입점, 밀어서 삭제를 쓰지 않는 이유),
+    사용자 스토리 4의 인수 시나리오 11~12, FR-016 개정, FR-016e~g, 핵심 엔터티의 `Session 상세` 보강.
+  - 검토 기준: 목록 진입점과 그 형태 제약, 확인 판의 통일, 빈 목록 안내가 모두 명세에 있다.
+
+## Phase 8: Convergence
+
+- [X] T048 `contracts/capture-control-ui.md`의 화면·진입점 표에서 Session Detail의 "우측 상단 정보 아이콘"을 `세션 정보`·`세션 삭제`를 담은 헤더 메뉴로 고치고, Task Session 목록 행에 길게 눌러 여는 삭제 진입점을 적는다 per FR-016, FR-016e (contradicts)
+- [X] T049 `contracts/capture-control-ui.md`에 삭제 동작 절을 추가한다. 기기에서만 지운다는 방침, 업로드 여부로 갈리는 확인 문구, 전송 중 금지, 색인 우선 삭제와 다음 실행 회수, 되돌릴 수 없는 확인 판의 공통 형태, 확인 판이 뜨는 동안 영상 재생을 멈춘다는 규칙을 포함한다 per FR-016, FR-016a, FR-016b, FR-016c, FR-016f (missing)
+- [X] T050 `contracts/capture-control-ui.md`의 `조회 화면의 짜임`에서 "상세의 세션 정보는 상단 우측 아이콘으로 연다"를 메뉴로 접은 현재 짜임과 그 이유로 고치고, 목록 카드가 삭제 표를 상주시키지 않는다는 제약을 적는다 per FR-016, FR-016e (contradicts)
+- [X] T051 `specs/002-capture-control-ux/plan.md`에 삭제의 설계 결정을 기록한다. 색인을 먼저 지우고 디렉터리를 지우는 순서, 실패 시 고아 디렉터리를 다음 실행이 회수하는 경로, 서버 DELETE API가 없다는 제약을 포함한다 per plan: 저장소 정책 (missing)
+- [X] T052 `specs/002-capture-control-ux/data-model.md`에 삭제가 더한 DAO 연산(`CaptureSessionDao.delete`·`allSessionIds`, `EpisodeMarkerDao.deleteForSession`)과 고아 번들 회수 수명주기를 반영한다 per FR-016, FR-016c (missing)
+- [X] T053 `specs/002-capture-control-ux/spec.md`의 성공 기준에 삭제 항목을 추가한다. 목록·번들·색인에서 사라지고 재실행 후에도 돌아오지 않는다는 측정 가능한 결과를 포함한다 per FR-016 계열 (missing)
+- [X] T054 `app/src/androidTest/java/com/ssafy/s15p21a206/tiger/ui/session/SessionListScreenTest.kt`에 Task Session 목록의 빈 상태를 고정하는 계측 테스트를 추가한다. 홈 빈 상태를 보던 `emptyListShowsStartCaptureAction`은 S15P21A206-43이 해결될 때까지 근거로 쓸 수 없다 per FR-016g (partial)
+
+### Phase 8 완료 증거 (2026-09-21)
+
+- T048·T049·T050 산출물: `contracts/capture-control-ui.md`. 진입점 표의 Session Detail 행을 헤더 메뉴로,
+  Task Session 목록 행에 길게 눌러 삭제를 적었다. `삭제 동작` 절을 새로 두어 기기 한정 방침, 확인 문구
+  분기, 전송 중 금지, 색인 우선 삭제와 고아 회수 순서, 확인 판의 공통 형태, 확인 중 재생 정지, 삭제 뒤
+  이동을 기록했다. `조회 화면의 짜임`에서 세션 정보 아이콘 서술을 메뉴로 고치고 목록 진입점·메뉴 위치·
+  빈 상태 규칙을 더했다.
+- T051 산출물: `plan.md` 요약에 삭제 방침과 색인 우선 삭제 순서를 두 저장소에 걸친 동작으로 설명하고,
+  제약에 `서버 DELETE API 없음`을 더했다.
+- T052 산출물: `data-model.md`의 `삭제 연산`·`고아 번들 수명주기` 절과 저장소 불변식 한 줄. DAO 연산
+  다섯과 `SessionDeleteResult` 세 값, 앱 시작 시 실행 순서를 적었다.
+- T053 산출물: `spec.md` 성공 기준 SC-010~012.
+- T054 구현: `SessionListScreenTest.anEmptyTaskSessionListExplainsHowToAddOne`이 Task Session 목록의
+  빈 안내가 보이고 `0개의 Session`이 없는지 검사한다.
+- 자동 검증: `.\gradlew.bat ktlintCheck testDebugUnitTest lintDebug compileDebugAndroidTestKotlin` 성공
+  (2026-09-21).
+- 계측 검증: androidTest 전체를 실기기에서 돌렸다 (2026-09-21, `SM-G973N`, Android 12).
+  **20 tests, 0 failures.**
+
+  ```text
+  ExportMigrationTest:.            SessionExportUiTest:..
+  CaptureSessionOrderTest:.        CaptureControlStateScreenTest:.......
+  CaptureWorkspaceScreenTest:...   SessionListScreenTest:......
+  Time: 15.48 / OK (20 tests)
+  ```
+
+  실행 방법: `.\gradlew.bat assembleDebug assembleDebugAndroidTest`로 APK를 만들고
+  `adb install -r`로 둘 다 깐 뒤
+  `adb shell am instrument -w com.ssafy.s15p21a206.tiger.test/androidx.test.runner.AndroidJUnitRunner`.
+
+  `connectedDebugAndroidTest`는 이 기기에서 쓰지 않았다. 매 실행마다 APK를 다시 설치하는데
+  앱 APK가 42MB라 기기에서 dex2oat이 수 분씩 걸린다. 32분을 기다려도 테스트가 시작되지 않았고,
+  같은 테스트가 이미 설치된 APK로는 15초에 끝난다. 전송이 아니라 기기에서의 컴파일이 병목이다
+  (`adb push`는 74MB/s로 측정됐다).
+- `origin/develop`에 `fix/fab-accessible-name`이 병합되면서 S15P21A206-43이 해결됐다.
+  그동안 실패하던 `emptyListShowsStartCaptureAction`이 통과하므로, T046의 "홈 빈 상태를
+  검사하는 테스트를 근거로 쓸 수 없다"는 범위 한계는 해소됐다.

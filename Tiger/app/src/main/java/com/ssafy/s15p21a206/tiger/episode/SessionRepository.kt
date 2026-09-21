@@ -85,6 +85,40 @@ class SessionRepository(
         }
     }
 
+    /**
+     * Session을 기기에서 지운다.
+     *
+     * 서버에는 DELETE API가 없다. 이미 올린 Session의 사본은 서버에 그대로 남으므로, 이 동작은
+     * 기기 저장 공간을 비우는 것이지 업로드를 취소하는 것이 아니다.
+     *
+     * 색인을 먼저 지우고 디렉터리를 지운다. 디렉터리 삭제가 실패해도 남는 것은 고아 디렉터리뿐이고
+     * 다음 실행의 [purgeOrphanBundles]가 회수한다. 반대 순서였다면 번들이 사라진 Session이 목록에
+     * 남아 재생도 업로드도 되지 않는다.
+     */
+    suspend fun delete(sessionId: String): SessionDeleteResult {
+        val session = sessionDao.session(sessionId) ?: return SessionDeleteResult.DELETED
+        // 업로드 중인 번들은 업로드가 읽고 있다. 먼저 끝나거나 실패해야 지울 수 있다.
+        if (session.uploadState == UploadState.UPLOADING.name) return SessionDeleteResult.UPLOAD_IN_PROGRESS
+        markerDao.deleteForSession(sessionId)
+        sessionDao.delete(sessionId)
+        return if (bundleStore.deleteCompletedBundle(session.bundlePath)) {
+            SessionDeleteResult.DELETED
+        } else {
+            SessionDeleteResult.BUNDLE_RETAINED
+        }
+    }
+
+    /**
+     * 색인에 없는 번들 디렉터리를 회수한다.
+     *
+     * 삭제 도중 디렉터리를 지우지 못했거나 앱이 끝난 경우에 남는다. 목록에는 이미 보이지 않으므로
+     * 저장 공간만 차지한다.
+     */
+    suspend fun purgeOrphanBundles() {
+        val known = sessionDao.allSessionIds().toSet()
+        bundleStore.orphanCompletedBundles(known).forEach(File::deleteRecursively)
+    }
+
     suspend fun normalizeDisplayNumbers() {
         sessionDao.sessionsInCaptureOrder().forEachIndexed { index, session ->
             val displayNumber = index + 1
@@ -95,6 +129,18 @@ class SessionRepository(
     }
 
     suspend fun nextDisplayNumber(): Int = sessionDao.nextDisplayNumber()
+}
+
+/** [SessionRepository.delete]의 결과. */
+enum class SessionDeleteResult {
+    /** 색인과 번들이 모두 사라졌다. */
+    DELETED,
+
+    /** 색인은 지웠지만 디렉터리가 남았다. 목록에서는 사라지며, 다음 실행이 디렉터리를 회수한다. */
+    BUNDLE_RETAINED,
+
+    /** 업로드가 진행 중이라 지우지 않았다. */
+    UPLOAD_IN_PROGRESS,
 }
 
 private fun CaptureSessionEntity.toCaptureSession() =

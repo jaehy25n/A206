@@ -37,9 +37,38 @@
 
 Session마다 하나의 작업만 소유할 수 있다. 진행 표시는 Session Detail이 담당한다. 사용자가 전송을 중간에 끊는 수단은 두지 않으며, 백그라운드 전환만이 진행 중인 전송을 끊는다.
 
+## 삭제 연산
+
+기기에서만 지운다. 서버에 DELETE API가 없으므로 색인과 번들에만 미친다.
+
+| 연산 | 규칙 |
+| --- | --- |
+| `CaptureSessionDao.delete(sessionId)` | 색인의 Session 행을 지운다. `uploadState`가 `UPLOADING`이면 repository가 먼저 거절하므로 도달하지 않는다. |
+| `EpisodeMarkerDao.deleteForSession(sessionId)` | 그 Session의 Episode marker를 함께 지운다. 두 테이블에 외래 키가 없어 색인에 고아 marker가 남지 않도록 명시적으로 지운다. |
+| `CaptureSessionDao.allSessionIds()` | 고아 번들 회수가 쓰는 색인의 전체 id. `recordingState`를 가리지 않는다. 아직 마감되지 않은 Session의 디렉터리를 고아로 오인해 지우면 수집 중인 데이터가 사라진다. |
+| `SessionBundleStore.deleteCompletedBundle(path)` | 관리하는 completed 디렉터리만 지운다. 관리 대상이 아니면 아무것도 하지 않고 지워진 것으로 본다. 이전 버전의 외부 경로를 건드리지 않기 위함이다. |
+| `SessionBundleStore.orphanCompletedBundles(knownIds)` | completed root에서 색인에 대응하는 행이 없는 디렉터리를 낸다. |
+
+삭제 결과는 세 가지다.
+
+| 결과 | 뜻 |
+| --- | --- |
+| `DELETED` | 색인과 번들이 모두 사라졌다. |
+| `BUNDLE_RETAINED` | 색인은 지웠지만 디렉터리가 남았다. 목록에서는 사라지며 다음 실행이 디렉터리를 회수한다. |
+| `UPLOAD_IN_PROGRESS` | 전송이 번들을 읽고 있어 지우지 않았다. 색인도 번들도 그대로다. |
+
+## 고아 번들 수명주기
+
+1. 삭제가 색인을 먼저 지우고 디렉터리를 지운다. 디렉터리 삭제가 실패하면 그 디렉터리는 고아가 된다.
+2. 고아는 색인에 행이 없으므로 목록·상세·전송·export 어디에도 나타나지 않는다. 저장 공간만 차지한다.
+3. 다음 앱 시작에서 `SessionRepository.purgeOrphanBundles()`가 회수한다. 실행 순서는 staging 구제
+   → 중단된 업로드 정리 → 순번 정규화 → 고아 회수다. 구제가 staging에서 옮겨 온 번들은 색인에 행이
+   있어 고아가 아니지만, 회수를 구제보다 먼저 돌리면 옮겨지기 전 상태를 보고 판단하게 된다.
+
 ## 저장소 불변식
 
 - staging과 completed bundle은 분리하고 metadata-last 공개 규칙을 유지한다.
 - 원시 bundle은 업로드·export 중 수정하지 않는다.
 - `filesDir/capture/completed/<session_id>/`만 이 기능이 관리하는 completed source root다.
 - 외부 저장소 Session 경로는 복사·삭제·목록·상세·export·업로드하지 않는다.
+- 삭제는 관리하는 completed 번들에만 미친다. 색인을 먼저 지우므로 재생·전송이 불가능한 Session이 목록에 남지 않는다.

@@ -6,6 +6,7 @@ import com.ssafy.s15p21a206.tiger.episode.UploadState
 internal data class SessionDetailPresentation(
     val durationSeconds: Long,
     val uploadAction: UploadAction?,
+    val deleteAction: SessionDeleteAction?,
 ) {
     internal enum class UploadAction { Upload, Retry }
 
@@ -20,6 +21,7 @@ internal data class SessionDetailPresentation(
                         UploadState.FAILED -> UploadAction.Retry
                         UploadState.UPLOADING, UploadState.UPLOADED -> null
                     },
+                deleteAction = SessionDeleteAction.from(summary.uploadState),
             )
         }
 

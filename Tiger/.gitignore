@@ -37,6 +37,7 @@ Thumbs.db
 /.claude/settings.local.json
 /.claude/.credentials.json
 /.claude/plugins/
+/.claude/worktrees/
 
 # 서명 자료
 *.jks
