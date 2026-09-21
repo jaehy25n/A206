@@ -18,6 +18,7 @@ import pytest
 import run_calibrate
 from camcal.board import BoardSpec
 from camcal.calibrate import detect_session_corners
+from camcal.combined import CombinedSession
 from camcal.session import Session
 from synth import IMAGE_SIZE, TRUE_K, default_poses, render_pose
 
@@ -35,6 +36,12 @@ def rendered(request):
         for rvec, tvec in default_poses(spec, TRUE_K, N_IMAGES)
     ]
     return frames, spec
+
+
+@pytest.fixture
+def combined(session: Session) -> CombinedSession:
+    """build_report 는 이제 CombinedSession 을 받는다 (세션 1개도 같은 경로)."""
+    return CombinedSession.open([session.path])
 
 
 @pytest.fixture
@@ -85,23 +92,23 @@ def test_detect_raises_when_board_spec_disagrees(tmp_path, rendered) -> None:
 # --- 리포트 dict -----------------------------------------------------------
 
 
-def test_build_report_recovers_K(session: Session) -> None:
-    report = run_calibrate.build_report(session, n_train=N_TRAIN, seed=0)
+def test_build_report_recovers_K(combined: CombinedSession) -> None:
+    report = run_calibrate.build_report(combined, n_train=N_TRAIN, seed=0)
     K = np.asarray(report["K"])
 
     assert abs(K[0, 0] - TRUE_K[0, 0]) / TRUE_K[0, 0] < 0.02
     assert abs(K[1, 1] - TRUE_K[1, 1]) / TRUE_K[1, 1] < 0.02
 
 
-def test_rendered_scene_has_no_distortion(session: Session) -> None:
+def test_rendered_scene_has_no_distortion(combined: CombinedSession) -> None:
     """호모그래피로 그렸으니 D 가 0 근처여야 한다. 크게 나오면 렌더러가 틀린 것이다."""
-    report = run_calibrate.build_report(session, n_train=N_TRAIN, seed=0)
+    report = run_calibrate.build_report(combined, n_train=N_TRAIN, seed=0)
     assert abs(report["D"][0]) < 0.02, f"k1={report['D'][0]:.4f}"
 
 
-def test_report_contains_all_four_checks(session: Session) -> None:
+def test_report_contains_all_four_checks(combined: CombinedSession) -> None:
     """RMS 만 보지 말라는 네 항목이 전부 dict 에 들어 있어야 한다."""
-    report = run_calibrate.build_report(session, n_train=N_TRAIN, seed=0)
+    report = run_calibrate.build_report(combined, n_train=N_TRAIN, seed=0)
 
     assert report["spatial"]["grid"] == 4                 # 1. 공간 분포
     assert "mean_dot" in report["radiality"]              # 2. 방향성
@@ -110,16 +117,16 @@ def test_report_contains_all_four_checks(session: Session) -> None:
     assert len(report["holdout_per_image"]) == N_IMAGES - N_TRAIN
 
 
-def test_split_recorded_in_report(session: Session) -> None:
+def test_split_recorded_in_report(combined: CombinedSession) -> None:
     """시드와 분할이 기록돼야 나중에 같은 결과를 재현할 수 있다."""
-    report = run_calibrate.build_report(session, n_train=N_TRAIN, seed=3)
+    report = run_calibrate.build_report(combined, n_train=N_TRAIN, seed=3)
     assert report["seed"] == 3
     assert len(report["train_ids"]) == N_TRAIN
     assert set(report["train_ids"]) & set(report["holdout_ids"]) == set()
 
 
-def test_two_fov_values_both_present(session: Session) -> None:
-    report = run_calibrate.build_report(session, n_train=N_TRAIN, seed=0)
+def test_two_fov_values_both_present(combined: CombinedSession) -> None:
+    report = run_calibrate.build_report(combined, n_train=N_TRAIN, seed=0)
     assert report["fov_nominal"]["h"] > 0
     assert report["fov_effective"]["h"] > 0
     assert np.asarray(report["fov_effective"]["K_prime"]).shape == (3, 3)
@@ -171,10 +178,10 @@ def test_cli_stops_when_holdout_would_be_empty(session: Session, tmp_path, capsy
     assert "n-train" in capsys.readouterr().err
 
 
-def test_same_seed_same_numbers(session: Session) -> None:
+def test_same_seed_same_numbers(combined: CombinedSession) -> None:
     """결정적이어야 한다. 같은 입력에 두 번 돌려 같은 K 가 나오는지."""
-    a = run_calibrate.build_report(session, n_train=N_TRAIN, seed=0)
-    b = run_calibrate.build_report(session, n_train=N_TRAIN, seed=0)
+    a = run_calibrate.build_report(combined, n_train=N_TRAIN, seed=0)
+    b = run_calibrate.build_report(combined, n_train=N_TRAIN, seed=0)
     assert a["K"] == b["K"]
     assert a["rms_train"] == b["rms_train"]
     assert a["stability"]["fx"]["std"] == b["stability"]["fx"]["std"]

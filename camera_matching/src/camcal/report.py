@@ -375,6 +375,20 @@ def render(report: dict[str, Any], out_dir: Path) -> Path:
         "(같은 시드면 같은 분할)")
     add("")
 
+    if report.get("n_sessions", 1) > 1:
+        add(f"세션 {report['n_sessions']}개를 합쳐 추정했다.")
+        add("")
+        for path in report.get("session_paths", []):
+            add(f"- `{path}`")
+        add("")
+
+    for session_id, extra in (report.get("orphan_pngs") or {}).items():
+        add(f"> **경고** `{session_id}/frames` 에 meta.json 이 모르는 PNG 가 "
+            f"{len(extra)}개 있다 ({', '.join(extra[:5])}"
+            f"{' ...' if len(extra) > 5 else ''}). 출처를 알 수 없어 **쓰지 않았다.** "
+            "다른 세션에서 복사됐거나 저장 중 기록이 실패한 파일이다.")
+        add("")
+
     if warnings:
         add("## 경고")
         add("")
@@ -385,6 +399,55 @@ def render(report: dict[str, Any], out_dir: Path) -> Path:
         add("")
         add("- 없음")
     add("")
+
+    if report.get("frame_rms"):
+        add("## 0. 프레임별 재투영 오차와 이상치 제거")
+        add("")
+        out = report["outliers"]
+        add(f"전체 {report['n_detected']}장으로 1차 추정한 RMS 는 "
+            f"**{report['rms_all_frames']:.4f} px** 이었다. 이 추정의 목적은 K 가 아니라 "
+            "프레임별 오차를 보는 것이다.")
+        add("")
+        if out.get("skipped"):
+            add("이상치 제거를 하지 않았다 (`--keep-all`). 아래 표는 참고용이다.")
+        else:
+            add("| 항목 | 값 |")
+            add("|---|---|")
+            add(f"| 중앙값 | {out['median']:.4f} px |")
+            add(f"| MAD | {out['mad']:.4f} px |")
+            add(f"| robust sigma (1.4826*MAD) | {out['sigma']:.4f} px |")
+            add(f"| 경계 (중앙값 + {out['k']}*sigma, 최소 0.3) | **{out['threshold']:.4f} px** |")
+            add(f"| 제거 / 남김 | {out['n_dropped']}장 / {out['n_kept']}장 |")
+            add("")
+            add("평균과 표준편차 대신 중앙값과 MAD 를 쓴다. 이상치가 평균과 표준편차를 "
+                "끌고 가서 자기 자신을 정상으로 만들어 버리기 때문이다.")
+        add("")
+        if out.get("capped_reason"):
+            add(f"> **{out['capped_reason']}**")
+            add("")
+        if out.get("dropped"):
+            add("### 제거된 프레임")
+            add("")
+            add("| 프레임 | RMS (px) |")
+            add("|---|---|")
+            for item in out["dropped"]:
+                add(f"| {item['frame']} | {item['rms']:.4f} |")
+            add("")
+            add("제거해도 **파일은 그대로 남는다.** meta.json 도 건드리지 않는다. "
+                "이 추정에서 빼기만 한 것이다.")
+            add("")
+
+        add("### 전체 프레임 (오차 큰 순)")
+        add("")
+        dropped_labels = {item["frame"] for item in out.get("dropped", [])}
+        add("| 프레임 | RMS (px) | 사용 |")
+        add("|---|---|---|")
+        for label, value in sorted(
+            report["frame_rms"].items(), key=lambda kv: -kv[1]
+        ):
+            mark = "**제외**" if label in dropped_labels else "사용"
+            add(f"| {label} | {value:.4f} | {mark} |")
+        add("")
 
     add("## 1. 추정값")
     add("")
@@ -474,8 +537,10 @@ def render(report: dict[str, Any], out_dir: Path) -> Path:
     add("## 3. 재현")
     add("")
     add("```bash")
-    add(f"python src/run_calibrate.py {report['session_path']} "
-        f"--n-train {report['n_train']} --seed {report['seed']}")
+    paths = " ".join(report.get("session_paths") or [report["session_path"]])
+    add(f"python src/run_calibrate.py {paths} "
+        f"--n-train {report['n_train']} --seed {report['seed']} "
+        f"--outlier-k {report['outliers']['k']}")
     add("```")
     add("")
 

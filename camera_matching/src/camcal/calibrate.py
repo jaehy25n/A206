@@ -30,6 +30,10 @@ from .constants import (
     CALIB_FLAGS,
     DEFAULT_N_TRAIN,
     DEFAULT_SEED,
+    OUTLIER_FLOOR_PX,
+    OUTLIER_MAD_K,
+    OUTLIER_MAX_DROP_RATIO,
+    OUTLIER_MIN_KEEP,
     STABILITY_RUNS,
     STABILITY_SUBSET,
 )
@@ -152,7 +156,10 @@ def detected_ids(session: Session) -> list[int]:
 
 
 def split(
-    session: Session, n_train: int = DEFAULT_N_TRAIN, seed: int = DEFAULT_SEED
+    session: Session,
+    n_train: int = DEFAULT_N_TRAIN,
+    seed: int = DEFAULT_SEED,
+    ids: list[int] | None = None,
 ) -> tuple[list[int], list[int]]:
     """검출 성공 프레임을 학습 / 홀드아웃으로 나눈다.
 
@@ -161,12 +168,14 @@ def split(
 
     Args:
         n_train: 학습에 쓸 장수. 나머지가 전부 홀드아웃이 된다.
+        ids: 나눌 대상 목록. 주지 않으면 세션의 검출 성공 프레임 전부.
+            이상치를 걸러낸 뒤 남은 것만 나눌 때 쓴다.
 
     Raises:
         ValueError: 홀드아웃이 한 장도 남지 않는 경우. 홀드아웃 없이 낸 RMS 는
             "학습 데이터를 얼마나 잘 맞췄나"일 뿐이라 조용히 진행하지 않는다.
     """
-    ids = detected_ids(session)
+    ids = sorted(ids) if ids is not None else detected_ids(session)
     if n_train < 1:
         raise ValueError(f"n_train 은 1 이상이어야 한다: {n_train}")
     if len(ids) <= n_train:
@@ -386,3 +395,107 @@ def stability(
             "max_dev": float(np.abs(arr - full[name]).max()),
         }
     return out
+
+
+# --- 프레임별 오차와 이상치 -------------------------------------------------
+
+
+def per_frame_rms(
+    session: Session,
+    result: CalibrationResult,
+    corners: CornerCache | None = None,
+) -> dict[int, float]:
+    """추정에 쓴 프레임 각각의 재투영 RMS (픽셀).
+
+    전체 RMS 하나로는 "한 장이 심하게 틀렸다"와 "전부 조금씩 틀렸다"를 구분할 수
+    없다. 앞쪽이면 그 한 장을 빼면 되고, 뒤쪽이면 촬영 조건을 다시 봐야 한다.
+    같은 숫자인데 해야 할 일이 정반대다.
+
+    Returns:
+        {프레임 index: RMS}. 순서는 result.ids 그대로.
+    """
+    cache = corners if corners is not None else detect_session_corners(session, result.ids)
+    object_points = session.board.object_points()
+
+    out: dict[int, float] = {}
+    for k, frame_id in enumerate(result.ids):
+        projected, _ = cv2.projectPoints(
+            object_points, result.rvecs[k], result.tvecs[k], result.K, result.D
+        )
+        projected = np.asarray(projected, dtype=np.float64).reshape(-1, 2)
+        observed = np.asarray(cache[frame_id], dtype=np.float64).reshape(-1, 2)
+        out[int(frame_id)] = rms_of(projected - observed)
+    return out
+
+
+def outlier_threshold(values: list[float], k: float = OUTLIER_MAD_K) -> dict[str, float]:
+    """중앙값과 MAD 로 이상치 경계를 잡는다.
+
+    평균과 표준편차를 쓰면 이상치가 그 둘을 끌고 가서 자기 자신을 정상으로
+    만든다 (한 장이 5 px 이면 표준편차가 커져 경계가 5 px 위로 올라간다).
+    중앙값과 MAD 는 그 영향을 받지 않는다.
+
+    Returns:
+        {"median", "mad", "sigma", "threshold"}. sigma = 1.4826 * MAD
+        (정규분포에서 MAD 를 표준편차로 환산하는 상수).
+    """
+    arr = np.asarray(values, dtype=np.float64)
+    median = float(np.median(arr))
+    mad = float(np.median(np.abs(arr - median)))
+    sigma = 1.4826 * mad
+    return {
+        "median": median,
+        "mad": mad,
+        "sigma": sigma,
+        "threshold": max(median + k * sigma, OUTLIER_FLOOR_PX),
+    }
+
+
+def drop_outliers(
+    frame_rms: dict[int, float],
+    k: float = OUTLIER_MAD_K,
+    max_drop_ratio: float = OUTLIER_MAX_DROP_RATIO,
+    min_keep: int = OUTLIER_MIN_KEEP,
+) -> dict[str, Any]:
+    """재투영 오차가 큰 프레임을 골라낸다. **실제로 지우지는 않는다.**
+
+    안전장치 두 개를 둔다.
+        - 한 번에 max_drop_ratio 넘게 버리지 않는다. 절반을 버려야 할 정도면
+          이상치가 아니라 촬영 자체가 잘못된 것이고 사람이 봐야 한다
+        - min_keep 장 아래로 내려가지 않는다
+
+    안전장치에 걸려 다 버리지 못하면 **오차가 큰 것부터** 한도까지만 버리고
+    그 사실을 `capped` 로 알린다 (조용히 덜 버리면 안 된다).
+
+    Returns:
+        {"keep": [...], "dropped": [...], "threshold", "median", "mad", "sigma",
+         "capped": bool, "capped_reason": str | None}
+    """
+    ids = sorted(frame_rms)
+    stats = outlier_threshold([frame_rms[i] for i in ids], k=k)
+    threshold = stats["threshold"]
+
+    over = sorted((i for i in ids if frame_rms[i] > threshold), key=lambda i: -frame_rms[i])
+    allowed = min(int(len(ids) * max_drop_ratio), max(len(ids) - min_keep, 0))
+
+    capped_reason = None
+    if len(over) > allowed:
+        capped_reason = (
+            f"이상치 후보 {len(over)}장 중 {allowed}장만 제거했다 "
+            f"(한도: 전체의 {max_drop_ratio * 100:.0f}% 이내, 최소 {min_keep}장 유지). "
+            "이 정도로 많으면 개별 프레임 문제가 아니라 촬영 조건을 의심한다"
+        )
+        over = over[:allowed]
+
+    dropped = set(over)
+    return {
+        "keep": [i for i in ids if i not in dropped],
+        "dropped": sorted(dropped),
+        "threshold": threshold,
+        "median": stats["median"],
+        "mad": stats["mad"],
+        "sigma": stats["sigma"],
+        "k": k,
+        "capped": capped_reason is not None,
+        "capped_reason": capped_reason,
+    }

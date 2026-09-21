@@ -1,7 +1,19 @@
-"""세션 하나 -> (K, D) + 리포트.
+"""세션 하나 또는 여럿 -> (K, D) + 리포트.
 
     python src/run_calibrate.py data/luaz/<session_id>
-    python src/run_calibrate.py data/s10/<session_id> --n-train 20 --seed 0
+    python src/run_calibrate.py data/s10/session1 data/s10/session2 --n-train 40
+
+여러 세션을 주면 **전부 합쳐 한 번에** 추정한다 (한 카메라를 나눠 찍은 경우).
+카메라 / 해상도 / 보드 규격이 하나라도 다르면 합치지 않고 멈춘다.
+
+처리 순서
+    1) 전체 프레임으로 1차 추정
+    2) **프레임별 재투영 오차**를 낸다
+    3) 오차가 큰 프레임을 이상치로 제거 (중앙값 + k*MAD, 안전장치 있음)
+    4) 남은 프레임으로 학습/홀드아웃을 나누고 **최종 추정**
+
+전체 RMS 하나로는 "한 장이 심하게 틀렸다"와 "전부 조금씩 틀렸다"를 구분할 수 없다.
+2)가 그 구분을 만들고, 3)은 앞쪽 경우만 정리한다.
 
 산출물
     results/<camera>_intrinsics.json    K, D, RMS, 안정성, FOV, 경고
@@ -22,18 +34,25 @@ from typing import Any
 
 import numpy as np
 
-from camcal import Session
 from camcal.calibrate import (
     calibrate,
     detect_session_corners,
     detected_ids,
+    drop_outliers,
     holdout_rms,
+    per_frame_rms,
     reprojection_residuals,
     split,
     stability,
 )
+from camcal.combined import CombinedSession, SessionMismatch
 from camcal.console import setup_console
-from camcal.constants import CALIB_D_MODEL, DEFAULT_N_TRAIN, DEFAULT_SEED
+from camcal.constants import (
+    CALIB_D_MODEL,
+    DEFAULT_N_TRAIN,
+    DEFAULT_SEED,
+    OUTLIER_MAD_K,
+)
 from camcal.fov import fov_effective, fov_nominal, is_degenerate_k_prime
 from camcal.report import (
     collect_warnings,
@@ -53,14 +72,41 @@ REPORTS_DIRNAME = "reports"
 
 
 def build_report(
-    session: Session,
+    session: CombinedSession,
     n_train: int,
     seed: int,
+    outlier_k: float = OUTLIER_MAD_K,
+    remove_outliers: bool = True,
 ) -> dict[str, Any]:
-    """추정과 분석을 모두 돌려 리포트 dict 를 만든다."""
-    train_ids, holdout_ids = split(session, n_train=n_train, seed=seed)
+    """1차 추정 -> 프레임별 오차 -> 이상치 제거 -> 최종 추정 -> 분석."""
     corners = detect_session_corners(session)
+    all_ids = detected_ids(session)
 
+    # 1) 전체로 한 번 추정한다. 이 추정의 목적은 K 가 아니라 **프레임별 오차**다.
+    #    (여기서 나온 K 는 이상치가 섞여 있으므로 최종값으로 쓰지 않는다)
+    first = calibrate(session, all_ids, corners=corners)
+    frame_rms = per_frame_rms(session, first, corners=corners)
+
+    # 2) 이상치 판정
+    if remove_outliers:
+        outliers = drop_outliers(frame_rms, k=outlier_k)
+    else:
+        outliers = {
+            "keep": list(all_ids),
+            "dropped": [],
+            "threshold": None,
+            "median": None,
+            "mad": None,
+            "sigma": None,
+            "k": outlier_k,
+            "capped": False,
+            "capped_reason": None,
+            "skipped": True,
+        }
+    kept_ids = outliers["keep"]
+
+    # 3) 남은 프레임으로 학습/홀드아웃을 나누고 최종 추정
+    train_ids, holdout_ids = split(session, n_train=n_train, seed=seed, ids=kept_ids)
     result = calibrate(session, train_ids, corners=corners)
     residuals, points = reprojection_residuals(session, result, corners=corners)
 
@@ -77,7 +123,23 @@ def build_report(
         "camera": session.camera,
         "session_id": session.session_id,
         "session_path": str(session.path),
+        "session_paths": session.session_paths,
+        "n_sessions": len(session.sessions),
+        "orphan_pngs": session.orphan_pngs,
         "resolution": [width, height],
+        "n_frames_total": len(session.frames),
+        "n_detected": len(all_ids),
+        "rms_all_frames": first.rms,
+        "frame_rms": {session.label_of(i): frame_rms[i] for i in sorted(frame_rms)},
+        "outliers": {
+            **{k: v for k, v in outliers.items() if k not in ("keep", "dropped")},
+            "dropped": [
+                {"frame": session.label_of(i), "rms": frame_rms[i]}
+                for i in outliers["dropped"]
+            ],
+            "n_kept": len(kept_ids),
+            "n_dropped": len(outliers["dropped"]),
+        },
         "K": result.K.tolist(),
         "D": result.D.tolist(),
         "D_model": CALIB_D_MODEL,
@@ -118,9 +180,15 @@ def print_summary(report: dict[str, Any], json_path: Path, md_path: Path) -> Non
     K = np.asarray(report["K"])
     warnings = report["warnings"]
 
+    out = report["outliers"]
     print()
-    print(f"  {report['camera']} / {report['session_id']}  "
-          f"학습 {report['n_train']}장 + 홀드아웃 {report['n_holdout']}장 (seed {report['seed']})")
+    print(f"  {report['camera']} / 세션 {report['n_sessions']}개 / "
+          f"검출 {report['n_detected']}장")
+    print(f"  1차(전체 {report['n_detected']}장) RMS {report['rms_all_frames']:.4f} px"
+          + ("  -> 이상치 제거 안 함" if out.get("skipped") else
+             f"  -> 이상치 {out['n_dropped']}장 제거 (경계 {out['threshold']:.4f} px)"))
+    print(f"  학습 {report['n_train']}장 + 홀드아웃 {report['n_holdout']}장 "
+          f"(남은 {out['n_kept']}장 중, seed {report['seed']})")
     print(f"  RMS  학습 {report['rms_train']:.4f} px ({rms_band(report['rms_train'])})  "
           f"홀드아웃 {report['rms_holdout']:.4f} px")
     print(f"  fx {K[0, 0]:.2f} +-{stab['fx']['std']:.2f}   fy {K[1, 1]:.2f} +-{stab['fy']['std']:.2f}"
@@ -144,7 +212,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("session", type=Path, help="data/<camera>/<session_id> 경로")
+    parser.add_argument(
+        "sessions",
+        type=Path,
+        nargs="+",
+        help="data/<camera>/<session_id> 경로. 여러 개면 합쳐서 한 번에 추정한다",
+    )
     parser.add_argument(
         "--n-train",
         type=int,
@@ -153,6 +226,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--seed", type=int, default=DEFAULT_SEED, help=f"분할 시드 (기본 {DEFAULT_SEED})"
+    )
+    parser.add_argument(
+        "--outlier-k",
+        type=float,
+        default=OUTLIER_MAD_K,
+        help=f"이상치 경계 = 중앙값 + k*sigma (기본 {OUTLIER_MAD_K}). 클수록 덜 버린다",
+    )
+    parser.add_argument(
+        "--keep-all",
+        action="store_true",
+        help="이상치를 제거하지 않는다. 프레임별 오차는 그대로 출력한다",
     )
     parser.add_argument(
         "--results-dir",
@@ -167,10 +251,25 @@ def main(argv: list[str] | None = None) -> int:
     setup_console()
     args = build_parser().parse_args(argv)
 
-    session = Session.open(args.session)
+    try:
+        session = CombinedSession.open(args.sessions)
+    except (SessionMismatch, ValueError) as exc:
+        print(f"[중단] {exc}", file=sys.stderr)
+        return 2
+
     n_detected = len(detected_ids(session))
-    print(f"세션 {session.session_id} / {session.camera} · "
+    print(f"{session.camera} · 세션 {len(session.sessions)}개 · "
           f"프레임 {len(session.frames)}장 (검출 성공 {n_detected}장)")
+    for one in session.sessions:
+        print(f"  - {one.session_id}: {len(one.frames)}장 (검출 {one.n_detected}장)")
+
+    for session_id, extra in session.orphan_pngs.items():
+        print(
+            f"[경고] {session_id}/frames 에 meta.json 이 모르는 PNG 가 {len(extra)}개 있다 "
+            f"({', '.join(extra[:3])}{' ...' if len(extra) > 3 else ''}). "
+            "출처를 알 수 없으므로 캘리브레이션에 쓰지 않는다",
+            file=sys.stderr,
+        )
 
     if not session.board.square_mm_measured:
         print(
@@ -180,7 +279,13 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     try:
-        report = build_report(session, n_train=args.n_train, seed=args.seed)
+        report = build_report(
+            session,
+            n_train=args.n_train,
+            seed=args.seed,
+            outlier_k=args.outlier_k,
+            remove_outliers=not args.keep_all,
+        )
     except ValueError as exc:
         print(f"[중단] {exc}", file=sys.stderr)
         return 2
