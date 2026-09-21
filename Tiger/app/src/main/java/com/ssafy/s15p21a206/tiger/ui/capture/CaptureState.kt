@@ -104,10 +104,6 @@ internal sealed interface CaptureIntent {
         val resolution: RecordingResolution,
     ) : CaptureIntent
 
-    data class SessionStartFailed(
-        val notice: String,
-    ) : CaptureIntent
-
     /** tracking 표본 하나. 값이 변하지 않아도 계속 들어와야 안정화와 유실 마감이 발화한다. */
     data class TrackingSampled(
         val ready: Boolean,
@@ -182,7 +178,6 @@ internal fun CaptureUiState.reduce(intent: CaptureIntent): CaptureUiState =
                 recordingStartNs = intent.startedAtNs,
                 busy = false,
             )
-        is CaptureIntent.SessionStartFailed -> copy(phase = CaptureWorkspaceControlState.Idle, notice = intent.notice, busy = false)
         is CaptureIntent.TrackingSampled ->
             when (phase) {
                 CaptureWorkspaceControlState.Initializing,
