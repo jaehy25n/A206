@@ -4,13 +4,13 @@
 측정 결과와 결정 사항은 [result.md](result.md) 에 쌓고, 도구 설명은 [README.md](README.md) 에 둡니다.
 
 > 2026-09-18 초기화. **`legacy/` 는 참조하지 않는다** (1회차 데이터는 잘못된 데이터로 판정).
-> 현재 1~4단계(LUAZ 촬영 · S10 웹앱 · 캘리브레이션 · target 공간 비교)까지 적혀 있습니다.
+> 현재 1~5단계(LUAZ 촬영 · S10 웹앱 · 캘리브레이션 · target 공간 비교 · 변환)까지 적혀 있습니다.
 
 ---
 
 ## 실행 순서 한눈에
 
-**직접 실행하는 파일은 `src/` 바로 아래 6개뿐이다.** 나머지(`src/camcal/`, `src/s10_server/`)는
+**직접 실행하는 파일은 `src/` 바로 아래 7개뿐이다.** 나머지(`src/camcal/`, `src/s10_server/`)는
 이들이 불러 쓰는 패키지라 직접 실행하지 않는다. 표의 순서대로 내려간다.
 
 | # | 실행 | 언제 | 산출물 | 넘어가는 조건 | 상세 |
@@ -24,16 +24,17 @@
 | 6 | (노트북 화면에서 본 촬영) | S10 본 촬영 | `data/s10/<session_id>/` | 25~30장, 빈 셀 없음 | [9장](#9-s10-본-촬영-2530장) |
 | 7 | `python src/run_calibrate.py data/luaz/<session_id>` | LUAZ 세션이 생긴 뒤 | `results/luaz_intrinsics.json`<br>`results/reports/<session_id>.md` | 리포트 경고 해소 | [10~12장](#10-세션-하나로-k-d-구하기) |
 | 8 | `python src/run_calibrate.py data/s10/<s1> data/s10/<s2>` | S10 세션이 생긴 뒤 (**여러 개면 다 넣는다**) | `results/s10_intrinsics.json` + 리포트 | 리포트 경고 해소 | [10~12장](#10-세션-하나로-k-d-구하기) |
-| 9 | `python src/run_fov_compare.py results/s10_intrinsics.json results/luaz_intrinsics.json` | 7, 8 이 **둘 다** 끝난 뒤 | `results/reports/fov_compare.md` + 히트맵 3장 | - (사람이 ②/③ 결정) | [14~16장](#14-두-intrinsics-로-지표-내기) |
+| 9 | `python src/run_fov_compare.py results/s10_intrinsics.json results/luaz_intrinsics.json --scan-f-target` | 7, 8 이 **둘 다** 끝난 뒤 | `results/reports/fov_compare.md` + 히트맵 3장 | - (사람이 ②/③ 결정) | [14~16장](#14-두-intrinsics-로-지표-내기) |
+| 10 | `python src/run_remap.py --design 3 --f-target-scale 1.10 --reference ... -o out/...` | ②/③ 를 정한 뒤 | `results/target_space.json` + 변환된 PNG | 육안 확인 | [18장](#18-영상을-공통-공간으로-옮긴다) |
 
 두 카메라는 서로 독립이다. **1~2(LUAZ)와 3~6(S10)은 순서를 바꿔도 되고**, 7과 8도 마찬가지다.
 9만 둘 다 끝나야 돌아간다.
 
 ```
-capture_luaz.py ──> data/luaz/<id>/ ──> run_calibrate.py ──> results/luaz_intrinsics.json ─┐
+capture_luaz.py ──> data/luaz/<id>/ ──> run_calibrate.py ──> results/luaz_intrinsics.json ─┐ \
                                                                                             ├─> run_fov_compare.py
-run_s10_server.py ─> data/s10/<id>/ ──> run_calibrate.py ──> results/s10_intrinsics.json  ─┘
-                          │
+run_s10_server.py ─> data/s10/<id>/ ──> run_calibrate.py ──> results/s10_intrinsics.json  ─┘ \
+                          │ \
                           └─> preflight_jitter.py, path_check.py  (첫 세션 확인용, 곁가지)
 ```
 
@@ -205,7 +206,7 @@ python src/run_s10_server.py
    (자체 서명 인증서라 정상이다. HTTP 로는 카메라를 아예 열 수 없다)
 3. 카메라 권한 허용
 4. 카메라 목록에서 **후면 메인**을 고른다. 초록 테두리가 후면으로 추정되는 것들이다
-   - **초광각·망원을 고르면 화각이 달라져 세션 전체를 다시 찍어야 한다.**
+   - **초광각·망원을 고르면 화각이 달라져 세션 전체를 다시 찍어야 한다.** \
      라벨을 반드시 확인한다
    - 고른 카메라는 이 폰에 기억된다. 바꾸려면 폰 화면 아래 "카메라 선택 다시 하기"
 5. 폰 화면이 `연결됨 · 1920×1080 · 노트북에서 조작한다` 한 줄이 되면 준비 끝
@@ -214,7 +215,7 @@ python src/run_s10_server.py
   **다른 해상도로 대신 찍지 않는다.** 다른 카메라를 고르거나 폰 설정을 확인한다
 - 노트북 화면 "연결 상태" 에서 확인할 것:
   - 폰 = 연결됨, 실제 해상도 = 1920 × 1080
-  - manual 제약: 적용된 항목과 미지원 항목. **미지원은 정상이다** (기기마다 다르다).
+  - manual 제약: 적용된 항목과 미지원 항목. **미지원은 정상이다** (기기마다 다르다). \
     무엇이 지원됐는지가 meta.json 에 남는 것이 중요하다
 
 ## 8. 본 촬영 전 두 가지 확인 (첫 세션에만)
@@ -259,7 +260,7 @@ python src/path_check.py data/s10/<session_id>/frames/000.png camera_app.png
    - 커버리지 3×3 격자가 전부 초록이 될 때까지 (빈 셀이 `없음` 이 될 때까지)
    - 기울이기 좌/우/상/하 각 2장 이상, 25~50도
    - 거리 근/중/원 각 2장 이상
-   - `마지막 업로드 프레임` 이 FAIL 로 계속 뜨면 보드가 화면을 벗어났거나
+   - `마지막 업로드 프레임` 이 FAIL 로 계속 뜨면 보드가 화면을 벗어났거나 \
      너무 기울었다. 검출 실패 프레임은 저장되지 않는다 (업로드 / 미검출 카운터로 확인)
 4. 저장 25~30장이 되면 `자동 정지` → `세션 종료`
 5. 종료 시 표시되는 session_id, 장수, 커버리지를 [result.md](result.md) 에 적는다
@@ -412,7 +413,7 @@ results/reports/stretch_design2_0.png   s10  -> luaz 원본
   여유가 1도 미만이면 가장자리가 위태롭다
 - **불통과**: **설계 ② 는 불가능하다.** LUAZ 가 S10 보다 넓으면 S10 에 없는 픽셀을
   요구하게 되고, 없는 픽셀은 만들 수 없다. 설계 ③ 도 `f_target` 을 올려 화각을 좁혀야 한다
-  - 이 경우 먼저 의심할 것: S10 이 후면 **메인**이 맞는가 (초광각을 고르면 반대로 넓다),
+  - 이 경우 먼저 의심할 것: S10 이 후면 **메인**이 맞는가 (초광각을 고르면 반대로 넓다), \
     S10 쪽에 EIS 크롭이 걸려 있지 않은가 (8-1 로 확인)
 
 ### 15-2. 두 설계의 숫자 (3, 4장)
@@ -446,7 +447,83 @@ decision log 에 적는다. 이 결정이 5단계(변환 프로그램)의 전제
 
 ---
 
-## 17. 기록
+# 변환 (5단계)
+
+## 18. 영상을 공통 공간으로 옮긴다
+
+### 18-1. 처음 한 번 - 설계와 배율을 명시한다
+
+```bash
+python src/run_remap.py data/s10/<session_id> --intrinsics results/s10_intrinsics.json --design 3 --reference results/luaz_intrinsics.json --f-target-scale 1.10 --note "2026-09-21 확정. result.md 9장" -o out/s10 --compare
+```
+
+이때 `results/target_space.json` 이 만들어진다. **이 파일이 공통 공간의 정본이다.**
+
+- `--design` 을 주지 않고 이 파일도 없으면 **멈춘다** (종료 코드 2).
+  코드가 ②/③ 를 대신 고르지 않는다
+- 이미 있는데 `--design` 을 또 주면 덮어쓰면서 경고한다.
+  **이전 공간으로 변환해 둔 결과물은 새 것과 섞을 수 없다**
+
+### 18-2. 이후 - 파일을 그대로 쓴다
+
+```bash
+python src/run_remap.py data/luaz/<session_id> --intrinsics results/luaz_intrinsics.json -o out/luaz --compare
+```
+
+### 18-3. 옵션
+
+| 옵션 | 뜻 |
+|---|---|
+| `--compare` | 전/후를 나란히 붙인 비교본을 `<out>/compare/` 에 같이 저장 |
+| `--crop` | 검은 영역을 잘라내고 유효 영역만 남긴다 (최대 내접 사각형) |
+| `--limit N` | 앞에서 N 장만 |
+
+검은 영역은 **원본에 없는 부분**이다. 채우지 않는다. 그대로 두거나(`기본`)
+잘라내거나(`--crop`) 둘 중 하나다.
+
+### 18-4. 확인할 것
+
+- 콘솔의 `valid pixel ratio` 가 4단계 리포트의 값과 같은지 (다르면 다른 공간을 쓴 것)
+- `--compare` 로 나온 비교본을 **눈으로** 본다. 직선인 것이 직선으로 보이는지.
+  `k1` 부호가 틀렸으면 반대로 휜다. 지표는 못 잡아도 눈은 잡는다
+- 세션 디렉토리를 주면 **meta.json 이 아는 프레임만** 변환한다 (폴더를 glob 하지 않는다)
+
+## 19. 두 카메라를 실시간으로 겹쳐 본다
+
+LUAZ 를 노트북에 꽂고 서버를 띄우면, S10 웹앱 프리뷰와 나란히/겹쳐서 볼 수 있다.
+
+```bash
+python src/run_s10_server.py --with-luaz
+```
+
+```
+  폰에서 열기   https://<LAN IP>:8443/phone
+  노트북에서 열기 https://localhost:8443/laptop
+  라이브 비교     https://localhost:8443/compare
+```
+
+`/compare` 에서:
+
+| 모드 | 무엇을 보는가 |
+|---|---|
+| **블렌드** | 슬라이더로 두 화면을 섞는다. 대략의 정렬을 본다 |
+| **차이** | 겹치면 검게, 어긋나면 밝게. **정렬 오차를 제일 잘 보여준다** |
+| **나란히** | 각각 따로 본다 |
+
+- `target 공간으로 변환` 체크를 끄면 원본끼리 비교한다 (변환 효과를 보려면 켜고 끈다)
+- `results/target_space.json` 과 양쪽 intrinsics 가 있어야 변환이 된다.
+  없으면 화면이 그 사실을 알려주고 원본만 보여준다
+
+**주의**
+- `--with-luaz` 는 촬영 도구(`capture_luaz.py`)와 **같은 카메라를 동시에 쓸 수 없다.**
+  둘 중 하나만 띄운다
+- S10 쪽은 320x180 프리뷰다. 정렬을 보는 용도이지 화질 비교용이 아니다
+- **평면 차트만 겹친다.** 3D 장면은 시차 때문에 겹치지 않는다.
+  같은 삼각대 자리에서 카메라만 바꿔 꽂아야 의미가 있다
+
+---
+
+## 20. 기록
 
 - 각 단계에서 나온 수치·판단은 그 자리에서 [result.md](result.md) 에 추가한다
 - 세션을 하나 찍을 때마다: session_id, 장수, 커버리지, 조명·거리 조건, 실측 `square_mm`

@@ -94,10 +94,11 @@ second/
 │   ├── preflight_jitter.py EIS 확인용 (정지 보드 흔들림 측정)
 │   ├── path_check.py       웹앱 vs 기본 앱 촬영 경로 동일성 확인
 │   ├── run_calibrate.py    세션 → (K, D) + 품질 리포트
-│   └── run_fov_compare.py  두 카메라 비교 → ②/③ 판정 지표
+│   ├── run_fov_compare.py  두 카메라 비교 → ②/③ 판정 지표
+│   └── run_remap.py        영상을 공통 target 공간으로 변환 (5단계)
 ├── tests/
 ├── data/<camera>/<session_id>/   frames/*.png + meta.json
-├── results/                <camera>_intrinsics.json, reports/
+├── results/                <camera>_intrinsics.json, target_space.json, reports/
 ├── docs/
 │   ├── calibration_theory.pdf
 │   └── REVIEW_PROTOCOL.md  코드 검수 방식
@@ -165,11 +166,11 @@ AI 리뷰는 지적을 끝없이 낸다. 그래서 리뷰 자체를 검증 대�
 | 2 | S10 웹앱 | `s10_server/` | 폰에서 1920×1080 확인, 원격 촬영 동작 |
 | 3 | 캘리브레이션 + 리포트 | `run_calibrate.py`, `*_intrinsics.json` | 양쪽 RMS < 0.5, 홀드아웃 근접 |
 | 4 | FOV 비교 + 판정 지표 | `run_fov_compare.py`, 리포트 | ②/③ 결정 |
-| 5 | 변환 프로그램 | — | 다음 회차 |
+| 5 | 변환 프로그램 | `run_remap.py`, `results/target_space.json` | 육안 확인 |
 
 각 단계는 `prompts/`의 해당 프롬프트로 위임하고, 끝나면 `docs/REVIEW_PROTOCOL.md`로 검수한다.
 
 **실행할 파일과 순서는 [action.md](action.md)의 "실행 순서 한눈에" 표가 정본이다.**
-직접 실행하는 파일은 `src/` 바로 아래 6개뿐이다: `capture_luaz.py`, `run_s10_server.py`,
-`preflight_jitter.py`, `path_check.py`, `run_calibrate.py`, `run_fov_compare.py`.
+직접 실행하는 파일은 `src/` 바로 아래 7개뿐이다: `capture_luaz.py`, `run_s10_server.py`,
+`preflight_jitter.py`, `path_check.py`, `run_calibrate.py`, `run_fov_compare.py`, `run_remap.py`.
 `src/camcal/`과 `src/s10_server/`는 이들이 불러 쓰는 패키지라 직접 실행하지 않는다.
