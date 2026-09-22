@@ -21,8 +21,14 @@
 
 - 상태는 `CaptureUiState` 하나로 모은다.
 - 변경은 `CaptureIntent`를 통해서만 한다.
-- 화면 이동·Snackbar 같은 일회성 동작은 effect로 내보낸다. 수집 쪽이 `NavController`를 알지 않는다.
 - `CaptureSessionCoordinator`는 이미 상태 기계이고 `CaptureControlPolicy`는 이미 순수 파생 함수다. 새로 만들지 말고 그것을 쓴다.
+
+**일회성 동작에 effect 채널을 두지 않는다.** 둘뿐이고 각자 갈 곳이 이미 있다.
+
+- 화면 이동: 수집은 목적지를 모른다. 마감된 세션을 `onCompleted(sessionId, uploadable)`로 올려 보내고 `TigerApp`이 정한다.
+- Snackbar: 문구를 `CaptureUiState.notice`에 담고, `LaunchedEffect`가 한 번 보여 준 뒤 `CaptureIntent.NoticeShown`으로 비운다.
+
+셋째가 생기면 그때 채널을 만든다. 지금 만들면 두 줄짜리 배선에 틀만 씌우는 것이 된다.
 
 ### 조회 — 상태 보유자만
 
@@ -43,7 +49,7 @@ Room Flow에서 목록이 나오고 화면은 값과 콜백만 받는다. 상태
 
 ### 패턴 밖에 두는 것
 
-`previewSurface`·`previewTexture`는 `CaptureUiState`에 넣지 않는다. 수명이 `TextureView`에 묶여 있어 상태로 올리면 backing view가 사라진 뒤의 null·release를 직접 관리해야 한다. composition에 남기고 intent의 인자로 넘긴다. 권한 launcher도 같다. 아래 "composition에 묶여 있어 올릴 수 없는 것"과 같은 목록이다.
+`previewSurface`·`previewTexture`는 `CaptureUiState`에 넣지 않는다. 수명이 `TextureView`에 묶여 있어 상태로 올리면 backing view가 사라진 뒤의 null·release를 직접 관리해야 한다. `rememberCaptureDriver`가 들고, 화면은 Surface가 생기고 사라졌다는 사실만 알린다. 권한 launcher도 드라이버에 있다. 아래 "composition에 묶여 있어 올릴 수 없는 것"과 같은 목록이다.
 
 ### 다시 검토해야 하는 조건
 
@@ -55,14 +61,17 @@ Room Flow에서 목록이 나오고 화면은 값과 콜백만 받는다. 상태
 
 ## 수집 화면의 구성
 
-수집은 파일 넷으로 갈라져 있다. 새 화면을 만들 때 참고할 수 있는 배치다.
+`ui/capture/`는 책임별로 갈라져 있다. 새 화면을 만들 때 참고할 수 있는 배치다.
 
 | | 맡는 것 |
 |---|---|
 | `CaptureWorkspace` | 그리기만 한다. 카메라도 목적지도 모른다 |
-| `rememberCaptureDriver` | 카메라 세션·ARCore·권한·tracking 폴링·마감 |
+| `CaptureDriver` | 카메라 세션·ARCore·권한·tracking 폴링·마감 |
+| `CaptureState` | `CaptureUiState`·`CaptureIntent`·`reduce` |
 | `CapturePreviewSurface` | `TextureView`와 `SurfaceTexture`의 수명 |
 | `CaptureMetadataDialog` | Task·Object·해상도 입력 |
+| `CaptureWorkspaceScreen` | 배지·제어 버튼·오버레이 |
+| `CaptureControlPolicy` | 상태에서 파생되는 허용 동작 |
 
 상태는 `TigerApp`이 소유하고 화면은 값과 `onIntent`만 받는다. 작업 공간을 여는 것이 조회 화면의 동작이기 때문이다.
 

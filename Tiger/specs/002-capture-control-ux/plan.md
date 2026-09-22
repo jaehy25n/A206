@@ -60,10 +60,16 @@ specs/002-capture-control-ux/
 ```text
 app/
 ├── src/main/java/com/ssafy/s15p21a206/tiger/
-│   ├── MainActivity.kt                 # 루트 UI 상태와 화면 구성
+│   ├── MainActivity.kt                 # Activity 선언만
+│   ├── TigerApplication.kt             # 프로세스 수명 객체(Room·OkHttp·repository)
+│   ├── TigerApp.kt                     # 앱 루트. NavHost·조회 운용·수집 상태 소유
 │   ├── capture/                        # 카메라 프리뷰와 AR/IMU 녹화 수명주기
 │   ├── data/local/                     # Room 데이터베이스와 DAO
 │   ├── episode/                        # Session·Episode·bundle·repository 모델
+│   ├── ui/capture/                     # 수집 작업 공간·드라이버·상태·프리뷰 Surface
+│   ├── ui/session/                     # 세션 목록·상세·운용(내보내기·전송·삭제)
+│   ├── ui/video/                       # 전체화면 재생과 공유 ExoPlayer
+│   ├── ui/common/                      # 공통 표시 요소와 방향 고정
 │   └── upload/                         # multipart 업로드와 취소 가능한 작업
 ├── src/main/res/values/strings.xml     # 사용자 문구·접근성 라벨
 └── src/test/java/com/ssafy/s15p21a206/tiger/
@@ -72,6 +78,8 @@ app/
     ├── upload/
     └── ui/
 ```
+
+2026-09-22에 presentation 계층을 정리하며 갱신했다(S15P21A206-46). 이전에는 `MainActivity.kt` 한 파일이 루트 UI 상태와 화면 구성을 전부 들고 있었다.
 
 **구조 결정**: 기존 단일 Android 앱 모듈을 유지한다. 조회 흐름(목록·Task Session 목록·상세·전체 화면 동영상)은 `androidx.navigation:navigation-compose`의 `NavHost`와 type-safe route로 전환하고, 이탈은 `popBackStack()`으로 통일한다. 수집 작업 공간은 목적지가 아니라 `NavHost` 위에 얹는 모달이며 boolean 상태로 관리한다. 2026-09-17에 S15P21A206-40으로 갱신했다. 이전 결정과 뒤집는 이유는 `research.md`에 있다.
 
