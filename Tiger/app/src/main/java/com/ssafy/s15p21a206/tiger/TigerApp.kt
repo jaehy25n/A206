@@ -29,26 +29,21 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.ssafy.s15p21a206.tiger.capture.RecordingResolutionStore
-import com.ssafy.s15p21a206.tiger.episode.ExportState
 import com.ssafy.s15p21a206.tiger.episode.SafDocumentTreeGateway
 import com.ssafy.s15p21a206.tiger.episode.SessionBundleExporter
-import com.ssafy.s15p21a206.tiger.episode.SessionDeleteResult
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureIntent
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureUiState
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspace
 import com.ssafy.s15p21a206.tiger.ui.capture.reduce
+import com.ssafy.s15p21a206.tiger.ui.session.SessionDeleteFailure
 import com.ssafy.s15p21a206.tiger.ui.session.SessionDetailScreen
 import com.ssafy.s15p21a206.tiger.ui.session.SessionListScreen
+import com.ssafy.s15p21a206.tiger.ui.session.SessionOperations
 import com.ssafy.s15p21a206.tiger.ui.session.TaskSessionListScreen
 import com.ssafy.s15p21a206.tiger.ui.upload.cancelUploadOnStop
 import com.ssafy.s15p21a206.tiger.ui.video.FullScreenVideoScreen
 import com.ssafy.s15p21a206.tiger.ui.video.rememberSharedVideoPlayer
-import com.ssafy.s15p21a206.tiger.upload.SessionUploadService
-import com.ssafy.s15p21a206.tiger.upload.UploadResult
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 
 // 조회 흐름의 목적지다. 인자는 Navigation Compose의 type-safe route로 전달한다. Task 이름은
@@ -94,14 +89,20 @@ fun TigerApp() {
     val completedSummaries by repository.observeCompletedSummaries().collectAsState(emptyList())
     val scope = rememberCoroutineScope()
     val gateway = remember { SafDocumentTreeGateway(context.applicationContext) }
-    val exporter = remember { SessionBundleExporter(gateway) }
     val resolutionStore = remember { RecordingResolutionStore(context.applicationContext) }
-    var exportState by remember { mutableStateOf(ExportState.NOT_EXPORTED) }
-    var exportMessage by remember { mutableStateOf<String?>(null) }
+    val exportFailedUnexpected = stringResource(R.string.export_failed_unexpected)
+    // 세션 하나에 할 수 있는 일들. 목적지는 모르고 결과 상태만 든다.
+    val operations =
+        remember(repository, uploadService) {
+            SessionOperations(
+                repository = repository,
+                uploadService = uploadService,
+                exporter = SessionBundleExporter(gateway),
+                scope = scope,
+                exportFailedUnexpected = exportFailedUnexpected,
+            )
+        }
     var pendingSessionId by remember { mutableStateOf<String?>(null) }
-    var uploadJob by remember { mutableStateOf<Job?>(null) }
-    var uploadFailureReason by remember { mutableStateOf<String?>(null) }
-    var deleteFailureReason by remember { mutableStateOf<String?>(null) }
     val navController = rememberNavController()
     val currentEntry by navController.currentBackStackEntryAsState()
 
@@ -122,7 +123,6 @@ fun TigerApp() {
     }
     val pickerCancelled = stringResource(R.string.export_picker_cancelled)
     val exportGrantFailed = stringResource(R.string.export_grant_failed)
-    val exportFailedUnexpected = stringResource(R.string.export_failed_unexpected)
     val uploadEndpointMissing = stringResource(R.string.upload_endpoint_missing)
     val deleteUploadInProgressMessage = stringResource(R.string.session_delete_upload_in_progress)
     val deleteFailedMessage = stringResource(R.string.session_delete_failed)
@@ -137,8 +137,7 @@ fun TigerApp() {
     val treePicker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
             if (uri == null) {
-                exportState = ExportState.EXPORT_FAILED
-                exportMessage = pickerCancelled
+                operations.exportUnavailable(pickerCancelled)
             } else {
                 val sessionId = pendingSessionId ?: return@rememberLauncherForActivityResult
                 val grantFailure =
@@ -149,34 +148,17 @@ fun TigerApp() {
                         )
                     }.exceptionOrNull()
                 if (grantFailure != null) {
-                    exportState = ExportState.EXPORT_FAILED
-                    exportMessage = grantFailure.message ?: exportGrantFailed
+                    operations.exportUnavailable(grantFailure.message ?: exportGrantFailed)
                     return@rememberLauncherForActivityResult
                 }
-                scope.launch {
-                    exportState = ExportState.EXPORTING
-                    when (
-                        val result =
-                            runCatching { exporter.exportCompleted(repository, sessionId, uri.toString()) }
-                                .getOrElse { SessionBundleExporter.ExportAttemptResult.Failed(it.message ?: exportFailedUnexpected, "") }
-                    ) {
-                        is SessionBundleExporter.ExportAttemptResult.Exported -> {
-                            exportState = ExportState.EXPORTED
-                            exportMessage = null
-                        }
-                        is SessionBundleExporter.ExportAttemptResult.Failed -> {
-                            exportState = ExportState.EXPORT_FAILED
-                            exportMessage = result.reason
-                        }
-                    }
-                }
+                operations.export(sessionId, uri.toString())
             }
         }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
         // 백그라운드 업로드는 하지 않는다. 판정 기준이 "업로드 화면에 있는가"였으나 그 화면을 없애
         // 전송이 진행 중인지로 바꾼다. 어느 화면에 있든 전송 중이면 끊고 FAILED로 남긴다.
-        if (cancelUploadOnStop(uploadInFlight = uploadJob?.isActive == true)) {
-            uploadJob?.cancel()
+        if (cancelUploadOnStop(uploadInFlight = operations.uploadInFlight)) {
+            operations.cancelUpload()
         }
     }
 
@@ -195,24 +177,6 @@ fun TigerApp() {
     }
 
     /**
-     * 전송을 걸고 실패 사유를 받아 둔다.
-     *
-     * 사유는 화면에만 쓰고 저장하지 않는다. 업로드에는 내보내기의 `exportFailureReason`에 해당하는
-     * 컬럼이 없고, 무엇이 막았는지는 실패한 자리에서 보면 되는 값이다.
-     */
-    fun launchUpload(
-        service: SessionUploadService,
-        sessionId: String,
-    ) {
-        uploadFailureReason = null
-        uploadJob =
-            scope.launch {
-                val result = runCatching { service.upload(sessionId) }.getOrNull()
-                uploadFailureReason = (result as? UploadResult.Failed)?.reason
-            }
-    }
-
-    /**
      * 전송을 걸고 그 세션의 상세를 띄운다.
      *
      * 마감이 끝나면 세션은 저장되어 존재한다. 존재하는 것에 무슨 일이 일어나는지는 그것의 화면에서
@@ -220,8 +184,7 @@ fun TigerApp() {
      * 있어 사용자를 붙잡아 둘 수도 없다.
      */
     fun startUpload(sessionId: String) {
-        val service = uploadService
-        if (service == null) {
+        if (!operations.canUpload) {
             // 갈 곳이 없으므로 작업 공간을 닫지 않는다. 그 자리에서 이유를 보여 준다.
             onCapture(CaptureIntent.Notify(uploadEndpointMissing))
             return
@@ -231,7 +194,7 @@ fun TigerApp() {
         if (currentEntry?.destination?.hasRoute<SessionDetailRoute>() != true) {
             navController.navigate(SessionDetailRoute(sessionId))
         }
-        launchUpload(service, sessionId)
+        operations.upload(sessionId)
     }
 
     /**
@@ -241,24 +204,11 @@ fun TigerApp() {
      * 업로드가 진행 중이라 거절당하면 상세에 머무르고 이유만 본문에 남긴다.
      */
     fun deleteSession(sessionId: String) {
-        scope.launch {
-            val result =
-                runCatching { withContext(Dispatchers.IO) { repository.delete(sessionId) } }
-                    .getOrElse {
-                        deleteFailureReason = deleteFailedMessage
-                        return@launch
-                    }
-            when (result) {
-                // 디렉터리가 남았더라도 목록과 색인에서는 사라졌다. 남은 것은 다음 실행이 회수한다.
-                SessionDeleteResult.DELETED, SessionDeleteResult.BUNDLE_RETAINED -> {
-                    deleteFailureReason = null
-                    // 상세에서 지웠으면 그 화면은 이제 "찾을 수 없음"이 되므로 나간다. 목록에서
-                    // 지웠으면 목록에 머무른다. 카드는 Flow가 갱신하면서 스스로 사라진다.
-                    if (currentEntry?.destination?.hasRoute<SessionDetailRoute>() == true) {
-                        navController.popBackStack()
-                    }
-                }
-                SessionDeleteResult.UPLOAD_IN_PROGRESS -> deleteFailureReason = deleteUploadInProgressMessage
+        operations.delete(sessionId) {
+            // 상세에서 지웠으면 그 화면은 이제 "찾을 수 없음"이 되므로 나간다. 목록에서
+            // 지웠으면 목록에 머무른다. 카드는 Flow가 갱신하면서 스스로 사라진다.
+            if (currentEntry?.destination?.hasRoute<SessionDetailRoute>() == true) {
+                navController.popBackStack()
             }
         }
     }
@@ -316,17 +266,23 @@ fun TigerApp() {
                         summary = completedSummaries.firstOrNull { it.sessionId == route.sessionId },
                         onBack = navController::popBackStack,
                         onUpload = { startUpload(route.sessionId) },
-                        exportState = exportState,
-                        exportMessage = exportMessage,
+                        exportState = operations.exportState,
+                        exportMessage = operations.exportMessage,
                         onExport = {
                             pendingSessionId = route.sessionId
                             treePicker.launch(null)
                         },
                         onDelete = { deleteSession(route.sessionId) },
-                        deleteFailureReason = deleteFailureReason,
+                        // 무엇이 막았는지만 운용이 말하고, 문구는 화면이 붙인다.
+                        deleteFailureReason =
+                            when (operations.deleteFailure) {
+                                SessionDeleteFailure.UploadInProgress -> deleteUploadInProgressMessage
+                                SessionDeleteFailure.Unavailable -> deleteFailedMessage
+                                null -> null
+                            },
                         sharedPlayer = sharedVideoPlayer,
                         onOpenFullscreenVideo = { navController.navigate(SessionVideoRoute(route.sessionId)) },
-                        uploadFailureReason = uploadFailureReason,
+                        uploadFailureReason = operations.uploadFailureReason,
                     )
                 }
             }
