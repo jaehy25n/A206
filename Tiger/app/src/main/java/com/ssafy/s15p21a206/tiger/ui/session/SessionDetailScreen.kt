@@ -148,7 +148,7 @@ internal fun SessionDetailScreen(
                 if (summary.uploadState != UploadState.LOCAL_ONLY) {
                     Text(
                         text = stringResource(summary.uploadState.labelRes),
-                        style = TigerText.body,
+                        style = TigerText.value,
                     )
                 }
                 // 무엇이 막았는지 알아야 다시 걸어 볼지 판단할 수 있다. 앱을 다시 켜면 남지 않는다.
@@ -337,7 +337,7 @@ private fun SessionInfoRow(
     value: String,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(text = label, style = TigerText.meta)
+        Text(text = label, style = TigerText.supporting)
         // 값은 시트 제목보다 작아야 한다. 전에는 값이 `bodyLarge`라 제목과 같은 16sp였고, 그래서
         // 제목이 목록의 첫 항목처럼 읽히며 큰 글자 다섯 개가 사다리처럼 쌓였다. 한 단계 내리면
         // 제목이 이 시트의 유일한 최상위가 되고, 라벨과의 낙차도 4sp에서 2sp로 좁아져 두 줄이

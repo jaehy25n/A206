@@ -426,7 +426,7 @@ private fun SessionSummaryItem(
                     // 행이 어긋난 것처럼 보인다. baseline은 어느 쪽이든 맞아 있다.
                     Text(
                         text = stringResource(summary.uploadState.labelRes),
-                        style = TigerText.meta,
+                        style = TigerText.supporting,
                         modifier = Modifier.alignByBaseline(),
                     )
                 }
