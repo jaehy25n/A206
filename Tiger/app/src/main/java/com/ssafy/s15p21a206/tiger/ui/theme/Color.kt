@@ -43,3 +43,39 @@ val CaptureOverlaySupporting = Color(0xE6FFFFFF)
 
 /** 비활성 제어의 색. 의미색을 흐리기만 하면 여전히 그 색으로 읽히므로 색상을 빼고 중성으로 떨어뜨린다. */
 val CaptureControlDisabled = Color(0x61FFFFFF)
+
+/**
+ * 앱이 고정하는 중성 계열.
+ *
+ * 회색으로 보여야 하는 것이 회색으로 보이게 한다. `dynamicColor`가 파생하는 중성은 배경화면의 색조를
+ * 조금씩 물고 오는데, 화면의 대부분을 차지하는 판에서는 그것이 "푸른 회색"으로 읽힌다.
+ *
+ * 순수 무채색은 아니다. 파랑을 빨강보다 3만큼만 올려 둔다. 완전한 무채색은 흰 카드 옆에서 누렇게
+ * 가라앉아 보이고, 이 정도의 한기는 색으로 읽히지 않으면서 판을 깨끗하게 만든다. iOS의 grouped
+ * 배경도 같은 방향으로 5만큼 올려 둔다.
+ */
+val SurfaceRaised = Color(0xFFFFFFFF)
+
+/** 카드가 얹히는 바닥. 흰 카드와 1.15:1로 갈린다. */
+val SurfaceRecessed = Color(0xFFEFEFF2)
+
+/** 판이 아니라 화면 자체의 기본 바닥. 카드 없는 화면은 [SurfaceRaised]를 쓰므로 여기 닿는 자리는 드물다. */
+val SurfaceBase = Color(0xFFF7F7F9)
+
+/** 한 단계 더 내려앉은 판. 메뉴와 다이얼로그가 목록 바닥 위에서 갈려야 할 때 쓴다. */
+val SurfaceSunken = Color(0xFFE7E7EB)
+
+/** 중성 계열에서 가장 어두운 판. */
+val SurfaceDeep = Color(0xFFE1E1E6)
+
+/** 진한 잉크. 흰 카드 위 17.2:1. */
+val InkStrong = Color(0xFF1B1B1F)
+
+/** 옅은 잉크. 흰 카드 위 9.5:1로 AA를 넉넉히 넘는다. */
+val InkMuted = Color(0xFF45454A)
+
+/** 경계선. 판을 가르는 데 쓰지 않고 입력처럼 윤곽이 필요한 자리에만 쓴다. */
+val OutlineNeutral = Color(0xFF76767C)
+
+/** 더 약한 경계선. */
+val OutlineNeutralFaint = Color(0xFFC7C7CD)
