@@ -724,7 +724,7 @@ Task와 Object를 Session 색인에 저장하는 범위를 FR-013e·FR-013f로 �
   - 실기기 화면 확인: 카드·상세·세션 정보 셋을 모두 봤다. 세션 정보는 다섯 행이 스크롤 없이 들어
     가고 전체 식별자가 한 줄이다.
 
-- [ ] T065 [S15P21A206-45] 앱이 쓰는 글자 조합을 역할로 뽑아 `ui/theme/TigerText.kt`에 정의하고,
+- [X] T065 [S15P21A206-45] 앱이 쓰는 글자 조합을 역할로 뽑아 `ui/theme/TigerText.kt`에 정의하고,
   화면은 이름으로만 고르게 한다.
   - 배경: 역할 다섯을 `ui/common`의 컴포넌트와 `MaterialTheme.typography` 위에 손으로 얹어 두었을
     뿐 정의된 곳이 없었다. 조합을 자리마다 만들 수 있는 구조가 남아 있으면 축은 다시 늘어난다.
@@ -755,6 +755,9 @@ Task와 Object를 Session 색인에 저장하는 범위를 FR-013e·FR-013f로 �
     `SessionDetailScreen`, `CaptureWorkspaceScreen`, `CaptureMetadataDialog`, `VideoPlayback`.
   - 자동 검증: `.\gradlew.bat ktlintCheck testDebugUnitTest lintDebug assembleDebug
     assembleDebugAndroidTest` 성공 (2026-09-22).
-  - 계측·화면 검증: **미실행.** 기기 연결이 끊겨 돌리지 못했다. 이 작업은 픽셀이 바뀌지 않는 것이
-    성립 조건이므로, 실기기에서 androidTest를 돌리고 카드·상세·세션 정보·수집 작업 공간 화면을
-    직전 스크린샷과 대조해야 완료다.
+  - 계측 검증 (2026-09-22, 에뮬레이터 `Medium_Phone`, Android 16): **29 tests, 0 failures.**
+    `OK (29 tests)`, 67.978초. 실기기 연결이 끊겨 에뮬레이터로 돌렸다.
+  - 화면 대조: 하지 않았다. 에뮬레이터에는 수집한 Session이 없어 카드·상세·세션 정보 화면에 닿을
+    수 없다. 픽셀이 바뀌지 않는다는 것은 치환마다 크기·굵기·색과 상속 여부를 그대로 옮긴 것으로
+    성립하며, 오버레이 역할은 `bodyLarge`에서 파생해 줄 높이와 자간까지 유지했다. 사용자가 이
+    확인을 생략해도 된다고 판단했다(리팩터라 화면이 바뀌었을 가능성이 낮다).
