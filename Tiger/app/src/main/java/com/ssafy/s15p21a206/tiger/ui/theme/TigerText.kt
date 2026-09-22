@@ -21,13 +21,26 @@ import androidx.compose.ui.unit.sp
  * 역할은 두 무리다. 표면 위에서 읽는 글과 프리뷰·영상 위에서 읽는 글은 색 체계가 다르다. 뒤가
  * 장면이면 표면 색을 쓸 수 없으므로 흰색으로 고정한다.
  *
- * 표면 위에서 읽는 여덟 역할은 모두 잉크 두 단계 중 하나를 골라 색을 명시한다. 진한 `onSurface`는
- * 그 항목을 짚는 글([sectionName], [itemName], [body], [value], [identifier], [formLabel])이고, 옅은
- * `onSurfaceVariant`는 딸린 값과 이름표와 안내([bodyMuted], [supporting])다.
+ * 표면 위에서 읽는 열 역할은 모두 잉크 두 단계 중 하나를 골라 색을 명시한다. 진한 `onSurface`는
+ * 그 항목을 짚는 글([sectionName], [itemName], [body], [value], [identifier], [menuItem], [formLabel])이고, 옅은
+ * `onSurfaceVariant`는 딸린 값과 이름표와 안내([bodyMuted], [supporting], [groupLabel])다.
  *
- * 크기는 셋이다. 제목 22sp, 본문 16sp, 목록 값 14sp. 다만 **한 화면이 쓰는 크기는 둘**이고 그 둘은
- * 늘 이웃한 칸이다. 목록은 이름([itemName], 16)과 값([supporting], [identifier], 14), 상세는
- * 제목([sectionName], 22)과 본문([body], [bodyMuted], 16)이다. 짝이 화면마다 다를 뿐이다.
+ * 크기는 셋이다. title 22sp, body 16sp, callout 14sp. 눈금과 그 이름은 Material 3의 타입 스케일에서
+ * 가져오고, 실제 값은 [Typography]가 정한다. 괄호 안은 Apple HIG의 대응이다.
+ *
+ * | 층 | 크기 | 이 파일의 역할 |
+ * | --- | --- | --- |
+ * | title (title2 22) | 22 | [sectionName] |
+ * | body (body 17, headline 17) | 16 | [itemName] [body] [bodyMuted] |
+ * | callout (subhead 15) | 14 | [value] [supporting] [identifier] [menuItem] [formLabel] |
+ * | caption (caption1 12) | 12 | [groupLabel] |
+ *
+ * caption 층에는 값을 두지 않는다. 묶음 이름표만 든다. 값을 한 단계 더 내리면 층이 늘어나는 것이
+ * 아니라 위가 홀로 커지지만, 표지는 값과 같은 층에 있으면 값으로 읽히므로 내려야 한다.
+ *
+ * **한 화면이 쓰는 크기는 둘**이고 그 둘은 늘 이웃한 칸이다. 목록은 이름([itemName], 16)과
+ * 값([supporting], [identifier], 14), 상세는 제목([sectionName], 22)과 본문([body], [bodyMuted], 16)
+ * 이다. 짝이 화면마다 다를 뿐이다.
  *
  * 한 칸을 건너뛰면 위가 홀로 커 보인다. 상세가 본문 층 없이 제목 22sp에서 값 14sp로 곧장 떨어지던
  * 동안 그랬다. 목록 카드가 16·14·12로 세 칸을 쓰던 동안에도 같은 일이 났는데, 이름과 가장 작은
@@ -123,6 +136,26 @@ object TigerText {
                 .hugged
 
     /**
+     * 한 묶음 위에 붙어 그 묶음이 무엇인지 말하는 이름표. 상세의 `세션 정보`, `업로드 상태`.
+     *
+     * 묶음 안의 글([body])보다 작고 옅다. 이름표는 읽는 대상이 아니라 무엇을 읽고 있는지 알려 주는
+     * 표지이므로, 제 묶음보다 커지면 묶음이 이름표에 딸린 것처럼 읽힌다.
+     *
+     * caption 층이다. 한 번 14sp로 두었더니 본문 16sp와 2sp밖에 차이가 나지 않고 잉크도 같아, 이름표가
+     * 표지가 아니라 그냥 작은 한 줄로 읽혔다. 표지는 값과 같은 층에 있으면 값이 된다. 층을 내려야
+     * 훑는 눈이 "이건 읽을 것이 아니라 무엇을 읽는지 알려 주는 것"으로 넘긴다.
+     *
+     * Material 3에서 이 자리의 이름이 `labelMedium`이다. 굵기가 한 단계 높아 작아져도 묻히지 않는다.
+     * Apple의 grouped list도 구획 머리를 본문보다 작게 두는데, 영어는 대문자로 한 번 더 가르고 한국어는
+     * 그 수단이 없으므로 크기와 굵기가 그 몫을 한다.
+     */
+    val groupLabel: TextStyle
+        @Composable get() =
+            MaterialTheme.typography.labelMedium
+                .copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                .hugged
+
+    /**
      * 기계가 부르는 이름. 목록 카드 오른쪽 끝의 짧은 Session 식별자.
      *
      * 이 앱은 배포용이 아니라 수집용이고, 서버에 올라간 수집분을 찾을 때 쓰는 것은 수집 일시가
@@ -142,6 +175,24 @@ object TigerText {
             MaterialTheme.typography.bodyMedium
                 .copy(
                     fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                ).hugged
+
+    /**
+     * 메뉴 항목의 글자.
+     *
+     * Material 3의 `DropdownMenuItem`은 `labelLarge`를 집어 쓰는데 그 역할은 Medium 굵기다. 버튼의
+     * 글자를 굵게 세우는 눈금이라 메뉴에서는 항목 넷이 모두 강조된 것처럼 보인다. 굵기만 한 단계
+     * 내린다.
+     *
+     * 호출부가 `fontWeight`를 직접 지정하고 있었다. 세 자리에서 각자 지정했고 그중 둘은 상수를
+     * 따로 두었다. 조합은 화면이 아니라 여기서 정한다.
+     */
+    val menuItem: TextStyle
+        @Composable get() =
+            MaterialTheme.typography.labelLarge
+                .copy(
+                    fontWeight = FontWeight.Normal,
                     color = MaterialTheme.colorScheme.onSurface,
                 ).hugged
 

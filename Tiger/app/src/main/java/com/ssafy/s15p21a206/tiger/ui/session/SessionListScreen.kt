@@ -39,7 +39,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -367,21 +366,24 @@ private fun SessionSummaryItem(
                 // 왼쪽 더미에서 한글 줄이 빠지는 효과도 있다. `E`나 `I`는 세로 획이 열을 꽉 채워
                 // 서지만 `업`의 ㅇ은 완만한 곡선이라, 나란히 쌓으면 상자 원점이 같은데도 한글 줄만
                 // 들여쓴 것처럼 보였다.
-                // 스타일은 셋만 쓴다. 이름(16sp Medium 진함), 딸린 값(14sp Regular 옅음),
-                // 식별자(12sp Medium 진함)다. Object·전송 상태·Episode 개수가 한 스타일을 함께
-                // 쓰는 것이 핵심이다.
+                // 스타일은 셋만 쓴다. 이름(16sp 진함), 딸린 값(14sp 옅음), 식별자(14sp Medium
+                // 진함)다. Object와 전송 상태가 한 스타일을 함께 쓰는 것이 핵심이다.
                 //
                 // 요소마다 새 조합을 만들지 않는다. 전에는 다섯 요소가 글꼴·크기·굵기·색 네 축을
                 // 섞어 조합 다섯 개를 만들었고, 그러면 어느 요소도 다른 요소와 스타일을 공유하지
                 // 않아 위계가 아니라 잡음으로 읽힌다. 값이 넷인 GitHub의 커밋 행은 조합 셋으로
                 // 끝내고, 글꼴은 하나에 크기는 둘만 쓴다.
                 //
-                // 왼쪽은 수집에 대한 것(언제·무엇·얼마나), 오른쪽은 이 기록에 대한 것(식별자·상태)
-                // 이다. 종류가 다른 값을 한 줄에 부호로 이어 붙이지 않고 단을 갈라 놓는다.
+                // 행으로 종류를 가른다. 첫 행은 이 수집이 무엇이고 지금 어떤가(수집 일시·전송 상태),
+                // 둘째 행은 그것에 딸린 메타(Object·짧은 ID)다.
                 //
-                // 식별자가 첫 행의 오른쪽 끝에 오는 것은 그것이 이 행을 짚는 값이기 때문이다. 서버에
-                // 올라간 영상을 찾을 때 쓰는 것이 수집 일시가 아니라 이 값이므로, 훑는 눈이 먼저
-                // 닿는 자리를 준다.
+                // 전에는 열로 갈랐고, 그래서 종류가 섞였다. 오른쪽 열에 식별자와 전송 상태가 함께
+                // 있었는데 앞은 메타이고 뒤는 상태다. 왼쪽 열에는 이름과 메타가 함께 있었다. 어느
+                // 열도 한 종류를 담지 않아, 무엇과 무엇이 같은 부류인지를 자리가 말해 주지 못했다.
+                //
+                // 상태가 첫 행의 오른쪽 끝에 오는 것은 그것이 이 행에서 변하는 유일한 값이기
+                // 때문이다. 목록을 훑는 이유가 무엇이 올라갔고 무엇이 안 올라갔는지 보는 것이다.
+                // 메타는 변하지 않으므로 아래 행에서 기다려도 된다.
                 //
                 // 두 행 모두 글자 크기가 다르므로 baseline을 맞춘다. 위를 맞추면 작은 글자가 큰
                 // 글자의 윗선에 붙어 떠 보인다.
@@ -398,8 +400,8 @@ private fun SessionSummaryItem(
                                 .alignByBaseline(),
                     )
                     Text(
-                        text = stringResource(R.string.session_list_short_id, summary.sessionId.take(8)),
-                        style = TigerText.identifier,
+                        text = stringResource(summary.uploadState.labelRes),
+                        style = TigerText.supporting,
                         modifier = Modifier.alignByBaseline(),
                     )
                 }
@@ -407,8 +409,8 @@ private fun SessionSummaryItem(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    // Object는 이름에 딸린 값이라 시각 바로 아래 둔다. 없으면 왼쪽을 비워 둔 채로
-                    // 오른쪽 상태만 남는다. 빈 이름표를 세우지 않는다.
+                    // Object가 없는 세션은 두 이름을 Session 행에 저장하기 전에 마감된 것이다. 빈
+                    // 이름표를 세우지 않고 왼쪽을 비운 채 식별자만 남긴다.
                     if (summary.objectName.isNotBlank()) {
                         Text(
                             text = stringResource(R.string.session_object, summary.objectName),
@@ -421,12 +423,11 @@ private fun SessionSummaryItem(
                     } else {
                         Spacer(Modifier.weight(1f))
                     }
-                    // 오른쪽 단은 한 크기로 묶는다. 식별자와 크기가 다르면 두 값이 한 단으로 읽히지
-                    // 않고, 같은 14sp라도 한글은 em 상자를 꽉 채워 왼쪽의 라틴 글자보다 커 보여
-                    // 행이 어긋난 것처럼 보인다. baseline은 어느 쪽이든 맞아 있다.
+                    // 식별자는 메타이므로 Object와 같은 행에 선다. 크기도 같고 굵기와 잉크로 갈린다.
+                    // 서버에 올라간 수집분을 찾을 때 쓰는 값이라 옅게 두지 않는다.
                     Text(
-                        text = stringResource(summary.uploadState.labelRes),
-                        style = TigerText.supporting,
+                        text = stringResource(R.string.session_list_short_id, summary.sessionId.take(8)),
+                        style = TigerText.identifier,
                         modifier = Modifier.alignByBaseline(),
                     )
                 }
@@ -441,7 +442,7 @@ private fun SessionSummaryItem(
         Box(modifier = Modifier.offset { pressPosition }) {
             DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                 DropdownMenuItem(
-                    text = { Text(stringResource(R.string.session_delete), fontWeight = FontWeight.Normal) },
+                    text = { Text(stringResource(R.string.session_delete), style = TigerText.menuItem) },
                     leadingIcon = {
                         Icon(
                             painter = painterResource(R.drawable.ic_session_delete),

@@ -31,12 +31,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ssafy.s15p21a206.tiger.R
 import com.ssafy.s15p21a206.tiger.episode.SessionBundle
 import com.ssafy.s15p21a206.tiger.episode.SessionSummary
 import com.ssafy.s15p21a206.tiger.episode.UploadState
+import com.ssafy.s15p21a206.tiger.ui.common.LabelledGroup
 import com.ssafy.s15p21a206.tiger.ui.common.ListSectionHeader
 import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeader
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerSurface
@@ -85,6 +85,7 @@ internal fun SessionDetailScreen(
         if (summary == null) {
             Text(
                 text = stringResource(R.string.session_detail_unavailable),
+                style = TigerText.bodyMuted,
                 modifier = Modifier.padding(horizontal = DETAIL_CONTENT_PADDING),
             )
         } else if (presentation != null) {
@@ -116,40 +117,42 @@ internal fun SessionDetailScreen(
                 //
                 // 이름과 정보는 띄어서 두 묶음으로 가른다. 같은 간격으로 쌓으면 네 줄이 한 덩어리가
                 // 되어 무엇이 이 화면의 이름인지 드러나지 않는다.
-                Column(verticalArrangement = Arrangement.spacedBy(DETAIL_TITLE_GAP)) {
-                    ListSectionHeader(
-                        title =
-                            java.text.DateFormat
-                                .getDateTimeInstance()
-                                .format(java.util.Date(summary.recordingStartEpochMs)),
-                        supporting = null,
-                    )
+                ListSectionHeader(
+                    title =
+                        java.text.DateFormat
+                            .getDateTimeInstance()
+                            .format(java.util.Date(summary.recordingStartEpochMs)),
+                    supporting = null,
+                )
+                // 묶음마다 이름표를 붙인다. 이 화면에는 성격이 다른 것이 둘 있다. 이 수집이 무엇인지
+                // 말하는 값들과, 그 기록이 지금 어떤 상태인지 말하는 줄이다. 이름표가 없으면 네 줄이
+                // 한 더미로 쌓여, 전송 상태가 Task·Object·ID와 같은 종류의 값으로 읽힌다.
+                //
+                // 이름표는 묶음 안의 글보다 작고 옅다. 읽을 대상이 아니라 무엇을 읽고 있는지 알려
+                // 주는 표지이기 때문이다.
+                LabelledGroup(stringResource(R.string.session_group_info)) {
                     // 세 값이 한 스타일을 함께 쓴다. 이름표와 값을 쌓는 자리에서는 층을 더 가를
                     // 이유가 없고, 각자 다른 조합을 주면 세 줄이 세 가지로 보여 읽히지 않는다.
-                    // 이름은 위의 수집 일시가 혼자 맡는다.
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        if (summary.taskName.isNotBlank()) {
-                            Text(text = stringResource(R.string.session_task, summary.taskName), style = TigerText.bodyMuted)
-                        }
-                        if (summary.objectName.isNotBlank()) {
-                            Text(text = stringResource(R.string.session_object, summary.objectName), style = TigerText.bodyMuted)
-                        }
+                    if (summary.taskName.isNotBlank()) {
+                        Text(text = stringResource(R.string.session_task, summary.taskName), style = TigerText.bodyMuted)
+                    }
+                    if (summary.objectName.isNotBlank()) {
+                        Text(text = stringResource(R.string.session_object, summary.objectName), style = TigerText.bodyMuted)
+                    }
+                    Text(
+                        text = stringResource(R.string.session_list_short_id, summary.sessionId.take(8)),
+                        style = TigerText.bodyMuted,
+                    )
+                }
+                // 아직 올리지 않았다는 것은 업로드 버튼이 이미 말한다. 그 상태에서만 나오는
+                // 버튼이므로 같은 말을 한 줄 더 적지 않고, 이름표도 함께 뺀다.
+                if (summary.uploadState != UploadState.LOCAL_ONLY) {
+                    LabelledGroup(stringResource(R.string.session_group_upload)) {
                         Text(
-                            text = stringResource(R.string.session_list_short_id, summary.sessionId.take(8)),
-                            style = TigerText.bodyMuted,
+                            text = stringResource(summary.uploadState.labelRes),
+                            style = TigerText.body,
                         )
                     }
-                }
-                // 전송 상태는 이름에 딸린 정보가 아니라 지금 무엇을 할 수 있는지를 말하므로,
-                // 아래 버튼과 한 묶음이 되도록 이름표에서 떼어 놓고 옅게 두지 않는다.
-                //
-                // 아직 올리지 않았다는 것은 업로드 버튼이 이미 말한다. 그 상태에서만 나오는
-                // 버튼이므로 같은 말을 한 줄 더 적지 않는다. 나머지 셋은 각자 할 말이 있다.
-                if (summary.uploadState != UploadState.LOCAL_ONLY) {
-                    Text(
-                        text = stringResource(summary.uploadState.labelRes),
-                        style = TigerText.body,
-                    )
                 }
                 // 무엇이 막았는지 알아야 다시 걸어 볼지 판단할 수 있다. 앱을 다시 켜면 남지 않는다.
                 // 전송 실패는 기록하는 컬럼이 없다.
@@ -237,7 +240,7 @@ private fun SessionDetailMenu(
             DropdownMenuItem(
                 // `DropdownMenuItem`이 상속시키는 `labelLarge`는 Medium이다. 항목이 둘뿐이라
                 // 굵기로 무게를 더 실을 이유가 없고, 삭제 항목의 error 색만으로 충분히 구분된다.
-                text = { Text(stringResource(R.string.session_info_title), fontWeight = MENU_ITEM_FONT_WEIGHT) },
+                text = { Text(stringResource(R.string.session_info_title), style = TigerText.menuItem) },
                 leadingIcon = {
                     Icon(
                         painter = painterResource(R.drawable.ic_session_info),
@@ -251,7 +254,7 @@ private fun SessionDetailMenu(
                 },
             )
             DropdownMenuItem(
-                text = { Text(stringResource(R.string.session_delete), fontWeight = MENU_ITEM_FONT_WEIGHT) },
+                text = { Text(stringResource(R.string.session_delete), style = TigerText.menuItem) },
                 leadingIcon = {
                     Icon(
                         painter = painterResource(R.drawable.ic_session_delete),
@@ -362,6 +365,7 @@ private fun SessionVideoPreview(
         // 영상은 화면 폭을 다 쓰지만 이 문구는 본문이다. 여백 없이 두면 화면 왼쪽 끝에 붙는다.
         Text(
             text = stringResource(R.string.session_detail_video_unavailable),
+            style = TigerText.bodyMuted,
             modifier = Modifier.padding(horizontal = DETAIL_CONTENT_PADDING),
         )
         return
@@ -402,4 +406,3 @@ private val DETAIL_TITLE_GAP = 8.dp
 private val HEADER_MENU_ICON_SIZE = 20.dp
 
 /** 헤더 메뉴 항목의 글자 굵기. `labelLarge`의 Medium에서 한 단계 내린 값이다. */
-private val MENU_ITEM_FONT_WEIGHT = FontWeight.Normal
