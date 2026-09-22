@@ -24,14 +24,14 @@ class CaptureSessionCoordinatorTest {
 
     /** Session을 시작하고 Tracking을 안정화시켜 Episode를 시작할 수 있는 상태로 만든다. */
     private fun startReadySession() {
-        coordinator.start(displayNumber = 1, bundlePath = "staging")
+        coordinator.start(displayNumber = 1, bundlePath = "staging", task = "Door opening", objectName = "cup")
         coordinator.onTracking(true)
         now += CaptureSessionCoordinator.READY_GATE_NS
         coordinator.onTracking(true)
     }
 
     @Test fun `tracking ready gate enables episodes after one second`() {
-        coordinator.start(displayNumber = 1, bundlePath = "staging")
+        coordinator.start(displayNumber = 1, bundlePath = "staging", task = "Door opening", objectName = "cup")
         coordinator.onTracking(true)
         now += 999_999_999
         coordinator.onTracking(true)
@@ -53,10 +53,30 @@ class CaptureSessionCoordinatorTest {
     }
 
     @Test fun `starting a session does not open an episode`() {
-        coordinator.start(displayNumber = 1, bundlePath = "staging")
+        coordinator.start(displayNumber = 1, bundlePath = "staging", task = "Door opening", objectName = "cup")
         assertNull(coordinator.activeEpisode)
         assertNull(coordinator.latestClosedEpisode)
         assertTrue(closed.isEmpty())
+    }
+
+    /**
+     * Episode가 아니라 Session이 두 이름을 든다. Episode를 하나도 시작하지 않고 끝나는 Session이
+     * 있고, 그때 두 이름을 아는 곳은 이 호출뿐이다.
+     */
+    @Test fun `a started session carries the task and object it was given`() {
+        val session = coordinator.start(displayNumber = 1, bundlePath = "staging", task = "mvi-check", objectName = "cup")
+
+        assertEquals("mvi-check", session.task)
+        assertEquals("cup", session.objectName)
+        assertEquals("mvi-check", coordinator.session!!.task)
+        assertEquals("cup", coordinator.session!!.objectName)
+    }
+
+    @Test fun `a session cannot start without both names`() {
+        assertThrows(IllegalStateException::class.java) {
+            coordinator.start(displayNumber = 1, bundlePath = "staging", task = "mvi-check", objectName = " ")
+        }
+        assertNull(coordinator.session)
     }
 
     @Test fun `episodes repeat inside one session without restarting it`() {
@@ -80,7 +100,7 @@ class CaptureSessionCoordinatorTest {
     }
 
     @Test fun `episode start is rejected before the ready gate elapses`() {
-        coordinator.start(displayNumber = 1, bundlePath = "staging")
+        coordinator.start(displayNumber = 1, bundlePath = "staging", task = "Door opening", objectName = "cup")
         coordinator.onTracking(true)
         now += CaptureSessionCoordinator.READY_GATE_NS - 1
         coordinator.onTracking(true)
@@ -196,7 +216,7 @@ class CaptureSessionCoordinatorTest {
         val first = coordinator.session!!.sessionId
         coordinator.finalizeSession()
         coordinator.release()
-        coordinator.start(displayNumber = 2, bundlePath = "staging")
+        coordinator.start(displayNumber = 2, bundlePath = "staging", task = "Door opening", objectName = "cup")
         assertNotEquals(first, coordinator.session!!.sessionId)
     }
 
@@ -205,7 +225,7 @@ class CaptureSessionCoordinatorTest {
         coordinator.finalizeSession()
         coordinator.release()
         assertEquals(TrackingState.INITIALIZING, coordinator.trackingState)
-        coordinator.start(displayNumber = 2, bundlePath = "staging")
+        coordinator.start(displayNumber = 2, bundlePath = "staging", task = "Door opening", objectName = "cup")
         // 이전 Session의 안정화 결과를 물려받으면 gate 없이 Episode가 시작된다.
         assertThrows(IllegalStateException::class.java) { coordinator.startEpisode("pick", "block") }
         coordinator.onTracking(true)
@@ -224,7 +244,7 @@ class CaptureSessionCoordinatorTest {
     }
 
     @Test fun `fatal interruption finalizes writers once`() {
-        coordinator.start(displayNumber = 1, bundlePath = "staging")
+        coordinator.start(displayNumber = 1, bundlePath = "staging", task = "Door opening", objectName = "cup")
         coordinator.interrupt("camera")
         assertEquals(1, writer.started)
         assertEquals(1, writer.finalized)

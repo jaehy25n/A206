@@ -33,6 +33,39 @@ class SessionRepositoryTest {
         }
     }
 
+    /**
+     * 수집 시작 때 입력받은 두 이름이 Session 행에 저장된다.
+     *
+     * 전에는 Episode 행에만 실려, Episode를 시작하지 않고 끝난 Session에서 사라졌다.
+     */
+    @Test
+    fun `saving a session persists the task and object it was started with`() {
+        runBlocking {
+            val root = Files.createTempDirectory("session-store").toFile()
+            val store = SessionBundleStore(root)
+            val dao = FakeSessionDao(emptyList())
+            val repository = SessionRepository(dao, FakeMarkerDao(), store)
+
+            repository.save(
+                CaptureSession(
+                    sessionId = "ce9c7947",
+                    displayNumber = 1,
+                    recordingState = RecordingState.COMPLETED,
+                    uploadState = UploadState.LOCAL_ONLY,
+                    recordingStartMonotonicTimestampNs = 1L,
+                    bundlePath = store.completedDirectory("ce9c7947").path,
+                    task = "mvi-check",
+                    objectName = "cup",
+                ),
+            )
+
+            val stored = dao.session("ce9c7947")!!
+            assertEquals("mvi-check", stored.task)
+            assertEquals("cup", stored.objectName)
+            root.deleteRecursively()
+        }
+    }
+
     /** 수집 화면이 홈 버튼 등으로 중단돼도 모아둔 데이터는 버리지 않는다. */
     @Test
     fun `an interrupted staging bundle is finalized instead of discarded`() {
