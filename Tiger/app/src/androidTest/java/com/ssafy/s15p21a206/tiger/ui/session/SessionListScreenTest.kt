@@ -65,11 +65,39 @@ class SessionListScreenTest {
             )
         }
 
-        composeRule.onNodeWithText(string(R.string.session_list_short_id, "session-")).assertIsDisplayed()
+        // 값마다 제 자리가 있다. 종류가 다른 값을 한 줄에 부호로 이어 붙이지 않는다.
         composeRule.onNodeWithText(string(R.string.session_list_episode_count, 2)).assertIsDisplayed()
+        // 서버에 올라간 영상을 찾을 때 쓰는 값이라 첫 행의 오른쪽 끝에 둔다.
+        composeRule.onNodeWithText(string(R.string.session_list_short_id, "session-")).assertIsDisplayed()
+        // 한 Task 안의 세션을 갈라 주는 유일한 이름이다. 시각만으로는 어느 물체를 찍은 것인지 모른다.
+        composeRule.onNodeWithText(string(R.string.session_object, "cup")).assertIsDisplayed()
         composeRule.onNodeWithText(string(R.string.upload_failed)).assertIsDisplayed()
         composeRule.onNodeWithContentDescription(sessionLabel).performClick()
         assertEquals(summary.sessionId, selectedSessionId)
+    }
+
+    /**
+     * 두 이름을 Session 행에 저장하기 전에 마감된 세션은 Object가 비어 있다. 값이 없는 줄을
+     * "Object" 한 마디로 세워 두면 없는 것을 있는 것처럼 읽히므로 줄째로 뺀다.
+     */
+    @Test
+    fun aSessionWithoutAnObjectShowsNoObjectLine() {
+        val summary = summary().copy(objectName = "")
+        val captureTime = DateFormat.getDateTimeInstance().format(Date(summary.recordingStartEpochMs))
+
+        composeRule.setContent {
+            TaskSessionListScreen(
+                taskName = summary.taskName,
+                sessions = listOf(summary),
+                onBack = {},
+                onOpenSession = {},
+                onDeleteSession = {},
+                onStartCapture = {},
+            )
+        }
+
+        composeRule.onNodeWithContentDescription(string(R.string.session_list_item_content_description, captureTime)).assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.session_object, "")).assertDoesNotExist()
     }
 
     /** 삭제는 카드에 표를 두지 않고 길게 누르기에 숨긴다. 확인을 거치지 않으면 지워지지 않는다. */
@@ -159,5 +187,6 @@ class SessionListScreenTest {
             bundlePath = "/managed/session-12345678",
             completedEpisodeCount = 2,
             taskName = "Door opening",
+            objectName = "cup",
         )
 }

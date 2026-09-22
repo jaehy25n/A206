@@ -58,12 +58,21 @@ class CaptureSessionCoordinator(
     private var lossDetectedAtNs: Long? = null
     private var lossObservedAtNs: Long? = null
 
+    /**
+     * Session을 연다. [task]와 [objectName]은 이 Session 전체에 적용되는 두 이름이다.
+     *
+     * Episode 시작 때 다시 받는 것과 같은 값이지만 여기서도 받는다. Episode를 하나도 시작하지
+     * 않고 끝나는 Session이 있고, 그때 두 이름을 아는 곳은 이 호출뿐이다.
+     */
     fun start(
         sessionId: String = UUID.randomUUID().toString(),
         displayNumber: Int,
         bundlePath: String,
+        task: String,
+        objectName: String,
     ): CaptureSession {
         check(session == null) { "Session already exists" }
+        check(task.isNotBlank() && objectName.isNotBlank()) { "Task and object are required" }
         writers.forEach(SessionWriter::start)
         return CaptureSession(
             sessionId,
@@ -72,6 +81,8 @@ class CaptureSessionCoordinator(
             UploadState.LOCAL_ONLY,
             clock.nowNs(),
             bundlePath = bundlePath,
+            task = task,
+            objectName = objectName,
         ).also {
             session =
                 it

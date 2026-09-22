@@ -65,6 +65,8 @@ class SessionUploadServiceTest {
             1L,
             2L,
             Files.createTempDirectory("upload-service").toString(),
+            task = "Door opening",
+            objectName = "cup",
         )
     }
 

@@ -153,6 +153,8 @@ private fun CaptureSessionEntity.toCaptureSession() =
         recordingEndNs,
         bundlePath,
         recordingStartEpochMs,
+        task,
+        objectName,
     )
 
 private fun SessionSummaryEntity.toSessionSummary() =
@@ -166,6 +168,7 @@ private fun SessionSummaryEntity.toSessionSummary() =
         bundlePath,
         completedEpisodeCount,
         taskName,
+        objectName,
     )
 
 private fun CaptureSession.toEntity() =
@@ -178,6 +181,8 @@ private fun CaptureSession.toEntity() =
         recordingEndMonotonicTimestampNs,
         bundlePath,
         recordingStartEpochMs = recordingStartEpochMs,
+        task = task,
+        objectName = objectName,
     )
 
 private fun EpisodeMarkerEntity.toEpisodeMarker() =

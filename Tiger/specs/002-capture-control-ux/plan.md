@@ -20,7 +20,7 @@
 
 **주요 의존성**: Jetpack Compose Material 3, Activity Compose, Lifecycle Compose, Room 2.8.4, Kotlin coroutines, OkHttp 5.3.2, ARCore
 
-**저장소**: Room `sessions`·`episode_markers` 색인 및 Detail 수집 시각용 로컬 벽시계 값, 앱 전용 `filesDir/capture/{staging,completed}/<session_id>/` 원시 bundle, 기존 SAF export 대상
+**저장소**: Room `sessions`·`episode_markers` 색인, Detail 수집 시각용 로컬 벽시계 값과 Session 단위 Task·Object, 앱 전용 `filesDir/capture/{staging,completed}/<session_id>/` 원시 bundle, 기존 SAF export 대상
 
 **테스트**: JUnit, Room testing, MockWebServer, 화면 전환·접근성 검증이 필요한 Compose UI 테스트, Gradle 단위·lint·assemble 검사
 

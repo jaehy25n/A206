@@ -35,6 +35,7 @@ import androidx.media3.ui.PlayerView
 import com.ssafy.s15p21a206.tiger.R
 import com.ssafy.s15p21a206.tiger.episode.SessionBundle
 import com.ssafy.s15p21a206.tiger.ui.common.LockLandscapeWhilePlaying
+import com.ssafy.s15p21a206.tiger.ui.theme.TigerText
 import java.io.File
 
 @Composable
@@ -62,7 +63,7 @@ internal fun FullScreenVideoScreen(
         } else {
             Text(
                 text = stringResource(R.string.session_detail_video_unavailable),
-                color = Color.White,
+                style = TigerText.onVideoBody,
                 modifier = Modifier.align(Alignment.Center),
             )
         }

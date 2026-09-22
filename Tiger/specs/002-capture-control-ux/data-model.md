@@ -14,13 +14,22 @@
 | `recordingStart` / `recordingEnd` | 수집 길이 계산에 사용하는 monotonic 값 |
 | `bundlePath` | 내부 completed root 하위 canonical 경로. legacy 외부 경로는 이전·삭제 없이 제외한다. |
 | `completedEpisodeCount` | outcome이 `COMPLETED`인 하위 Episode marker 개수 |
-| `taskName` | 완료 Episode marker의 공통 `task` 값. Task 홈에서 Session을 묶는 키이며, 값이 없으면 `이름 없는 Task` 그룹으로 표시한다. |
+| `taskName` | Session 행의 `task` 값. Task 홈에서 Session을 묶는 키이고 상세 본문에서 Object와 짝으로 표시하며, 값이 없으면 `이름 없는 Task` 그룹으로 표시한다. |
+| `objectName` | Session 행의 `objectName` 값. 목록 카드와 상세 본문에서 수집 대상을 확인하는 데 쓴다. 두 화면 모두 수집 일시에 딸린 줄이며, 값이 없으면 그 자리를 세우지 않는다. |
+
+### Task와 Object의 저장 위치
+
+두 이름은 수집 시작 때 한 번 입력받아 Session 전체에 적용되므로 `sessions` 행에 저장한다. `episode_markers` 집계로 역산하지 않는다. 역산하던 때에는 Episode를 하나도 시작하지 않은 Session에서 두 이름이 빈 문자열이 되어, 수집자가 분명히 입력한 값이 `이름 없는 Task` 그룹으로 떨어졌다.
+
+`episode_markers`의 `task`·`objectName`은 그대로 유지한다. 번들의 `episodes.csv`가 Episode마다 두 열을 요구하는 계약이기 때문이다. 두 곳의 값은 같으며, Session 행이 조회의 유일한 출처다.
+
+migration은 컬럼을 더하는 것으로 끝나지 않는다. 조회가 집계를 떠나 Session 행을 읽으므로, 이전 버전에서 마감된 Session은 같은 migration 안에서 Episode 행이 가진 값으로 채운다. 채우지 않으면 이미 쌓인 Session이 전부 `이름 없는 Task`로 떨어져, 이 변경이 고치려는 증상을 과거 데이터 전체에 되풀이한다. 채울 Episode 행이 없는 Session만 빈 값으로 남는다. 그 두 이름은 애초에 어디에도 저장된 적이 없다.
 
 ## EpisodeMarker
 
 | 필드 | 규칙 |
 | --- | --- |
-| `task` / `objectName` | 첫 재생 전에 필수 입력하고, 해당 Session의 모든 Episode에 변경 없이 적용한다. |
+| `task` / `objectName` | 첫 재생 전에 필수 입력하고, 해당 Session의 모든 Episode에 변경 없이 적용한다. 번들 계약을 위해 Episode 행에도 남기며, 조회는 Session 행에서 읽는다. |
 | `outcome` | `ACTIVE`, `COMPLETED`, `INVALID_TRACKING`만 사용하며 `CANCELLED`는 제거한다. |
 | `startTimestampNs` / `endTimestampNs` | 재생과 일시 정지·정지에서 Episode 경계를 쓴다. 완료된 Session에는 열린 Episode가 남을 수 없다. |
 

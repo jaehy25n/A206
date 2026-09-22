@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -16,6 +15,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ssafy.s15p21a206.tiger.R
+import com.ssafy.s15p21a206.tiger.ui.theme.TigerText
 
 /**
  * 뒤로 가기와 제목을 담는 조회 화면 공통 헤더다.
@@ -47,7 +47,7 @@ fun NavigationHeader(
         }
         Text(
             text = title,
-            style = MaterialTheme.typography.titleMedium,
+            style = TigerText.itemName,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             // 제목이 남는 폭을 다 가져가야 동작이 오른쪽 끝에 붙는다.

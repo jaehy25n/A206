@@ -206,7 +206,13 @@ internal fun rememberCaptureDriver(
                         }.onSuccess { bundle ->
                             val startedAtNs = SystemClock.elapsedRealtimeNanos()
                             // Session 시작은 Episode를 만들지 않는다. Tracking 안정화 뒤 사용자가 따로 시작한다.
-                            coordinator.start(bundle.sessionId, bundle.displayNumber, bundle.directory.absolutePath)
+                            coordinator.start(
+                                bundle.sessionId,
+                                bundle.displayNumber,
+                                bundle.directory.absolutePath,
+                                state.task,
+                                state.objectName,
+                            )
                             onIntent(CaptureIntent.SessionStarted(bundle, startedAtNs, state.resolution))
                             repository.save(
                                 CaptureSession(
@@ -217,6 +223,8 @@ internal fun rememberCaptureDriver(
                                     startedAtNs,
                                     bundlePath = bundle.directory.absolutePath,
                                     recordingStartEpochMs = System.currentTimeMillis(),
+                                    task = state.task,
+                                    objectName = state.objectName,
                                 ),
                             )
                         }.onFailure { error ->
@@ -296,6 +304,8 @@ internal fun rememberCaptureDriver(
                     SystemClock.elapsedRealtimeNanos(),
                     interruptedBundle.directory.absolutePath,
                     System.currentTimeMillis(),
+                    state.task,
+                    state.objectName,
                 ),
             )
         }
@@ -336,6 +346,8 @@ internal fun rememberCaptureDriver(
                                     SystemClock.elapsedRealtimeNanos(),
                                     result.directory.absolutePath,
                                     System.currentTimeMillis(),
+                                    state.task,
+                                    state.objectName,
                                 )
                             repository.save(completedSession)
                             // 백그라운드에서 마감됐으면 전송을 걸지 않고 실패로 남긴다.

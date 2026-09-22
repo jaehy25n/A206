@@ -25,6 +25,15 @@ data class CaptureSessionEntity(
     val exportTreeUri: String? = null,
     val exportFailureReason: String? = null,
     val recordingStartEpochMs: Long = 0L,
+    /**
+     * 수집을 시작할 때 입력받은 Task와 Object.
+     *
+     * 한 Session의 모든 Episode가 같은 값을 갖는 Session 속성이므로 여기에 둔다. Episode 행에서
+     * 역산하던 때에는 Episode가 0개인 Session에서 두 이름이 사라졌다. 입력받은 자리에 저장하면
+     * Episode 유무와 무관해진다.
+     */
+    val task: String = "",
+    val objectName: String = "",
 )
 
 data class SessionSummaryEntity(
@@ -37,6 +46,7 @@ data class SessionSummaryEntity(
     val bundlePath: String,
     val completedEpisodeCount: Int,
     val taskName: String = "",
+    val objectName: String = "",
 )
 
 @Entity(tableName = "episode_markers")
@@ -73,14 +83,20 @@ interface CaptureSessionDao {
     @Query("SELECT * FROM sessions WHERE recordingState = 'COMPLETED' ORDER BY recordingStartEpochMs DESC")
     fun observeCompleted(): Flow<List<CaptureSessionEntity>>
 
-    /** 정렬 기준은 [observeCompleted]와 같다. */
+    /**
+     * 정렬 기준은 [observeCompleted]와 같다.
+     *
+     * Task와 Object는 `sessions` 행에서 그대로 읽는다. 전에는 `episode_markers`의 최솟값으로
+     * 역산했는데, 그러면 Episode가 하나도 없는 Session에서 두 이름이 빈 문자열로 사라졌다.
+     * Episode 조인은 이제 개수를 세기 위해서만 남는다.
+     */
     @Query(
         """
         SELECT sessions.sessionId, sessions.displayNumber, sessions.uploadState,
                sessions.recordingStartEpochMs, sessions.recordingStartNs, sessions.recordingEndNs,
                sessions.bundlePath,
                COUNT(CASE WHEN episode_markers.outcome = 'COMPLETED' THEN 1 END) AS completedEpisodeCount,
-               COALESCE(MIN(NULLIF(episode_markers.task, '')), '') AS taskName
+               sessions.task AS taskName, sessions.objectName AS objectName
         FROM sessions
         LEFT JOIN episode_markers ON episode_markers.sessionId = sessions.sessionId
         WHERE sessions.recordingState = 'COMPLETED'
@@ -173,7 +189,7 @@ interface CaptureLogDao {
     suspend fun clearAll()
 }
 
-@Database(entities = [CaptureSessionEntity::class, EpisodeMarkerEntity::class, CaptureLogEntity::class], version = 4, exportSchema = false)
+@Database(entities = [CaptureSessionEntity::class, EpisodeMarkerEntity::class, CaptureLogEntity::class], version = 5, exportSchema = false)
 abstract class TigerDatabase : RoomDatabase() {
     abstract fun captureSessionDao(): CaptureSessionDao
 
@@ -205,3 +221,37 @@ val MIGRATION_3_4 =
 
 const val RECORDING_START_EPOCH_MIGRATION_SQL =
     "ALTER TABLE sessions ADD COLUMN recordingStartEpochMs INTEGER NOT NULL DEFAULT 0"
+
+val MIGRATION_4_5 =
+    object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            SESSION_METADATA_MIGRATION_SQL.forEach(db::execSQL)
+        }
+    }
+
+/**
+ * Task와 Object를 Session 행으로 옮긴다.
+ *
+ * 컬럼을 더하는 것만으로는 안 된다. 조회가 `episode_markers` 집계를 떠나 `sessions.task`를 읽으므로,
+ * 채워 넣지 않으면 이미 쌓인 Session이 모두 이름 없는 Task로 떨어진다. 이 이관이 고치려는 증상을
+ * 과거 데이터 전체에 되풀이하는 셈이다. 그래서 같은 이관 안에서 Episode 행의 값으로 채운다.
+ *
+ * 채우는 식은 떠나는 집계와 같다. Episode가 없는 Session은 채울 값이 없어 빈 문자열로 남는다.
+ * 그 행의 두 이름은 애초에 어디에도 저장된 적이 없다.
+ */
+val SESSION_METADATA_MIGRATION_SQL =
+    listOf(
+        "ALTER TABLE sessions ADD COLUMN task TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE sessions ADD COLUMN objectName TEXT NOT NULL DEFAULT ''",
+        """
+        UPDATE sessions SET
+            task = COALESCE((
+                SELECT MIN(NULLIF(episode_markers.task, ''))
+                FROM episode_markers WHERE episode_markers.sessionId = sessions.sessionId
+            ), ''),
+            objectName = COALESCE((
+                SELECT MIN(NULLIF(episode_markers.objectName, ''))
+                FROM episode_markers WHERE episode_markers.sessionId = sessions.sessionId
+            ), '')
+        """,
+    )
