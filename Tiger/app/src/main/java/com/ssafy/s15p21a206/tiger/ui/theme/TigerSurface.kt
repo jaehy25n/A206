@@ -1,0 +1,63 @@
+package com.ssafy.s15p21a206.tiger.ui.theme
+
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+
+/**
+ * 이 앱이 판에 주는 역할.
+ *
+ * 화면에서는 표면 색을 직접 고르지 않고 여기 이름 중에서 고른다. [TigerText]가 글자에 대해 하는
+ * 일을 판에 대해 한다.
+ *
+ * 역할은 둘이다. 카드가 얹히는 바닥([listBackground])과 글자가 직접 놓이는 판([content])이다.
+ * 세 번째 층은 두지 않는다. 조회 흐름에 카드 위에 또 카드가 놓이는 자리가 없고, 층을 늘리면 밝은
+ * 테마에서 단계마다 쓸 수 있는 밝기 폭이 눈에 보이지 않을 만큼 좁아진다.
+ *
+ * 어두운 바닥은 카드를 띄우기 위한 것이므로 카드가 있는 화면만 쓴다. 카드 없이 내용을 한 덩어리로
+ * 쌓는 Session 상세는 [content]를 바닥으로 깐다. 거기서 바닥을 어둡게 하면 띄울 것이 없는 화면이
+ * 통째로 회색이 되어, 아직 안 그려진 화면처럼 보인다. iOS도 grouped list에만 회색 바닥을 주고
+ * 보통 화면에는 흰 바닥을 준다.
+ *
+ * ## 왜 바닥이 더 어두운가
+ *
+ * 전에는 반대였다. 바닥이 `surface`(실측 `#F6FAFF`), 카드가 `surfaceVariant`(`#DCE3E9`)여서 카드가
+ * 바닥보다 어두웠고, 카드가 떠오르는 것으로 읽히지 않았다.
+ *
+ * 그때 대비는 1.24:1이었는데, 대비값이 원인은 아니다. iOS의 grouped list는 바닥 `#F2F2F7`에 카드
+ * `#FFFFFF`로 1.12:1이고, 그보다 낮은데도 카드가 떠 보인다. 원인은 방향이다. 사람은 빛이 위에서
+ * 온다고 보아 밝은 면을 앞으로 읽으므로, 카드가 바닥보다 어두우면 떠오른 것이 아니라 파인 것으로
+ * 읽힌다. 방향을 뒤집으면 같은 크기의 밝기 차가 "떠 있음"으로 읽힌다.
+ *
+ * 그래서 목표는 채움 대비 3:1을 만드는 것이 아니다. 밝은 바닥 위 밝은 카드로는 3:1을 만들 수 없고
+ * (한쪽이 `#959595` 정도까지 어두워져야 한다), WCAG 1.4.11은 애초에 이 자리에 적용되지 않는다.
+ * 그 조항은 컴포넌트를 식별하는 데 필요한 시각 정보를 요구하는데, 이 카드들은 안에 담긴 이름과
+ * 수집 일시로 식별된다. 경계는 Material과 Apple이 하는 대로 밝기 방향과 카드 사이 여백이 만든다.
+ *
+ * ## 기기 배경화면
+ *
+ * 테마가 `dynamicColor`를 쓰므로 아래 두 값의 실제 색은 기기마다 다르다. 다만 둘의 순서는 다르지
+ * 않다. tonal palette에서 [content]가 [listBackground]보다 항상 밝은 단계이므로, 배경화면이
+ * 무엇이든 "카드가 바닥보다 밝다"는 관계는 유지된다. 이 파일이 정하는 것은 값이 아니라 그 관계다.
+ */
+object TigerSurface {
+    /**
+     * 카드가 얹히는 바닥. 홈과 Task Session 목록.
+     *
+     * 다섯 단계 중 가운데를 쓴다. 더 어두운 `surfaceContainerHigh`·`Highest`는 카드와의 차이가
+     * 커지지만 밝은 테마에서 바닥이 회색 판으로 먼저 읽히고, 더 밝은 `surfaceContainerLow`는 흰
+     * 카드와 갈리지 않는다. 이 단계가 위에 적은 iOS 값에 가장 가깝다.
+     */
+    val listBackground: Color
+        @Composable get() = MaterialTheme.colorScheme.surfaceContainer
+
+    /**
+     * 글자가 직접 놓이는 판. 목록 카드, 세션 정보 시트, 그리고 카드가 없는 Session 상세의 바닥.
+     *
+     * 다섯 단계 중 가장 밝은 것이고 밝은 테마에서는 흰색이다. 흰 바닥이 생기는 덕에 그 위 글자를
+     * 더 진하게 쓸 수 있다. 옅은 잉크는 7.20:1에서 9.32:1로, 진한 잉크는 13.27:1에서 17.20:1로
+     * 오른다.
+     */
+    val content: Color
+        @Composable get() = MaterialTheme.colorScheme.surfaceContainerLowest
+}

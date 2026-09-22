@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -51,6 +50,7 @@ import com.ssafy.s15p21a206.tiger.episode.SessionSummary
 import com.ssafy.s15p21a206.tiger.ui.common.ListSectionHeader
 import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeader
 import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeaderTitleCenter
+import com.ssafy.s15p21a206.tiger.ui.common.TigerCard
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerText
 import com.ssafy.s15p21a206.tiger.ui.upload.labelRes
 
@@ -277,7 +277,7 @@ private fun TaskSummaryItem(
     sessionCount: Int,
     onOpenTask: () -> Unit,
 ) {
-    Card(
+    TigerCard(
         modifier =
             Modifier
                 .fillMaxWidth()
@@ -322,7 +322,7 @@ private fun SessionSummaryItem(
     // 길게 누른 지점. 메뉴는 카드가 아니라 이 지점에 건다.
     var pressPosition by remember { mutableStateOf(IntOffset.Zero) }
     Box {
-        Card(
+        TigerCard(
             modifier =
                 Modifier
                     .fillMaxWidth()

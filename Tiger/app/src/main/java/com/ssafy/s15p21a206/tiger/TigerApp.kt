@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
@@ -40,6 +41,7 @@ import com.ssafy.s15p21a206.tiger.ui.session.SessionDetailScreen
 import com.ssafy.s15p21a206.tiger.ui.session.SessionListScreen
 import com.ssafy.s15p21a206.tiger.ui.session.SessionOperations
 import com.ssafy.s15p21a206.tiger.ui.session.TaskSessionListScreen
+import com.ssafy.s15p21a206.tiger.ui.theme.TigerSurface
 import com.ssafy.s15p21a206.tiger.ui.upload.cancelUploadOnStop
 import com.ssafy.s15p21a206.tiger.ui.video.FullScreenVideoScreen
 import com.ssafy.s15p21a206.tiger.ui.video.rememberSharedVideoPlayer
@@ -237,7 +239,7 @@ fun TigerApp() {
             popExitTransition = { ExitTransition.None },
         ) {
             composable<SessionListRoute> {
-                DestinationSurface {
+                DestinationSurface(TigerSurface.listBackground) {
                     SessionListScreen(
                         sessions = completedSummaries,
                         onStartCapture = { startCapture("") },
@@ -247,7 +249,7 @@ fun TigerApp() {
             }
             composable<TaskSessionsRoute> { entry ->
                 val route = entry.toRoute<TaskSessionsRoute>()
-                DestinationSurface {
+                DestinationSurface(TigerSurface.listBackground) {
                     TaskSessionListScreen(
                         taskName = route.taskName,
                         sessions = completedSummaries.filter { it.taskName.trim() == route.taskName },
@@ -261,7 +263,7 @@ fun TigerApp() {
             }
             composable<SessionDetailRoute> { entry ->
                 val route = entry.toRoute<SessionDetailRoute>()
-                DestinationSurface {
+                DestinationSurface(TigerSurface.content) {
                     SessionDetailScreen(
                         summary = completedSummaries.firstOrNull { it.sessionId == route.sessionId },
                         onBack = navController::popBackStack,
@@ -324,8 +326,17 @@ fun TigerApp() {
  */
 @Suppress("FunctionName")
 @Composable
-private fun DestinationSurface(content: @Composable () -> Unit) {
+private fun DestinationSurface(
+    color: Color,
+    content: @Composable () -> Unit,
+) {
     // targetSdk 35부터 창이 시스템 바 아래까지 늘어난다. 목적지마다 막지 않으면 헤더가 상태 표시줄에,
     // 목록 끝이 제스처 바에 물린다. 판이 한 번 막으면 안에 놓이는 화면은 인셋을 몰라도 된다.
-    Surface(modifier = Modifier.fillMaxSize().safeDrawingPadding(), content = content)
+    //
+    // 인셋은 판 자신이 아니라 판 안쪽에서 막는다. 판에 걸면 판이 인셋만큼 줄어들어 시스템 바 자리에는
+    // 판 색이 칠해지지 않고 창 배경이 드러난다. 두 색이 같던 동안은 보이지 않았지만, 목록이 바닥을
+    // 어둡게 깔고부터는 위아래에 다른 색 띠로 남는다.
+    Surface(modifier = Modifier.fillMaxSize(), color = color) {
+        Box(modifier = Modifier.safeDrawingPadding()) { content() }
+    }
 }

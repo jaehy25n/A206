@@ -20,28 +20,39 @@ import androidx.compose.ui.unit.sp
  * 역할은 두 무리다. 표면 위에서 읽는 글과 프리뷰·영상 위에서 읽는 글은 색 체계가 다르다. 뒤가
  * 장면이면 표면 색을 쓸 수 없으므로 흰색으로 고정한다.
  *
- * 색을 지정하지 않는 역할이 있다. 그런 역할은 놓인 자리의 콘텐츠 색을 그대로 따른다. 이것이
- * Compose의 기본 방식이지만, 자리에 따라 같은 역할이 다르게 보일 수 있다는 뜻이기도 하다. 실제로
- * [itemName]은 Card 안에서 `onSurfaceVariant`로, 밖에서 `onSurface`로 렌더된다. Material 3의 Card가
- * 콘텐츠 색으로 `onSurfaceVariant`를 주기 때문이며 아무도 의도한 적이 없다. 이 역할 집합은 지금
- * 렌더를 이름 아래로 옮긴 것이므로 그 어긋남도 그대로 옮겨져 있다.
+ * 표면 위에서 읽는 아홉 역할은 모두 잉크 두 단계 중 하나를 골라 색을 명시한다. 진한
+ * `onSurface`는 그 항목을 짚는 글([sectionName], [itemName], [body], [value], [identifier],
+ * [formLabel])이고, 옅은 `onSurfaceVariant`는 딸린 값과 이름표와 안내([supporting], [meta],
+ * [guidance])다. 층의 경계는 크기와 이 두 단계로만 갈린다.
+ *
+ * 색을 비워 두지 않는 것이 규칙이다. 비우면 놓인 자리의 콘텐츠 색을 따르는데, 그러면 같은 역할이
+ * 자리마다 다르게 렌더된다. 실제로 그랬다. [itemName]이 Card 안에서 `onSurfaceVariant`로, 밖에서
+ * `onSurface`로 나왔다. Material 3의 Card가 콘텐츠 색으로 `onSurfaceVariant`를 주기 때문이고 아무도
+ * 의도한 적이 없다. 그래서 명시적으로 `onSurface`를 쓰는 [identifier]가 같은 카드의 제목보다
+ * 진해져 위계가 뒤집혔다. 색을 여기서 정하면 호출부의 판이 무엇이든 역할이 흔들리지 않는다.
+ *
+ * 판의 색은 [TigerSurface]가 정한다.
  */
 object TigerText {
     /** 한 묶음을 이끄는 이름. 홈의 `Tasks`, Task Session 목록의 Task 이름이 여기 해당한다. */
     val sectionName: TextStyle
-        @Composable get() = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+        @Composable get() =
+            MaterialTheme.typography.titleLarge.copy(
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
 
     /**
      * 한 항목 또는 한 화면의 이름. 카드의 Task 이름과 수집 일시, 화면 헤더 제목, 세션 정보 제목.
      *
-     * 색을 지정하지 않아 자리의 색을 따른다. Card 안에서는 옅게, 밖에서는 진하게 나온다.
+     * 진한 잉크다. 이름은 [identifier]나 [supporting]보다 약해질 수 없다.
      */
     val itemName: TextStyle
-        @Composable get() = MaterialTheme.typography.titleMedium
+        @Composable get() = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.onSurface)
 
     /** 문장으로 읽는 글. 상세의 전송 상태처럼 그 자리에서 무엇을 할 수 있는지 말하는 한 줄. */
     val body: TextStyle
-        @Composable get() = MaterialTheme.typography.bodyLarge
+        @Composable get() = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface)
 
     /** 목록이 비었을 때 남은 공간 가운데 서는 안내. 본문과 크기는 같고 색을 낮춰 둔다. */
     val guidance: TextStyle
@@ -89,7 +100,7 @@ object TigerText {
 
     /** 입력 모달에서 한 무리의 입력을 이끄는 이름표. */
     val formLabel: TextStyle
-        @Composable get() = MaterialTheme.typography.labelLarge
+        @Composable get() = MaterialTheme.typography.labelLarge.copy(color = MaterialTheme.colorScheme.onSurface)
 
     /**
      * 프리뷰를 덮은 판 위의 이름. 마감 진행과 마감 실패 문구.

@@ -40,6 +40,7 @@ import com.ssafy.s15p21a206.tiger.episode.SessionSummary
 import com.ssafy.s15p21a206.tiger.episode.UploadState
 import com.ssafy.s15p21a206.tiger.ui.common.ListSectionHeader
 import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeader
+import com.ssafy.s15p21a206.tiger.ui.theme.TigerSurface
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerText
 import com.ssafy.s15p21a206.tiger.ui.upload.labelRes
 import com.ssafy.s15p21a206.tiger.ui.video.SharedVideoPlayer
@@ -295,7 +296,7 @@ private fun SessionInfoSheet(
     durationSeconds: Long,
     onDismiss: () -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = TigerSurface.content) {
         // 행 사이는 12dp다. 값이 한 단계 작아졌으니 사이도 좁혀야 라벨-값 2dp와의 대비가 유지된다.
         // 16dp로 두면 행이 작아진 만큼 빈 자리만 늘어 사다리가 더 늘어져 보인다.
         Column(

@@ -1,0 +1,148 @@
+package com.ssafy.s15p21a206.tiger.ui.theme
+
+import androidx.activity.ComponentActivity
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.text.TextStyle
+import org.junit.Assert.assertTrue
+import org.junit.Rule
+import org.junit.Test
+import kotlin.math.max
+import kotlin.math.min
+
+/**
+ * 판과 잉크가 서로에 대해 지켜야 하는 관계를 검사한다.
+ *
+ * 값이 아니라 관계를 검사하는 것은 테마가 `dynamicColor`를 쓰기 때문이다. 실제 색은 기기 배경화면
+ * 에서 파생되므로 기기마다 다르고, 특정 값을 박으면 이 검사는 한 대에서만 맞는다. 대신 "카드가
+ * 바닥보다 밝다", "이름이 식별자보다 약하지 않다"처럼 어느 팔레트에서나 성립해야 하는 것을 검사한다.
+ * 그래서 이 검사가 통과한다는 것은 이 기기의 배경화면에서 위계가 유지된다는 뜻이기도 하다.
+ *
+ * 실측값은 실패 메시지와 아래 [report]가 남긴다. 값을 문서에 옮겨 적는 대신 검사가 재도록 한다.
+ */
+class SurfaceAndInkTest {
+    @get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()
+
+    private class Palette(
+        val listBackground: Color,
+        val card: Color,
+        val darkInk: Color,
+        val lightInk: Color,
+        val surfaceRoles: Map<String, TextStyle>,
+    )
+
+    private fun palette(): Palette {
+        lateinit var captured: Palette
+        composeRule.setContent {
+            // 밝은 테마만 검사한다. `dynamicColor`는 앱이 쓰는 그대로 두어 이 기기의 팔레트를 잰다.
+            TigerTheme(darkTheme = false) {
+                captured =
+                    Palette(
+                        listBackground = TigerSurface.listBackground,
+                        card = TigerSurface.content,
+                        darkInk = MaterialTheme.colorScheme.onSurface,
+                        lightInk = MaterialTheme.colorScheme.onSurfaceVariant,
+                        surfaceRoles =
+                            mapOf(
+                                "sectionName" to TigerText.sectionName,
+                                "itemName" to TigerText.itemName,
+                                "body" to TigerText.body,
+                                "guidance" to TigerText.guidance,
+                                "value" to TigerText.value,
+                                "supporting" to TigerText.supporting,
+                                "identifier" to TigerText.identifier,
+                                "meta" to TigerText.meta,
+                                "formLabel" to TigerText.formLabel,
+                            ),
+                    )
+            }
+        }
+        composeRule.waitForIdle()
+        return captured
+    }
+
+    @Test
+    fun aCardIsLighterThanTheListBackgroundBehindIt() {
+        val palette = palette()
+
+        assertTrue(
+            "카드가 바닥보다 밝아야 한다. " + report(palette),
+            palette.card.luminance() > palette.listBackground.luminance(),
+        )
+    }
+
+    @Test
+    fun everySurfaceRoleStatesItsOwnColor() {
+        val palette = palette()
+
+        val unstated = palette.surfaceRoles.filterValues { it.color == Color.Unspecified }
+        assertTrue(
+            "표면 위 역할은 색을 비워 두지 않는다. 비운 역할: ${unstated.keys}",
+            unstated.isEmpty(),
+        )
+    }
+
+    @Test
+    fun anItemNameIsNeverWeakerThanTheIdentifierBesideIt() {
+        val palette = palette()
+        val itemName = palette.surfaceRoles.getValue("itemName").color
+        val identifier = palette.surfaceRoles.getValue("identifier").color
+
+        // 위계 역전이 여기서 났다. Card가 콘텐츠 색으로 `onSurfaceVariant`를 주는 동안 이름만
+        // 옅어졌고, 색을 명시해 둔 식별자가 같은 카드의 제목보다 진했다.
+        assertTrue(
+            "카드 안 이름이 식별자보다 약하다. " +
+                "이름 ${hex(itemName)} ${ratio(itemName, palette.card)}:1, " +
+                "식별자 ${hex(identifier)} ${ratio(identifier, palette.card)}:1",
+            contrast(itemName, palette.card) >= contrast(identifier, palette.card),
+        )
+    }
+
+    @Test
+    fun bothInksMeetAaOnBothSurfaces() {
+        val palette = palette()
+        val pairs =
+            listOf(
+                "진한 잉크 / 카드" to contrast(palette.darkInk, palette.card),
+                "옅은 잉크 / 카드" to contrast(palette.lightInk, palette.card),
+                "진한 잉크 / 바닥" to contrast(palette.darkInk, palette.listBackground),
+                "옅은 잉크 / 바닥" to contrast(palette.lightInk, palette.listBackground),
+            )
+
+        val failing = pairs.filter { (_, ratio) -> ratio < AA_NORMAL_TEXT }
+        assertTrue(
+            "글자 대비가 WCAG AA(4.5:1)에 못 미치는 쌍이 있다. $failing. 전체: $pairs",
+            failing.isEmpty(),
+        )
+    }
+
+    /** 실패했을 때 무엇을 재서 그렇게 판정했는지 남긴다. */
+    private fun report(palette: Palette): String =
+        "바닥 ${hex(palette.listBackground)}, 카드 ${hex(palette.card)}, " +
+            "채움 대비 ${ratio(palette.card, palette.listBackground)}:1"
+
+    private fun hex(color: Color): String = "#%06X".format(color.toArgb() and 0xFFFFFF)
+
+    /** 사람이 읽을 자리에 쓰는 대비값. */
+    private fun ratio(
+        one: Color,
+        other: Color,
+    ): String = "%.2f".format(contrast(one, other))
+
+    /** WCAG 2.1의 명도 대비. [Color.luminance]가 이미 상대 휘도를 준다. */
+    private fun contrast(
+        one: Color,
+        other: Color,
+    ): Double {
+        val a = one.luminance()
+        val b = other.luminance()
+        return (max(a, b) + 0.05) / (min(a, b) + 0.05)
+    }
+
+    private companion object {
+        const val AA_NORMAL_TEXT = 4.5
+    }
+}
