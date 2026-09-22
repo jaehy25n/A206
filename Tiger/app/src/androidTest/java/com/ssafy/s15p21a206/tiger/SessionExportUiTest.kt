@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import com.ssafy.s15p21a206.tiger.episode.ExportState
+import com.ssafy.s15p21a206.tiger.ui.session.ExportControls
 import org.junit.Rule
 import org.junit.Test
 
