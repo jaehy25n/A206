@@ -1,8 +1,12 @@
 package com.ssafy.s15p21a206.tiger.ui.session
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -174,6 +178,41 @@ class SessionListScreenTest {
         composeRule.onNodeWithText(string(R.string.task_session_list_empty)).assertIsDisplayed()
         // 비어 있을 때는 바로 아래 안내가 같은 말을 하므로 개수를 세지 않는다.
         composeRule.onNodeWithText(string(R.string.session_list_count, 0)).assertDoesNotExist()
+    }
+
+    /**
+     * 홈은 헤더가 없고 Task의 Session 목록은 헤더를 얹는다. 두 이름표가 같은 높이에서 시작해야
+     * 화면을 오갈 때 글자가 제자리에 머무르는 것으로 보인다.
+     *
+     * 전에는 홈이 제목의 중심을 헤더 제목의 중심에 맞췄다. 헤더에 제목을 두는 화면이 없어 맞출
+     * 상대가 없는 정렬이었고, 그동안 홈의 이름표만 50dp 위에 붙어 있었다.
+     */
+    @Test
+    fun bothListScreensStartTheirSectionNameAtTheSameHeight() {
+        var showHome by mutableStateOf(true)
+        val summary = summary()
+
+        composeRule.setContent {
+            if (showHome) {
+                SessionListScreen(listOf(summary), onStartCapture = {}, onOpenTask = {})
+            } else {
+                TaskSessionListScreen(
+                    taskName = summary.taskName,
+                    sessions = listOf(summary),
+                    onBack = {},
+                    onOpenSession = {},
+                    onDeleteSession = {},
+                    onStartCapture = {},
+                )
+            }
+        }
+
+        val homeTop = composeRule.onNodeWithText(string(R.string.session_list_title)).getBoundsInRoot().top
+        showHome = false
+        composeRule.waitForIdle()
+        val taskTop = composeRule.onNodeWithText(summary.taskName).getBoundsInRoot().top
+
+        assertEquals(homeTop.value.toDouble(), taskTop.value.toDouble(), 0.5)
     }
 
     private fun summary() =

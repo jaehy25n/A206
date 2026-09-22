@@ -32,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -49,7 +48,7 @@ import com.ssafy.s15p21a206.tiger.R
 import com.ssafy.s15p21a206.tiger.episode.SessionSummary
 import com.ssafy.s15p21a206.tiger.ui.common.ListSectionHeader
 import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeader
-import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeaderTitleCenter
+import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeaderHeight
 import com.ssafy.s15p21a206.tiger.ui.common.TigerCard
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerText
 import com.ssafy.s15p21a206.tiger.ui.upload.labelRes
@@ -64,14 +63,13 @@ fun SessionListScreen(
 ) {
     val unknownTask = stringResource(R.string.task_name_unknown)
     val taskGroups = sessions.groupBy { it.taskName.trim() }.toSortedMap()
-    // 이 화면에는 헤더가 없다. Task를 열면 나오는 화면의 헤더 제목과 이름표가 같은 높이에
-    // 놓여야 화면을 오갈 때 글자가 제자리에 머무르는 것으로 보인다. 글자 높이는 사용자가 고른
-    // 글꼴 크기에 따라 달라지므로 값을 박지 않고 줄 높이에서 끌어낸다.
-    val sectionTitleLineHeight = TigerText.sectionName.lineHeight
-    val sectionTopPadding =
-        with(LocalDensity.current) {
-            (NavigationHeaderTitleCenter - sectionTitleLineHeight.toDp() / 2).coerceAtLeast(0.dp)
-        }
+    // 이 화면에는 헤더가 없다. Task를 열면 나오는 화면은 헤더를 얹고 그 아래에서 본문을 시작하므로,
+    // 여기서도 헤더만큼을 비워야 화면을 오갈 때 이름표가 제자리에 머무르는 것으로 보인다.
+    //
+    // 전에는 제목의 중심을 헤더 제목의 중심에 맞춰 14dp만 비웠다. 그 정렬은 맞출 상대가 없었다.
+    // 헤더에 제목을 두는 화면이 없어 어느 화면이든 이름은 본문의 이름표가 말하는데, 그 이름표는
+    // 헤더 아래 64dp에서 시작한다. 홈만 50dp 위에 붙어 화면 위쪽에 눌린 것으로 보였다.
+    val sectionTopPadding = NavigationHeaderHeight + LIST_CONTENT_TOP_PADDING
     Box(modifier = modifier.fillMaxSize()) {
         if (taskGroups.isEmpty()) {
             // 비어 있으면 목록이 아니다. 이름표는 제자리에 두고 안내만 남은 공간 가운데로 보낸다.
@@ -175,6 +173,9 @@ private fun NewSessionFab(
  */
 private val SECTION_HEADER_BOTTOM_PADDING = 8.dp
 
+/** 이름표가 화면 맨 위나 헤더에 붙지 않도록 본문 위에 두는 여백. 두 목록 화면이 같은 값을 쓴다. */
+private val LIST_CONTENT_TOP_PADDING = 8.dp
+
 private const val HOME_SECTION_KEY = "home-section"
 private const val TASK_SESSIONS_SECTION_KEY = "task-sessions-section"
 
@@ -229,7 +230,7 @@ fun TaskSessionListScreen(
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = FAB_CLEARANCE),
+                            .padding(start = 16.dp, end = 16.dp, top = LIST_CONTENT_TOP_PADDING, bottom = FAB_CLEARANCE),
                 ) {
                     ListSectionHeader(
                         modifier = Modifier.padding(bottom = SECTION_HEADER_BOTTOM_PADDING),
@@ -241,11 +242,11 @@ fun TaskSessionListScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    // 홈과 달리 이 화면에는 헤더가 얹히므로 위 여백을 적게 둔다. 헤더가 이미 아래로
-                    // 여백을 두고 있어, 여기서 16dp를 더 띄우면 이름표가 화면 한참 아래에서 시작한다.
+                    // 위 여백은 헤더 아래에서부터 재므로 홈이 헤더 높이에 더해 쓰는 것과 같은 값이다.
+                    // 두 화면의 이름표가 같은 높이에서 시작한다.
                     //
                     // 아래 여백은 홈과 같은 이유로 FAB가 마지막 카드를 가리지 않을 만큼 둔다.
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = FAB_CLEARANCE),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = LIST_CONTENT_TOP_PADDING, bottom = FAB_CLEARANCE),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     item(key = TASK_SESSIONS_SECTION_KEY) {
