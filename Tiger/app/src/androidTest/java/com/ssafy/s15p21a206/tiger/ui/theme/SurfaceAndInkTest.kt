@@ -1,5 +1,6 @@
 package com.ssafy.s15p21a206.tiger.ui.theme
 
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
@@ -61,6 +62,21 @@ class SurfaceAndInkTest {
             }
         }
         composeRule.waitForIdle()
+        // 실측값을 남긴다. 검사는 관계만 보지만, 이 기기에서 실제로 무엇이 나왔는지는 바꾼 뒤에
+        // 재어 기록해야 한다. 문서에 숫자를 옮겨 적으면 다음 기기에서 거짓이 되므로 검사가 재게 둔다.
+        //
+        //   adb shell am instrument -w -e class \
+        //     "com.ssafy.s15p21a206.tiger.ui.theme.SurfaceAndInkTest" \
+        //     com.ssafy.s15p21a206.tiger.test/androidx.test.runner.AndroidJUnitRunner
+        //   adb logcat -d -s TigerSurfaceAndInk
+        Log.i(LOG_TAG, report(captured))
+        captured.surfaceRoles.forEach { (name, style) ->
+            Log.i(
+                LOG_TAG,
+                "$name ${hex(style.color)} 카드 위 ${ratio(style.color, captured.card)}:1, " +
+                    "바닥 위 ${ratio(style.color, captured.listBackground)}:1",
+            )
+        }
         return captured
     }
 
@@ -144,5 +160,6 @@ class SurfaceAndInkTest {
 
     private companion object {
         const val AA_NORMAL_TEXT = 4.5
+        const val LOG_TAG = "TigerSurfaceAndInk"
     }
 }
