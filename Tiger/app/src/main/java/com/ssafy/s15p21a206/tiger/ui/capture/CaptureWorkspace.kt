@@ -22,27 +22,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -53,19 +38,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -86,7 +63,6 @@ import com.ssafy.s15p21a206.tiger.capture.RecordingResolutionStore
 import com.ssafy.s15p21a206.tiger.episode.CaptureSession
 import com.ssafy.s15p21a206.tiger.episode.EpisodeState
 import com.ssafy.s15p21a206.tiger.episode.FinalizeResult
-import com.ssafy.s15p21a206.tiger.episode.RecordingInputValidator
 import com.ssafy.s15p21a206.tiger.episode.RecordingResolution
 import com.ssafy.s15p21a206.tiger.episode.RecordingState
 import com.ssafy.s15p21a206.tiger.episode.SessionBundleStore
@@ -546,99 +522,29 @@ internal fun CaptureWorkspace(
         }
     }
     if (state.showMetadataDialog) {
-        val focusManager = LocalFocusManager.current
-        val objectFieldFocus = remember { FocusRequester() }
-        val captureMetadataReady = state.task.isNotBlank() && state.objectName.isNotBlank()
-        val cancelCaptureMetadata = { onIntent(CaptureIntent.Close) }
-        // 확정한 선택만 기억한다. 취소하고 나간 선택은 다음 수집의 기본값이 되지 않는다.
-        val confirmCaptureMetadata = {
-            val chosen = state.resolution
-            resolutionStore.save(chosen)
-            onIntent(CaptureIntent.ConfirmMetadata)
-            // 유휴 프리뷰도 고른 해상도로 다시 연다. Camera2는 session을 만들 때 stream 크기를
-            // 정하므로, 버퍼 크기만 바꾸면 이미 열린 session에는 반영되지 않는다.
-            if (state.idlePreviewSize != chosen) {
-                onIntent(CaptureIntent.IdlePreviewResized(chosen))
-                previewTexture?.setDefaultBufferSize(chosen.width, chosen.height)
-                restoreIdlePreview()
-            }
-        }
-        // 키보드 입력이 필요한 다이얼로그는 Material 가이드라인상 전체화면으로 띄우고 확인·취소를
-        // 상단 앱바에 둔다. 가운데 띄우는 다이얼로그는 가로 화면에서 키보드가 올라오면 아래쪽 버튼이
-        // 가려져 닿을 방법이 없다. 앱바는 키보드와 겹치지 않으므로 방향과 무관하게 항상 누를 수 있다.
-        Dialog(
-            onDismissRequest = cancelCaptureMetadata,
-            properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
-        ) {
-            Surface(modifier = Modifier.fillMaxSize()) {
-                Column(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
-                    TopAppBar(
-                        title = { Text(stringResource(R.string.capture_metadata_title)) },
-                        navigationIcon = {
-                            IconButton(onClick = cancelCaptureMetadata) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_navigation_back),
-                                    contentDescription = stringResource(R.string.action_cancel),
-                                )
-                            }
-                        },
-                        actions = {
-                            TextButton(
-                                enabled = captureMetadataReady,
-                                onClick = confirmCaptureMetadata,
-                            ) { Text(stringResource(R.string.capture_metadata_confirm)) }
-                        },
-                    )
-                    Column(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .verticalScroll(rememberScrollState())
-                                .imePadding()
-                                .padding(horizontal = 24.dp, vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        // Task가 채워진 채로 열렸으면 손댈 곳은 다음 칸이다. 이미 적혀 있는
-                        // 칸에 커서를 두면 지우고 다시 쓰라는 신호로 읽힌다.
-                        LaunchedEffect(Unit) {
-                            if (state.task.isNotBlank()) objectFieldFocus.requestFocus()
-                        }
-                        OutlinedTextField(
-                            value = state.task,
-                            onValueChange = { onIntent(CaptureIntent.EditTask(it)) },
-                            label = { Text(stringResource(R.string.capture_metadata_task)) },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                            keyboardActions = KeyboardActions(onNext = { objectFieldFocus.requestFocus() }),
-                        )
-                        OutlinedTextField(
-                            value = state.objectName,
-                            onValueChange = { onIntent(CaptureIntent.EditObjectName(it)) },
-                            label = { Text(stringResource(R.string.capture_metadata_object)) },
-                            modifier = Modifier.focusRequester(objectFieldFocus),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                            keyboardActions =
-                                KeyboardActions(
-                                    onDone = {
-                                        if (captureMetadataReady) {
-                                            focusManager.clearFocus()
-                                            confirmCaptureMetadata()
-                                        }
-                                    },
-                                ),
-                        )
-                        RecordingResolutionPicker(
-                            selected = state.resolution,
-                            onSelect = { onIntent(CaptureIntent.SelectResolution(it)) },
-                        )
-                    }
+        CaptureMetadataDialog(
+            task = state.task,
+            objectName = state.objectName,
+            resolution = state.resolution,
+            onTaskChange = { onIntent(CaptureIntent.EditTask(it)) },
+            onObjectNameChange = { onIntent(CaptureIntent.EditObjectName(it)) },
+            onResolutionChange = { onIntent(CaptureIntent.SelectResolution(it)) },
+            onCancel = { onIntent(CaptureIntent.Close) },
+            // 확정한 선택만 기억한다. 취소하고 나간 선택은 다음 수집의 기본값이 되지 않는다.
+            onConfirm = {
+                val chosen = state.resolution
+                resolutionStore.save(chosen)
+                onIntent(CaptureIntent.ConfirmMetadata)
+                // 유휴 프리뷰도 고른 해상도로 다시 연다. Camera2는 session을 만들 때 stream 크기를
+                // 정하므로, 버퍼 크기만 바꾸면 이미 열린 session에는 반영되지 않는다.
+                if (state.idlePreviewSize != chosen) {
+                    onIntent(CaptureIntent.IdlePreviewResized(chosen))
+                    previewTexture?.setDefaultBufferSize(chosen.width, chosen.height)
+                    restoreIdlePreview()
                 }
-            }
-        }
+            },
+        )
     }
-    // 마감 중이거나 마감이 실패한 동안은 작업 공간을 덮는다. 제어가 이미 전부 막혀 있는
-    // 구간이라 덮는 편이 상태를 정직하게 말한다.
     if (!state.chromeVisible) {
         CaptureFinalizingOverlay(
             failure = state.finalizeFailure,
@@ -653,46 +559,6 @@ internal fun CaptureWorkspace(
             },
             onDismiss = { onIntent(CaptureIntent.StopDismissed) },
         )
-    }
-}
-
-/**
- * 이번 Session으로 녹화할 해상도를 고른다.
- *
- * Session마다 다르게 갈 수 있으므로 Task·Object와 함께 매번 고른다. 후보는 실기기에서 확인한
- * ARCore Camera config의 `textureSize`이며, 순서는 [RecordingInputValidator.supportedResolutions]를 따른다.
- */
-@Suppress("FunctionName")
-@Composable
-private fun RecordingResolutionPicker(
-    selected: RecordingResolution,
-    onSelect: (RecordingResolution) -> Unit,
-) {
-    Column(modifier = Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            text = stringResource(R.string.capture_metadata_resolution),
-            style = MaterialTheme.typography.labelLarge,
-        )
-        RecordingInputValidator.supportedResolutions.forEach { option ->
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .selectable(
-                            selected = option == selected,
-                            role = Role.RadioButton,
-                            onClick = { onSelect(option) },
-                        ).padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // 선택은 Row가 받는다. RadioButton에 onClick을 주면 터치 영역이 둘로 갈린다.
-                RadioButton(selected = option == selected, onClick = null)
-                Text(
-                    text = stringResource(R.string.capture_resolution_option, option.width, option.height),
-                    modifier = Modifier.padding(start = 8.dp),
-                )
-            }
-        }
     }
 }
 
