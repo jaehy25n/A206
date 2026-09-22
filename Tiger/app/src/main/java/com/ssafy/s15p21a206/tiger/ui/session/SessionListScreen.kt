@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -46,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.round
 import com.ssafy.s15p21a206.tiger.R
 import com.ssafy.s15p21a206.tiger.episode.SessionSummary
+import com.ssafy.s15p21a206.tiger.ui.common.IdentifierText
 import com.ssafy.s15p21a206.tiger.ui.common.ListSectionHeader
 import com.ssafy.s15p21a206.tiger.ui.common.MetaText
 import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeader
@@ -350,10 +353,74 @@ private fun SessionSummaryItem(
                     ),
         ) {
             Column(modifier = Modifier.padding(CARD_CONTENT_PADDING), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(text = captureTime, style = MaterialTheme.typography.titleMedium)
-                SupportingText(stringResource(summary.uploadState.labelRes))
-                MetaText(stringResource(R.string.session_list_episode_count, summary.completedEpisodeCount))
-                MetaText(stringResource(R.string.session_list_short_id, summary.sessionId.take(8)))
+                // 이름과 상태를 한 행에 둔다. 상태는 이름에 딸린 값이 아니라 그 세션이 지금 어떤지를
+                // 말하므로 왼쪽 더미에 끼워 넣지 않는다. Material 3 리스트가 개수·날짜 같은 부수
+                // 정보를 trailing에 두는 자리다.
+                //
+                // 왼쪽 더미에서 한글 줄이 빠지는 효과도 있다. `E`나 `I`는 세로 획이 열을 꽉 채워
+                // 서지만 `업`의 ㅇ은 완만한 곡선이라, 나란히 쌓으면 상자 원점이 같은데도 한글 줄만
+                // 들여쓴 것처럼 보였다.
+                // 스타일은 셋만 쓴다. 이름(16sp Medium 진함), 딸린 값(14sp Regular 옅음),
+                // 식별자(12sp Medium 진함)다. Object·전송 상태·Episode 개수가 한 스타일을 함께
+                // 쓰는 것이 핵심이다.
+                //
+                // 요소마다 새 조합을 만들지 않는다. 전에는 다섯 요소가 글꼴·크기·굵기·색 네 축을
+                // 섞어 조합 다섯 개를 만들었고, 그러면 어느 요소도 다른 요소와 스타일을 공유하지
+                // 않아 위계가 아니라 잡음으로 읽힌다. 값이 넷인 GitHub의 커밋 행은 조합 셋으로
+                // 끝내고, 글꼴은 하나에 크기는 둘만 쓴다.
+                //
+                // 왼쪽은 수집에 대한 것(언제·무엇·얼마나), 오른쪽은 이 기록에 대한 것(식별자·상태)
+                // 이다. 종류가 다른 값을 한 줄에 부호로 이어 붙이지 않고 단을 갈라 놓는다.
+                //
+                // 식별자가 첫 행의 오른쪽 끝에 오는 것은 그것이 이 행을 짚는 값이기 때문이다. 서버에
+                // 올라간 영상을 찾을 때 쓰는 것이 수집 일시가 아니라 이 값이므로, 훑는 눈이 먼저
+                // 닿는 자리를 준다.
+                //
+                // 두 행 모두 글자 크기가 다르므로 baseline을 맞춘다. 위를 맞추면 작은 글자가 큰
+                // 글자의 윗선에 붙어 떠 보인다.
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = captureTime,
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .alignByBaseline(),
+                    )
+                    IdentifierText(
+                        text = stringResource(R.string.session_list_short_id, summary.sessionId.take(8)),
+                        modifier = Modifier.alignByBaseline(),
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    // Object는 이름에 딸린 값이라 시각 바로 아래 둔다. 없으면 왼쪽을 비워 둔 채로
+                    // 오른쪽 상태만 남는다. 빈 이름표를 세우지 않는다.
+                    if (summary.objectName.isNotBlank()) {
+                        SupportingText(
+                            text = stringResource(R.string.session_object, summary.objectName),
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .alignByBaseline(),
+                        )
+                    } else {
+                        Spacer(Modifier.weight(1f))
+                    }
+                    // 오른쪽 단은 한 크기로 묶는다. 식별자와 크기가 다르면 두 값이 한 단으로 읽히지
+                    // 않고, 같은 14sp라도 한글은 em 상자를 꽉 채워 왼쪽의 라틴 글자보다 커 보여
+                    // 행이 어긋난 것처럼 보인다. baseline은 어느 쪽이든 맞아 있다.
+                    MetaText(
+                        text = stringResource(summary.uploadState.labelRes),
+                        modifier = Modifier.alignByBaseline(),
+                    )
+                }
+                SupportingText(stringResource(R.string.session_list_episode_count, summary.completedEpisodeCount))
             }
         }
         // 메뉴는 누른 손가락 자리에서 열린다. 카드를 앵커로 쓰면 폭이 화면을 꽉 채우므로 어디를

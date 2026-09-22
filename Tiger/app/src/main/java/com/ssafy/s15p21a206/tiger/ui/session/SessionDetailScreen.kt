@@ -105,15 +105,42 @@ internal fun SessionDetailScreen(
                     ),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                // 목록 화면의 이름표와 같은 짜임이다. 이 화면의 이름은 언제 찍은 것인지이고,
-                // ID는 그것을 특정해 주지 않으므로 딸린 줄로 내린다.
-                ListSectionHeader(
-                    title =
-                        java.text.DateFormat
-                            .getDateTimeInstance()
-                            .format(java.util.Date(summary.recordingStartEpochMs)),
-                    supporting = stringResource(R.string.session_list_short_id, summary.sessionId.take(8)),
-                )
+                // 이 화면의 이름은 언제 찍은 것인지이고, 그 아래로 무엇을 찍었는지와 식별자가 온다.
+                //
+                // 두 이름이 본문에 있어야 하는 이유는 수집을 마감한 직후 경로다. 그때는 Task 묶음도
+                // 세션 카드도 지나오지 않고 이 화면으로 바로 오므로, 둘 다 화면에 한 번도 나온 적이
+                // 없다. 방금 찍은 것이 맞는지 확인하는 자리에서 메뉴를 한 번 더 열게 할 수 없다.
+                //
+                // 목록 카드와 달리 Task도 함께 둔다. 카드는 Task 이름을 단 화면 안에 있지만 이
+                // 화면은 스스로 말하지 않으면 알 길이 없고, Object만으로는 이름의 절반이다.
+                //
+                // 상세는 목록 항목이 아니다. Material 3이 보조 줄을 1~3줄로 제한하는 것은 훑는
+                // 목록의 규칙이고, 여기서는 줄을 아낄 이유가 없다. 이름표와 값을 쌓는다. 세션 정보
+                // 시트가 이미 같은 형태다.
+                //
+                // 이름과 정보는 띄어서 두 묶음으로 가른다. 같은 간격으로 쌓으면 네 줄이 한 덩어리가
+                // 되어 무엇이 이 화면의 이름인지 드러나지 않는다.
+                Column(verticalArrangement = Arrangement.spacedBy(DETAIL_TITLE_GAP)) {
+                    ListSectionHeader(
+                        title =
+                            java.text.DateFormat
+                                .getDateTimeInstance()
+                                .format(java.util.Date(summary.recordingStartEpochMs)),
+                        supporting = null,
+                    )
+                    // 세 값이 한 스타일을 함께 쓴다. 이름표와 값을 쌓는 자리에서는 층을 더 가를
+                    // 이유가 없고, 각자 다른 조합을 주면 세 줄이 세 가지로 보여 읽히지 않는다.
+                    // 이름은 위의 수집 일시가 혼자 맡는다.
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        if (summary.taskName.isNotBlank()) {
+                            SupportingText(stringResource(R.string.session_task, summary.taskName))
+                        }
+                        if (summary.objectName.isNotBlank()) {
+                            SupportingText(stringResource(R.string.session_object, summary.objectName))
+                        }
+                        SupportingText(stringResource(R.string.session_list_short_id, summary.sessionId.take(8)))
+                    }
+                }
                 // 전송 상태는 이름에 딸린 정보가 아니라 지금 무엇을 할 수 있는지를 말하므로,
                 // 아래 버튼과 한 묶음이 되도록 이름표에서 떼어 놓고 옅게 두지 않는다.
                 //
@@ -267,9 +294,11 @@ private fun SessionInfoSheet(
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
+        // 행 사이는 12dp다. 값이 한 단계 작아졌으니 사이도 좁혀야 라벨-값 2dp와의 대비가 유지된다.
+        // 16dp로 두면 행이 작아진 만큼 빈 자리만 늘어 사다리가 더 늘어져 보인다.
         Column(
             modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
                 text = stringResource(R.string.session_info_title),
@@ -313,7 +342,15 @@ private fun SessionInfoRow(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         MetaText(label)
-        Text(text = value, style = MaterialTheme.typography.bodyLarge)
+        // 값은 시트 제목보다 작아야 한다. 전에는 값이 `bodyLarge`라 제목과 같은 16sp였고, 그래서
+        // 제목이 목록의 첫 항목처럼 읽히며 큰 글자 다섯 개가 사다리처럼 쌓였다. 한 단계 내리면
+        // 제목이 이 시트의 유일한 최상위가 되고, 라벨과의 낙차도 4sp에서 2sp로 좁아져 두 줄이
+        // 한 묶음으로 붙는다. 36자 식별자도 한 줄에 들어가 행 높이가 고르게 된다.
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
     }
 }
 
@@ -352,6 +389,14 @@ private val DETAIL_CONTENT_PADDING = 16.dp
 
 /** 영상과 본문 사이 간격. 좌우 여백보다 넓어야 영상이 끝나고 설명이 시작되는 것으로 읽힌다. */
 private val DETAIL_VIDEO_GAP = 24.dp
+
+/**
+ * 이름과 그 아래 정보 묶음 사이 간격.
+ *
+ * 줄 사이(2dp)보다 뚜렷하게 넓어야 이름이 정보와 갈린다. 다만 아래 묶음(16dp)보다는 좁아야 둘이
+ * 한 덩어리로 묶여 보인다. 간격의 크기가 곧 묶음의 경계다.
+ */
+private val DETAIL_TITLE_GAP = 8.dp
 
 /**
  * 헤더 메뉴 버튼의 글리프 크기.

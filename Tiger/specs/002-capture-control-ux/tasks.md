@@ -469,3 +469,257 @@ FR-016e~g 추가가 여기에 대응한다.
 - `origin/develop`에 `fix/fab-accessible-name`이 병합되면서 S15P21A206-43이 해결됐다.
   그동안 실패하던 `emptyListShowsStartCaptureAction`이 통과하므로, T046의 "홈 빈 상태를
   검사하는 테스트를 근거로 쓸 수 없다"는 범위 한계는 해소됐다.
+
+## 추가 범위 (2026-09-22, S15P21A206-45)
+
+Task와 Object를 Session 색인에 저장하는 범위를 FR-013e·FR-013f로 명세에 추가하고, FR-013c의
+세션 정보 항목에 Object를 더했다. 두 이름은 수집 시작 때 입력받지만 `episode_markers` 행에만
+실려, Object는 어디에도 표시되지 않고 Episode가 0개인 Session은 Task까지 사라졌다.
+
+- [X] T055 [S15P21A206-45] `app/src/main/java/com/ssafy/s15p21a206/tiger/data/local/TigerDatabase.kt`에
+  `sessions.task`·`sessions.objectName` 컬럼과 v4 → v5 이관을 두고, 목록 조회가 Episode 집계
+  대신 Session 행을 읽게 한다.
+  - 구현: `CaptureSessionEntity`에 두 컬럼, `SessionSummaryEntity.objectName`,
+    `observeCompletedSummaries`의 `COALESCE(MIN(NULLIF(episode_markers.task, '')), '')`를
+    `sessions.task AS taskName, sessions.objectName AS objectName`으로 교체. `MIGRATION_4_5`와
+    `SESSION_METADATA_MIGRATION_SQL`은 컬럼 추가 두 문장과 Episode 행에서 값을 옮기는 `UPDATE`
+    한 문장이다. 채워 넣기가 없으면 조회가 집계를 떠나는 순간 이미 쌓인 Session이 전부
+    `이름 없는 Task`로 떨어진다.
+  - production 호출 경로: `TigerApplication.database`의 `addMigrations(MIGRATION_2_3,
+    MIGRATION_3_4, MIGRATION_4_5)`.
+  - 자동 검증: `TigerDatabaseMigrationTest.version five migration adds the two session metadata
+    columns`, `version five migration backfills both names from existing episode rows`,
+    `SessionSummaryRepositoryTest.a session without episodes still carries its task and object`;
+    `.\gradlew.bat ktlintCheck testDebugUnitTest lintDebug` 성공 (2026-09-22, 138 tests).
+  - 계측 검증: `SessionMetadataMigrationTest`(실제 SQLite에서 v4 → v5 채워 넣기),
+    `SessionMetadataQueryTest`(Episode 0개 Session의 조회 결과). 실기기에서 통과했다 (T058).
+
+- [X] T056 [S15P21A206-45] `app/src/main/java/com/ssafy/s15p21a206/tiger/capture/CaptureSessionCoordinator.kt`,
+  `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/capture/CaptureDriver.kt`에서 Session을 저장하는
+  모든 경로가 입력받은 두 이름을 함께 쓰게 한다.
+  - 구현: `CaptureSession.task`·`objectName`에 기본값을 두지 않아 저장 경로가 값을 명시하게
+    강제한다. `coordinator.start(sessionId, displayNumber, bundlePath, task, objectName)`는
+    `startEpisode`와 같은 비어 있지 않음 검사를 갖는다. `CaptureDriver`의 세 저장 지점(시작
+    `INITIALIZING`, `ON_STOP` `INTERRUPTED`, 마감 `COMPLETED`)이 `state.task`·`state.objectName`을
+    넘긴다.
+  - production 호출 경로: `CaptureWorkspace`가 쥔 `CaptureDriver`의 재생·`ON_STOP`·정지 경로.
+  - 자동 검증: `CaptureSessionCoordinatorTest.a started session carries the task and object it was
+    given`, `a session cannot start without both names`,
+    `SessionRepositoryTest.saving a session persists the task and object it was started with`;
+    같은 `testDebugUnitTest` 실행에 포함된다.
+
+- [X] T057 [S15P21A206-45] `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/session/SessionDetailScreen.kt`,
+  `app/src/main/java/com/ssafy/s15p21a206/tiger/ui/session/SessionListScreen.kt`,
+  `app/src/main/res/values/strings.xml`에 Object를 표시한다.
+  - 구현: 목록 카드와 상세 본문에 `Object %1$s` 줄(`session_object`). 두 자리 모두 수집 일시에
+    딸린 줄(`SupportingText`)이며, 짧은 ID는 그 아래 `MetaText`로 내린다. 값이 비어 있으면
+    줄째로 뺀다.
+  - production 호출 경로: `SessionSummaryItem`(Task Session 목록 카드), `SessionDetailScreen`의
+    본문 `ListSectionHeader`.
+  - 계측 검증: `SessionDetailObjectTest.sessionDetailNamesTheObjectThatWasCaptured`,
+    `sessionDetailOmitsTheObjectLineWhenThereIsNone`, `sessionInfoLeavesTheObjectToTheBody`,
+    `SessionListScreenTest.sessionSummaryShowsDetailsAndOpensDetail`(Object 줄 추가),
+    `aSessionWithoutAnObjectShowsNoObjectLine`. 화면을 바꾼 작업이므로
+    `.\gradlew.bat compileDebugAndroidTestKotlin` 성공만으로 완료로 보지 않는다. 실행 기록은
+    T059에 있다.
+  - 첫 구현은 세션 정보 시트와 목록 카드에 두었고 카드에서는 `MetaText` 층이었다. T059에서
+    바꿨다. 이유는 그 task에 적었다.
+
+- [X] T058 [S15P21A206-45] androidTest 전체를 실기기에서 실행해 T055·T057의 계측 검증을 남긴다.
+  `AGENTS.md`의 "계측 테스트 실행" 절차를 따르고, 출력의 `OK (N tests)` 또는 `FAILURES!!!`로
+  판정한다. 이관은 기존 DB가 있는 기기에서 앱을 갱신해 목록의 Task 이름이 그대로 남는지도 함께
+  확인한다.
+  - 계측 검증 (2026-09-22, `SM-G973N`, Android 12): **27 tests, 0 failures.** 이전 기록의 20개에서
+    `ApplicationScopedDependencyTest` 1개와 이번 6개가 늘었다.
+
+    ```text
+    ApplicationScopedDependencyTest:.   ExportMigrationTest:.
+    SessionExportUiTest:..              SessionMetadataMigrationTest:.
+    CaptureSessionOrderTest:.           SessionMetadataQueryTest:..
+    CaptureControlStateScreenTest:...   CaptureWorkspaceScreenTest:...
+    SessionInfoSheetTest:..             SessionListScreenTest:.......
+    Time: 18.604 / OK (27 tests)
+    ```
+
+  - 이관 검증: 같은 기기에 이미 있던 v4 `tiger.db`를 갱신했다. `문도` 묶음(2개 Session)이 그대로
+    남고, 카드에 `Object 56`·`Object 때린다`가, 세션 정보(`9c0a11e8`)에 `Object 56`이 나온다. 두
+    이름이 `episode_markers`에서 Session 행으로 옮겨졌다는 뜻이다. 컬럼만 더했다면 이 묶음이
+    `이름 없는 Task`로 떨어졌을 자리다.
+  - 기존 `이름 없는 Task` 3개(`af60ee8e`, `7e142186`, `ce9c7947`)는 모두 Episode 0개이며 이관
+    뒤에도 이름이 없고 Object 줄도 세우지 않는다. 설계대로다. 이 세션들의 두 이름은 어디에도
+    저장된 적이 없어 채울 값이 없다. `ce9c7947`은 이 이슈의 재현 기록에 나오는 그 Session이다.
+  - 남은 한계: 이번 확인은 이관과 조회·표시까지다. 새로 수집한 Session을 Episode 0개로 끝냈을
+    때 두 이름이 남는지는 실제 수집을 하지 않았으므로 기기에서 확인하지 않았다. 그 경로는
+    `CaptureSessionCoordinatorTest`·`SessionRepositoryTest`와 `SessionMetadataQueryTest`가 덮는다.
+
+- [X] T059 [S15P21A206-45] Object의 위계와 자리를 고친다. `FR-013c`를 원문으로 되돌리고
+  `FR-013f`·`FR-013g`를 그에 맞게 다시 쓴다.
+  - 배경: 첫 구현은 Object를 세션 정보 시트와 목록 카드의 `MetaText` 층에 두었다. 둘 다
+    저장소가 이미 적어 둔 기준에 어긋났다.
+    - `MetaText`의 정의는 "Episode 수·길이·해상도·ID는 **무엇을 찍은 것인지 알려 주지 않으므로**
+      `SupportingText`보다 한 단계 더 내린다"이다. Object는 그 화면에서 그것만 말하는 값인데
+      그 층에 넣었다. 12sp 회색 세 줄 가운데 묻혀 눈에 들어오지 않았다.
+    - `SessionInfoSheet`의 정의는 "세션을 특정해 주지 않는 값들을 담는 시트"이고 `FR-013c`가
+      같은 말을 한다. Object는 고를 때 쓰는 값이라 들어맞지 않았고, 넣으려고 `FR-013c`를
+      고쳐야 했다. 구현에 맞추려 명세를 굽힌 것이므로 되돌린다.
+    - 결정적인 것은 수집 마감 직후 경로다. `onCompleted`가 수집 화면에서 상세로 바로 넘기므로
+      그 경로에서는 Task 묶음도 목록 카드도 지나오지 않는다. 방금 찍은 것이 맞는지 확인하는
+      자리에서 두 이름이 화면에 한 번도 나오지 않았다.
+  - 구현: 카드와 상세 본문 모두 이름은 수집 일시, 딸린 줄은 Object, 짧은 ID는 `MetaText`.
+    세션 정보 시트에서 Object 행을 빼고 원래 다섯 항목으로 되돌린다. `session_info_object`를
+    지우고 `session_list_object`를 두 화면이 함께 쓰는 `session_object`로 바꾼다.
+  - 명세: `FR-013c` 원문 복구, `FR-013`에 Object 추가, `FR-013f`를 카드와 본문 두 곳으로,
+    `FR-013g`에 위계 규칙 신설. 인수 시나리오 1·1a·1c 수정과 1d 신설. `capture-control-ui.md`의
+    `조회 화면의 짜임`과 진입점 표, `data-model.md`의 `objectName` 행.
+  - 자동 검증: `.\gradlew.bat ktlintCheck testDebugUnitTest lintDebug` 성공 (2026-09-22).
+  - 계측 검증 (2026-09-22, `SM-G973N`, Android 12): **28 tests, 0 failures.** `SessionInfoSheetTest`가
+    `SessionDetailObjectTest`(3개)로 바뀌어 T058의 27개 결과는 이 task의 근거가 되지 않으므로 다시
+    돌렸다.
+
+    ```text
+    SessionDetailObjectTest:...         SessionListScreenTest:.......
+    SessionMetadataMigrationTest:.      SessionMetadataQueryTest:..
+    Time: 18.776 / OK (28 tests)
+    ```
+
+  - 실기기 화면 확인: 같은 기기의 `문도` 묶음에서 카드가 `시각 / Object 56 / 업로드 완료 /
+    Episode 1개 / ID`로, 상세 본문이 `시각 / Object 56 / ID 9c0a11e8 / 업로드 완료`로 나온다.
+    Object가 딸린 줄 크기로 올라오고 ID가 한 층 내려갔다.
+
+- [X] T060 [S15P21A206-45] 카드와 상세 본문의 층을 다시 세우고 상세에 Task를 더한다. `FR-013f`를
+  고치고 `FR-013h`를 신설한다.
+  - 배경: 층이 다섯이고 경계가 크기 하나에만 걸려 있었다.
+    - 카드가 제목 아래 보조 줄 넷(Object / 업로드 완료 / Episode 수 / ID)을 쌓았다. Material 3
+      리스트 가이드라인은 보조 줄을 1~3줄로 제한한다.
+    - 2층(14sp)과 3층(12sp)이 색·굵기가 같고 크기만 2sp 달랐다. 의도한 단계가 아니라 들쭉날쭉한
+      것으로 읽힌다. 타이포그래피 통념은 크기 하나에 위계를 맡기지 말고 굵기나 색을 함께 바꾸라는
+      쪽이다.
+    - 카드에서 `업로드 완료` 줄만 들여쓴 것처럼 보였다. 화면을 재어 보니 다섯 줄의 상자 원점은
+      같고(첫 잉크 86~88px) 글리프 side bearing 차이였다. `E`·`I`는 x=88에 높이 25px짜리 세로
+      획이 서지만 `업`의 ㅇ은 완만한 곡선이라 가장 짙은 열이 x=93이다. 착시이므로 정렬로 고칠
+      것이 없고, 그 줄을 왼쪽 더미에서 빼는 것이 답이다.
+    - Object만 있고 Task가 없어 상세가 이름의 절반만 말했다. 둘은 한 다이얼로그에서 함께
+      입력받아 떨어지면 뜻이 없고, 수집 직후 경로에서는 Task도 화면에 나온 적이 없다.
+  - 구현: 층을 셋으로 줄인다. 이름(`titleMedium`/`titleLarge`) → 두 이름(`SubjectText`, 14sp
+    `onSurface`) → 부수(`MetaText`, 12sp `onSurfaceVariant`, `META_SEPARATOR`로 한 줄). 경계마다
+    크기와 함께 굵기 또는 색이 바뀐다. 전송 상태는 카드 제목과 같은 행의 끝으로 옮긴다
+    (`labelMedium`). 상세 본문은 `Task … · Object …` 한 줄이며 없는 쪽은 빠진다.
+  - production 호출 경로: `SessionSummaryItem`, `SessionDetailScreen` 본문.
+  - 자동 검증: `.\gradlew.bat ktlintCheck testDebugUnitTest lintDebug` 성공 (2026-09-22).
+  - 계측 검증 (2026-09-22, `SM-G973N`, Android 12): **29 tests, 0 failures.**
+    `SessionDetailObjectTest`가 넷으로 늘었다(`sessionDetailNamesTheTaskAndObjectThatWereCaptured`,
+    `sessionDetailNamesOnlyWhatItHas`, `sessionDetailDropsTheLineWhenThereAreNoNames`,
+    `sessionInfoLeavesTheNamesToTheBody`).
+
+    ```text
+    SessionDetailObjectTest:....        SessionListScreenTest:.......
+    Time: 19.682 / OK (29 tests)
+    ```
+
+  - 실기기 화면 확인: 카드가 `시각 … 업로드 완료 / Object 56 / Episode 1개 · ID 9c0a11e8` 세 줄로,
+    상세 본문이 `시각 / Task 문도 · Object 56 / ID 9c0a11e8`로 나온다.
+
+- [X] T061 [S15P21A206-45] 한 줄에 놓인 값 사이를 부호에서 간격으로 바꾸고, 전송 상태의 baseline을
+  이름에 맞춘다. `FR-013h`를 고치고 `FR-013i`를 신설한다.
+  - 배경:
+    - 가운뎃점으로 이었더니 어색했다. 한국어에서 그 부호는 같은 종류의 낱말을 묶는 자리인데
+      (`서울·부산`), 여기서 잇는 것은 각자 이름표를 단 서로 다른 값이다. 이름표가 이미 값의
+      시작을 알리므로 벌리는 것만으로 갈린다.
+    - 전송 상태가 이름보다 위로 떠 보였다. `Row`의 기본 정렬이 위 맞춤이라 12sp 글자가 16sp
+      글자의 윗선에 붙었다. 화면을 재어 보니 상태의 아래 잉크가 이름보다 16px 높았다.
+  - 구현: `META_SEPARATOR`를 `" · "`에서 em space 둘(`"  "`)로 바꾼다. 카드 제목 행의
+    두 `Text`에 `Modifier.alignByBaseline()`을 준다.
+  - production 호출 경로: `SessionSummaryItem`, `SessionDetailScreen` 본문.
+  - 자동 검증: `.\gradlew.bat ktlintCheck testDebugUnitTest lintDebug` 성공 (2026-09-22). 두 계측
+    테스트는 `META_SEPARATOR`로 기대값을 만들므로 구분자가 바뀌어도 함께 따라간다.
+  - 계측 검증 (2026-09-22, `SM-G973N`, Android 12): **29 tests, 0 failures.** `OK (29 tests)`,
+    19.264초.
+  - 실기기 화면 확인: 같은 기기에서 상태의 아래 잉크가 이름과 1px 안으로 들어왔다(글리프
+    overshoot). 카드의 부수 줄이 `Episode 1개   ID 9c0a11e8`, 상세의 이름 줄이
+    `Task 문도   Object 56`으로 나온다.
+
+- [X] T062 [S15P21A206-45] 식별자를 부수 정보에서 떼어 내고 카드의 단을 둘로 나눈다. `FR-013g`~
+  `FR-013i`를 고치고 `FR-013j`·`FR-013k`를 신설한다.
+  - 배경: `Episode 1개`와 `ID 9c0a11e8`을 한 줄에 두고 구분자를 무엇으로 바꿔도 어색했다. 부호가
+    아니라 두 값이 서로 관계가 없는 것이 원인이었다. 분량과 식별자다.
+    - 사용자 확인: 이 앱은 배포용이 아니라 수집용이고, 서버에 올라간 영상을 찾을 때 쓰는 것은
+      수집 일시가 아니라 ID다. 즉 식별자는 곁다리가 아니라 목록에서 세션을 짚는 주 수단이다.
+      "시각으로 구분 가능하다"는 판단은 ID의 존재 이유를 부정하는 것이었으므로 철회한다.
+    - 레퍼런스: 같은 문제를 다루는 GitHub 커밋 목록을 실제로 재 봤다. 짧은 SHA가 `fontSize: 12px`
+      (가장 작은 층), `color: rgb(37,41,46)`(본문과 같은 색, 옅게 하지 않음), 행 폭 1174 중
+      왼쪽 1024 지점(오른쪽 끝 trailing)에 있고 옆에 복사 버튼이 붙는다.
+    - 고정폭은 두 가지를 준다. 값 대조가 이 값의 쓸모이므로 `0`/`O`, `1`/`l`이 갈려야 하고,
+      글꼴이 다르면 사람이 읽는 이름과 기계가 부르는 이름이 다른 종류라는 것이 저절로 드러나
+      부호로 가를 필요가 없어진다.
+  - 구현: `IdentifierText`(12sp, `FontFamily.Monospace`, `onSurface`)를 새로 둔다. 카드는 단을
+    둘로 나눈다 — 왼쪽은 수집 일시·Object·Episode 개수, 오른쪽은 첫 행에 식별자, 둘째 행에 전송
+    상태. 두 행 모두 `alignByBaseline()`. 상세 본문은 이름표와 값을 한 줄씩 쌓는다(수집 일시 /
+    Task / Object / 식별자). `META_SEPARATOR`는 쓰는 곳이 없어져 지웠다.
+  - production 호출 경로: `SessionSummaryItem`, `SessionDetailScreen` 본문.
+  - 자동 검증: `.\gradlew.bat ktlintCheck testDebugUnitTest lintDebug` 성공 (2026-09-22).
+  - 계측 검증 (2026-09-22, `SM-G973N`, Android 12): **29 tests, 0 failures.** `OK (29 tests)`,
+    19.561초. `SessionDetailObjectTest`가 두 이름을 각각 검사하도록 바뀌었다.
+  - 실기기 화면 확인: 카드가 `시각 … ID 9c0a11e8 / Object 56 … 업로드 완료 / Episode 1개`로,
+    상세 본문이 `시각 / Task 문도 / Object 56 / ID 9c0a11e8`로 나온다. 고정폭이라 두 카드의
+    `9c0a11e8`·`acc6031a`가 자리까지 맞는다.
+  - 남은 것: GitHub은 SHA 옆에 복사 버튼을 둔다. 이 앱도 식별자를 서버 기록과 맞추려면 옮겨 적는
+    대신 복사하는 편이 낫지만, 카드의 길게 누르기는 이미 삭제가 쓰고 있어 자리가 겹친다. 별개
+    범위로 남긴다.
+
+- [X] T063 [S15P21A206-45] 스타일 조합을 역할 셋으로 접는다. `FR-013h`·`FR-013j`를 고치고
+  `FR-013l`을 신설한다.
+  - 배경: 요소마다 조합을 새로 만들어 두 화면이 난잡해졌다. 카드가 요소 5개에 조합 5개였다 —
+    시각(Roboto/16/Medium/진함), ID(**Mono**/12/Regular/진함), Object(Roboto/14/Regular/진함),
+    전송 상태(Roboto/12/**Medium**/옅음), Episode(Roboto/12/Regular/옅음). 축 넷을 섞은 결과
+    어느 요소도 다른 요소와 스타일을 공유하지 않았다. 지적을 받을 때마다 구별 축을 하나씩 더한
+    것이 원인이다.
+  - 레퍼런스: 실제 제품의 한 행을 재 봤다.
+    - GitHub 커밋 목록(값 4개): 글꼴 1종, 크기 2종(16/12px), 굵기 2종(500/400), 색 2종 →
+      **조합 3개**. 제목 `16px/500/rgb(31,35,40)`, 작성자·시각 `12px/400/rgb(89,99,110)`,
+      SHA `12px/500/rgb(37,41,46)`. SHA는 고정폭이 아니다.
+    - GitHub Actions 실행 목록: 크기는 12·16px 둘뿐이고 **상태는 글자가 아니라 아이콘**이다.
+      고정폭(`ui-monospace`)은 브랜치 ref에만 쓴다.
+    - Material 3 리스트 anatomy: 텍스트 역할이 label·supporting·trailing 셋이고 그 밖은
+      badge·icon으로 처리한다.
+    - 원칙: 크기는 네 가지를 넘기지 않는 것이 통념이고 굵기는 셋까지다. Apple HIG는 글꼴 하나에
+      스타일 몇 개만 쓰라고 하며, 여러 글꼴을 섞으면 **정보 위계를 오히려 가린다**고 적는다.
+      같은 문서가 조합을 손으로 만들지 말고 정해진 텍스트 스타일에서 고르라고 한다.
+  - 구현: 역할을 셋으로 정하고(이름 16/Medium/진함, 딸린 값 14/Regular/옅음, 식별자
+    12/Medium/진함) 요소를 거기 배정한다. Object·전송 상태·Episode 개수가 `SupportingText`
+    하나를 함께 쓰고, 상세 본문의 Task·Object·짧은 ID 세 줄도 같은 역할을 쓴다. `SubjectText`는
+    `SupportingText`와 역할이 겹쳐 지웠다. `IdentifierText`는 고정폭을 떼고 12sp Medium
+    `onSurface`로 다시 정의했다. 고정폭은 세션 정보의 전체 ID 한 곳에만 남긴다
+    (`SessionInfoRow(valueFontFamily = FontFamily.Monospace)`).
+  - production 호출 경로: `SessionSummaryItem`, `SessionDetailScreen` 본문, `SessionInfoSheet`.
+  - 자동 검증: `.\gradlew.bat ktlintCheck testDebugUnitTest lintDebug` 성공 (2026-09-22).
+  - 계측 검증 (2026-09-22, `SM-G973N`, Android 12): **29 tests, 0 failures.** `OK (29 tests)`.
+  - 실기기 화면 확인: 카드·상세·세션 정보 셋을 모두 봤다. 카드는 글꼴 1종·조합 3개가 되었고,
+    세션 정보의 전체 ID만 고정폭으로 나온다.
+
+- [X] T064 [S15P21A206-45] 카드 오른쪽 단을 한 크기로 묶고, 상세 본문을 두 묶음으로 가르고, 세션
+  정보의 고정폭과 값 크기를 고친다. `FR-013i`·`FR-013k`·`FR-013l`을 고치고 `FR-013m`을 신설한다.
+  - 카드의 정렬 확인: 실기기 화면을 픽셀로 재 보니 **레이아웃 정렬은 맞았다.** 2행의 `Object 56`과
+    `업로드 완료`가 cap-top 598, baseline 630으로 같고, 아래 잉크 6px 차이는 `Object`의 `j`
+    꼬리다. 1행도 `ID`(555)와 시각의 숫자(555)가 같으며 3px 차이는 `오전`의 한글이 CJK 폰트 대체로
+    라틴 baseline 아래로 내려가는 것이다. 어긋나 보이는 원인은 정렬이 아니라 오른쪽 단의 두 값이
+    크기가 달라 한 단으로 읽히지 않는 것이었다. 같은 14sp라도 한글은 em 상자를 꽉 채워 왼쪽의 라틴
+    글자보다 커 보인다. 전송 상태를 12sp로 내려 식별자와 한 크기로 묶었다. 오른쪽 단 두 값의 잉크
+    높이가 25/33에서 25/29로 좁혀졌다.
+  - 상세 본문: 이름과 정보 사이에 `DETAIL_TITLE_GAP`(8dp)을 두어 두 묶음으로 갈랐다. 줄 사이
+    2dp보다 넓고 다음 묶음 16dp보다 좁아 이름이 정보와 갈리면서도 한 덩어리로 묶인다.
+  - 세션 정보: 고정폭을 뺐다. 글자 단위 대조에는 고정폭이 낫지만 한 화면에 글꼴이 둘이면 그 이득
+    보다 위계를 가리는 손해가 크다는 판단이다. 어색했던 이유는 넷이었다.
+    1. 값이 `bodyLarge` 16sp라 시트 제목(`titleMedium` 16sp)과 같은 크기였다. 제목이 목록의 첫
+       항목처럼 읽히고 큰 글자 다섯 개가 사다리처럼 쌓였다.
+    2. 이름표 12sp 옅음과 값 16sp 진함 사이가 4sp+색+대비로 한꺼번에 벌어져 두 줄이 한 묶음으로
+       붙지 않고 이름표만 따로 뜬 작은 글자가 됐다.
+    3. 고정폭 값만 두 줄로 넘쳐 그 행 높이가 두 배가 되고 리듬이 깨졌다.
+    4. 행 사이 16dp가 값이 큰 상태에 맞춰져 있어 시트 전체가 늘어졌다.
+    고친 것: 값 `bodyLarge` → `bodyMedium`(16→14sp), 고정폭 제거, 행 사이 16 → 12dp. 제목이
+    유일한 최상위가 되고, 이름표와 값의 차이가 2sp로 좁아지고, 36자 식별자가 한 줄에 들어가
+    행 높이가 고르게 됐다.
+  - production 호출 경로: `SessionSummaryItem`, `SessionDetailScreen` 본문, `SessionInfoRow`.
+  - 자동 검증: `.\gradlew.bat ktlintCheck testDebugUnitTest lintDebug` 성공 (2026-09-22).
+  - 계측 검증 (2026-09-22, `SM-G973N`, Android 12): **29 tests, 0 failures.** `OK (29 tests)`.
+  - 실기기 화면 확인: 카드·상세·세션 정보 셋을 모두 봤다. 세션 정보는 다섯 행이 스크롤 없이 들어
+    가고 전체 식별자가 한 줄이다.
