@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -405,35 +404,18 @@ private fun SessionSummaryItem(
                         modifier = Modifier.alignByBaseline(),
                     )
                 }
-                Row(
+                // 메타 둘은 나란히 붙여 둔다. 같은 종류이므로 가운뎃점으로 이을 수 있다. 한국어에서
+                // 가운뎃점은 같은 종류의 낱말을 묶는 부호이고, 이 자리가 바로 그 자리다.
+                //
+                // 열로 갈라 Object를 왼쪽, 식별자를 오른쪽 끝에 두었더니 근접성이 종류를 이겼다.
+                // 식별자와 전송 상태가 같은 오른쪽 기둥에 세로로 붙어 한 묶음으로 보였는데 앞은
+                // 메타이고 뒤는 상태다. 붙여 놓은 것이 곧 묶인 것으로 읽히므로, 묶고 싶은 것을
+                // 붙여 놓아야 한다.
+                Text(
+                    text = sessionMeta(summary),
+                    style = TigerText.supporting,
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    // Object가 없는 세션은 두 이름을 Session 행에 저장하기 전에 마감된 것이다. 빈
-                    // 이름표를 세우지 않고 왼쪽을 비운 채 식별자만 남긴다.
-                    if (summary.objectName.isNotBlank()) {
-                        Text(
-                            text = stringResource(R.string.session_object, summary.objectName),
-                            style = TigerText.supporting,
-                            modifier =
-                                Modifier
-                                    .weight(1f)
-                                    .alignByBaseline(),
-                        )
-                    } else {
-                        Spacer(Modifier.weight(1f))
-                    }
-                    // 식별자는 메타이므로 Object와 같은 행에 선다. 크기도 같고 굵기와 잉크로 갈린다.
-                    // 서버에 올라간 수집분을 찾을 때 쓰는 값이라 옅게 두지 않는다.
-                    Text(
-                        text = stringResource(R.string.session_list_short_id, summary.sessionId.take(8)),
-                        style = TigerText.identifier,
-                        modifier = Modifier.alignByBaseline(),
-                    )
-                }
-                // Episode 개수는 여기 두지 않는다. 목록에서 세션을 고를 때 쓰는 값이 아니고,
-                // 왼쪽 단을 3층으로 만들어 Object가 없는 세션에서는 시각과 개수 사이가 빈 줄로
-                // 벌어졌다. 분량은 상세의 세션 정보가 말한다.
+                )
             }
         }
         // 메뉴는 누른 손가락 자리에서 열린다. 카드를 앵커로 쓰면 폭이 화면을 꽉 채우므로 어디를
@@ -475,4 +457,24 @@ private fun SessionSummaryItem(
             onDismiss = { pendingDelete = null },
         )
     }
+}
+
+/**
+ * 카드 둘째 행의 메타 문자열.
+ *
+ * Object와 짧은 ID는 같은 종류라 가운뎃점으로 잇는다. 한국어에서 가운뎃점은 같은 종류의 낱말을 묶는
+ * 부호이므로, 종류가 다른 값을 이으면 거짓말이 되지만 여기서는 사실이다.
+ *
+ * 두 이름을 Session 행에 저장하기 전에 마감된 세션은 Object가 비어 있다. 그때는 빈 자리를 세우지 않고
+ * 식별자만 남긴다.
+ */
+@Composable
+private fun sessionMeta(summary: SessionSummary): String {
+    val shortId = stringResource(R.string.session_list_short_id, summary.sessionId.take(8))
+    if (summary.objectName.isBlank()) return shortId
+    return stringResource(
+        R.string.session_meta_separator,
+        stringResource(R.string.session_object, summary.objectName),
+        shortId,
+    )
 }

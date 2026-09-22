@@ -21,8 +21,8 @@ import androidx.compose.ui.unit.sp
  * 역할은 두 무리다. 표면 위에서 읽는 글과 프리뷰·영상 위에서 읽는 글은 색 체계가 다르다. 뒤가
  * 장면이면 표면 색을 쓸 수 없으므로 흰색으로 고정한다.
  *
- * 표면 위에서 읽는 열 역할은 모두 잉크 두 단계 중 하나를 골라 색을 명시한다. 진한 `onSurface`는
- * 그 항목을 짚는 글([sectionName], [itemName], [body], [value], [identifier], [menuItem], [formLabel])이고, 옅은
+ * 표면 위에서 읽는 아홉 역할은 모두 잉크 두 단계 중 하나를 골라 색을 명시한다. 진한 `onSurface`는
+ * 그 항목을 짚는 글([sectionName], [itemName], [body], [value], [menuItem], [formLabel])이고, 옅은
  * `onSurfaceVariant`는 딸린 값과 이름표와 안내([bodyMuted], [supporting], [groupLabel])다.
  *
  * 크기는 셋이다. title 22sp, body 16sp, callout 14sp. 눈금과 그 이름은 Material 3의 타입 스케일에서
@@ -32,14 +32,14 @@ import androidx.compose.ui.unit.sp
  * | --- | --- | --- |
  * | title (title2 22) | 22 | [sectionName] |
  * | body (body 17, headline 17) | 16 | [itemName] [body] [bodyMuted] |
- * | callout (subhead 15) | 14 | [value] [supporting] [identifier] [menuItem] [formLabel] |
+ * | callout (subhead 15) | 14 | [value] [supporting] [menuItem] [formLabel] |
  * | caption (caption1 12) | 12 | [groupLabel] |
  *
  * caption 층에는 값을 두지 않는다. 묶음 이름표만 든다. 값을 한 단계 더 내리면 층이 늘어나는 것이
  * 아니라 위가 홀로 커지지만, 표지는 값과 같은 층에 있으면 값으로 읽히므로 내려야 한다.
  *
  * **한 화면이 쓰는 크기는 둘**이고 그 둘은 늘 이웃한 칸이다. 목록은 이름([itemName], 16)과
- * 값([supporting], [identifier], 14), 상세는 제목([sectionName], 22)과 본문([body], [bodyMuted], 16)
+ * 값([supporting], 14), 상세는 제목([sectionName], 22)과 본문([body], [bodyMuted], 16)
  * 이다. 짝이 화면마다 다를 뿐이다.
  *
  * 한 칸을 건너뛰면 위가 홀로 커 보인다. 상세가 본문 층 없이 제목 22sp에서 값 14sp로 곧장 떨어지던
@@ -53,7 +53,7 @@ import androidx.compose.ui.unit.sp
  * 색을 비워 두지 않는 것이 규칙이다. 비우면 놓인 자리의 콘텐츠 색을 따르는데, 그러면 같은 역할이
  * 자리마다 다르게 렌더된다. 실제로 그랬다. [itemName]이 Card 안에서 `onSurfaceVariant`로, 밖에서
  * `onSurface`로 나왔다. Material 3의 Card가 콘텐츠 색으로 `onSurfaceVariant`를 주기 때문이고 아무도
- * 의도한 적이 없다. 그래서 명시적으로 `onSurface`를 쓰는 [identifier]가 같은 카드의 제목보다
+ * 의도한 적이 없다. 그래서 명시적으로 `onSurface`를 쓰던 식별자가 같은 카드의 제목보다
  * 진해져 위계가 뒤집혔다. 색을 여기서 정하면 호출부의 판이 무엇이든 역할이 흔들리지 않는다.
  *
  * 판의 색은 [TigerSurface]가 정한다.
@@ -71,7 +71,7 @@ object TigerText {
     /**
      * 한 항목 또는 한 화면의 이름. 카드의 Task 이름과 수집 일시, 화면 헤더 제목, 세션 정보 제목.
      *
-     * 진한 잉크다. 이름은 [identifier]나 [supporting]보다 약해질 수 없다.
+     * 진한 잉크다. 이름은 [supporting]보다 약해질 수 없다.
      */
     val itemName: TextStyle
         @Composable get() =
@@ -124,10 +124,10 @@ object TigerText {
                 .hugged
 
     /**
-     * 목록에서 이름에 딸려 그것을 설명하는 값과 이름표. 카드의 Object와 전송 상태, 세션 개수,
-     * 세션 정보 시트의 이름표.
+     * 목록에서 이름에 딸려 그것을 설명하는 값과 이름표. 카드의 Object·짧은 ID와 전송 상태,
+     * 세션 개수, 세션 정보 시트의 이름표.
      *
-     * 이름과는 크기와 굵기로, 같은 크기인 [value]·[identifier]와는 잉크로 갈린다.
+     * 이름과는 크기와 굵기로, 같은 크기인 [value]와는 잉크로 갈린다.
      */
     val supporting: TextStyle
         @Composable get() =
@@ -154,29 +154,6 @@ object TigerText {
             MaterialTheme.typography.labelMedium
                 .copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 .hugged
-
-    /**
-     * 기계가 부르는 이름. 목록 카드 오른쪽 끝의 짧은 Session 식별자.
-     *
-     * 이 앱은 배포용이 아니라 수집용이고, 서버에 올라간 수집분을 찾을 때 쓰는 것은 수집 일시가
-     * 아니라 이 값이다. 그래서 색은 옅게 하지 않고 굵기를 한 단계 올린다. GitHub의 커밋 목록도 짧은
-     * SHA의 색을 본문과 같게, 굵기를 주변 작은 글자보다 한 단계 굵게 둔다.
-     *
-     * 크기는 [supporting]과 같다. 전에는 한 단계 더 낮춰 카드가 크기 셋을 썼는데, 그러면 이름과의
-     * 차이가 1.33배로 벌어져 이름만 과하게 커 보였다. 같은 GitHub의 커밋 행이 조합 셋을 쓰면서도
-     * 글꼴은 하나, 크기는 둘로 끝내는 것이 이 이유다. 값이 여럿이면 크기를 늘리는 대신 굵기와
-     * 잉크로 가른다.
-     *
-     * 고정폭을 쓰지 않는다. 글자 단위 대조에는 고정폭이 낫지만 한 화면에 글꼴이 둘이면 그 이득보다
-     * 위계를 가리는 손해가 크다.
-     */
-    val identifier: TextStyle
-        @Composable get() =
-            MaterialTheme.typography.bodyMedium
-                .copy(
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                ).hugged
 
     /**
      * 메뉴 항목의 글자.

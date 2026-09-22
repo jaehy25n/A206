@@ -54,7 +54,8 @@ class SurfaceAndInkTest {
                                 "bodyMuted" to TigerText.bodyMuted,
                                 "value" to TigerText.value,
                                 "supporting" to TigerText.supporting,
-                                "identifier" to TigerText.identifier,
+                                "groupLabel" to TigerText.groupLabel,
+                                "menuItem" to TigerText.menuItem,
                                 "formLabel" to TigerText.formLabel,
                             ),
                     )
@@ -101,18 +102,18 @@ class SurfaceAndInkTest {
     }
 
     @Test
-    fun anItemNameIsNeverWeakerThanTheIdentifierBesideIt() {
+    fun anItemNameIsNeverWeakerThanTheValuesBesideIt() {
         val palette = palette()
         val itemName = palette.surfaceRoles.getValue("itemName").color
-        val identifier = palette.surfaceRoles.getValue("identifier").color
+        val supporting = palette.surfaceRoles.getValue("supporting").color
 
-        // 위계 역전이 여기서 났다. Card가 콘텐츠 색으로 `onSurfaceVariant`를 주는 동안 이름만
-        // 옅어졌고, 색을 명시해 둔 식별자가 같은 카드의 제목보다 진했다.
+        // 위계 역전이 여기서 났다. Card가 콘텐츠 색으로 `onSurfaceVariant`를 주는 동안 카드 안
+        // 이름만 옅어졌고, 색을 명시해 둔 값들이 같은 카드의 제목보다 진했다.
         assertTrue(
-            "카드 안 이름이 식별자보다 약하다. " +
+            "카드 안 이름이 딸린 값보다 약하다. " +
                 "이름 ${hex(itemName)} ${ratio(itemName, palette.card)}:1, " +
-                "식별자 ${hex(identifier)} ${ratio(identifier, palette.card)}:1",
-            contrast(itemName, palette.card) >= contrast(identifier, palette.card),
+                "딸린 값 ${hex(supporting)} ${ratio(supporting, palette.card)}:1",
+            contrast(itemName, palette.card) >= contrast(supporting, palette.card),
         )
     }
 

@@ -37,6 +37,7 @@ import com.ssafy.s15p21a206.tiger.episode.SessionBundle
 import com.ssafy.s15p21a206.tiger.episode.SessionSummary
 import com.ssafy.s15p21a206.tiger.episode.UploadState
 import com.ssafy.s15p21a206.tiger.ui.common.LabelledGroup
+import com.ssafy.s15p21a206.tiger.ui.common.LabelledValue
 import com.ssafy.s15p21a206.tiger.ui.common.ListSectionHeader
 import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeader
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerSurface
@@ -100,7 +101,7 @@ internal fun SessionDetailScreen(
                         top = DETAIL_VIDEO_GAP,
                         bottom = DETAIL_CONTENT_PADDING,
                     ),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(DETAIL_GROUP_GAP),
             ) {
                 // 이 화면의 이름은 언제 찍은 것인지이고, 그 아래로 무엇을 찍었는지와 식별자가 온다.
                 //
@@ -131,18 +132,15 @@ internal fun SessionDetailScreen(
                 // 이름표는 묶음 안의 글보다 작고 옅다. 읽을 대상이 아니라 무엇을 읽고 있는지 알려
                 // 주는 표지이기 때문이다.
                 LabelledGroup(stringResource(R.string.session_group_info)) {
-                    // 세 값이 한 스타일을 함께 쓴다. 이름표와 값을 쌓는 자리에서는 층을 더 가를
-                    // 이유가 없고, 각자 다른 조합을 주면 세 줄이 세 가지로 보여 읽히지 않는다.
+                    // 세 줄이 모두 이름표와 값이라 같은 짜임을 쓴다. 이름표 기둥이 고정폭이라 값이
+                    // 한 기둥에 정렬되고, 훑는 눈이 값만 따라 내려갈 수 있다.
                     if (summary.taskName.isNotBlank()) {
-                        Text(text = stringResource(R.string.session_task, summary.taskName), style = TigerText.bodyMuted)
+                        LabelledValue(stringResource(R.string.session_label_task), summary.taskName)
                     }
                     if (summary.objectName.isNotBlank()) {
-                        Text(text = stringResource(R.string.session_object, summary.objectName), style = TigerText.bodyMuted)
+                        LabelledValue(stringResource(R.string.session_label_object), summary.objectName)
                     }
-                    Text(
-                        text = stringResource(R.string.session_list_short_id, summary.sessionId.take(8)),
-                        style = TigerText.bodyMuted,
-                    )
+                    LabelledValue(stringResource(R.string.session_label_id), summary.sessionId.take(8))
                 }
                 // 아직 올리지 않았다는 것은 업로드 버튼이 이미 말한다. 그 상태에서만 나오는
                 // 버튼이므로 같은 말을 한 줄 더 적지 않고, 이름표도 함께 뺀다.
@@ -396,6 +394,14 @@ private val DETAIL_VIDEO_GAP = 24.dp
  * 한 덩어리로 묶여 보인다. 간격의 크기가 곧 묶음의 경계다.
  */
 private val DETAIL_TITLE_GAP = 8.dp
+
+/**
+ * 묶음과 묶음 사이.
+ *
+ * 묶음 안 줄 사이(6dp)와 이름표가 제 묶음에 붙는 간격(4dp)보다 뚜렷하게 넓어야 한다. 셋이 엇비슷하면
+ * 이름표가 어느 묶음의 것인지 간격이 말해 주지 못한다.
+ */
+private val DETAIL_GROUP_GAP = 20.dp
 
 /**
  * 헤더 메뉴 버튼의 글리프 크기.
