@@ -723,3 +723,38 @@ Task와 Object를 Session 색인에 저장하는 범위를 FR-013e·FR-013f로 �
   - 계측 검증 (2026-09-22, `SM-G973N`, Android 12): **29 tests, 0 failures.** `OK (29 tests)`.
   - 실기기 화면 확인: 카드·상세·세션 정보 셋을 모두 봤다. 세션 정보는 다섯 행이 스크롤 없이 들어
     가고 전체 식별자가 한 줄이다.
+
+- [ ] T065 [S15P21A206-45] 앱이 쓰는 글자 조합을 역할로 뽑아 `ui/theme/TigerText.kt`에 정의하고,
+  화면은 이름으로만 고르게 한다.
+  - 배경: 역할 다섯을 `ui/common`의 컴포넌트와 `MaterialTheme.typography` 위에 손으로 얹어 두었을
+    뿐 정의된 곳이 없었다. 조합을 자리마다 만들 수 있는 구조가 남아 있으면 축은 다시 늘어난다.
+    Apple HIG가 "정해진 텍스트 스타일에서 고르라"고 하는 것이 이 얘기다.
+  - 추출 결과: 앱이 직접 정한 조합 14개. M3 컴포넌트가 스스로 주는 스타일(Button·AlertDialog·
+    TextField 등)은 앱이 정한 것이 아니므로 제외했다.
+    - 표면 위 9: `sectionName` `itemName` `body` `guidance` `value` `supporting` `identifier`
+      `meta` `formLabel`
+    - 어두운 배경 위 5: `overlayTitle` `overlaySupporting` `overlayBadge` `overlayGlyph`
+      `onVideoBody`
+    - 화면 제목(`NavigationHeader`)과 항목 이름이 같은 조합이라 `itemName` 하나로 합쳐졌다.
+  - 추출이 드러낸 어긋남 둘. **이번에는 고치지 않고 그대로 옮겼다.** 추출은 지금 렌더를 이름 아래로
+    옮기는 작업이고 픽셀을 바꾸는 것은 별개 판단이다.
+    1. 같은 `itemName`이 Card 안에서는 `onSurfaceVariant`로, 밖에서는 `onSurface`로 렌더된다.
+       Material 3의 Card가 콘텐츠 색으로 `onSurfaceVariant`를 주기 때문이며 의도한 적이 없다.
+       실기기 렌더를 재 보면 카드의 수집 일시가 `#40484D`로 딸린 값과 같고, 묶음 이름과 식별자만
+       `#161C20`이다.
+    2. 그래서 `identifier`(명시적 `onSurface`)가 같은 카드의 `itemName`보다 진하다. 식별자의 색을
+       옅게 하지 않기로 한 결정이, 제목이 옅어진 상태에서 위계를 뒤집었다.
+    3. 곁가지: 메뉴 항목의 굵기가 상세는 `Medium`, 목록 카드는 `Normal`로 서로 다르다. 컴포넌트가
+       주는 스타일 위의 굵기 조정이라 역할로 뽑지 않았고 그대로 두었다.
+  - 구현: `TigerText` 객체에 역할 14개를 정의한다. 색이 역할의 일부라 `Typography`만으로는 담을 수
+    없으므로 색까지 묶은 스타일로 둔다. 색을 지정하지 않는 역할은 자리의 콘텐츠 색을 따르며, 그
+    사실을 문서에 적었다. 오버레이 역할은 `bodyLarge`에서 파생해 줄 높이와 자간을 지금과 같게
+    유지한다. `SupportingText`·`MetaText`·`IdentifierText` 세 컴포넌트는 스타일 하나에 컴포넌트
+    하나를 두는 층이라 지우고, 적어 둔 근거는 역할 정의의 문서로 옮겼다.
+  - production 호출 경로: `ListSectionHeader`, `NavigationHeader`, `SessionListScreen`,
+    `SessionDetailScreen`, `CaptureWorkspaceScreen`, `CaptureMetadataDialog`, `VideoPlayback`.
+  - 자동 검증: `.\gradlew.bat ktlintCheck testDebugUnitTest lintDebug assembleDebug
+    assembleDebugAndroidTest` 성공 (2026-09-22).
+  - 계측·화면 검증: **미실행.** 기기 연결이 끊겨 돌리지 못했다. 이 작업은 픽셀이 바뀌지 않는 것이
+    성립 조건이므로, 실기기에서 androidTest를 돌리고 카드·상세·세션 정보·수집 작업 공간 화면을
+    직전 스크린샷과 대조해야 완료다.

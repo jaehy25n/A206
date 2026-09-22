@@ -33,9 +33,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.ssafy.s15p21a206.tiger.R
 import com.ssafy.s15p21a206.tiger.episode.RecordingResolution
 import com.ssafy.s15p21a206.tiger.ui.common.DestructiveConfirmationDialog
@@ -43,8 +41,8 @@ import com.ssafy.s15p21a206.tiger.ui.theme.CaptureControlDisabled
 import com.ssafy.s15p21a206.tiger.ui.theme.CaptureDestructive
 import com.ssafy.s15p21a206.tiger.ui.theme.CaptureFullScreenScrim
 import com.ssafy.s15p21a206.tiger.ui.theme.CaptureOverlayScrim
-import com.ssafy.s15p21a206.tiger.ui.theme.CaptureOverlaySupporting
 import com.ssafy.s15p21a206.tiger.ui.theme.CaptureStart
+import com.ssafy.s15p21a206.tiger.ui.theme.TigerText
 
 @Composable
 @Suppress("FunctionName")
@@ -147,14 +145,13 @@ fun CaptureFinalizingOverlay(
                 modifier = Modifier.size(48.dp).semantics { contentDescription = finalizing },
                 color = Color.White,
             )
-            Text(text = finalizing, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+            Text(text = finalizing, style = TigerText.overlayTitle)
             Text(
                 text = stringResource(R.string.capture_finalizing_warning),
-                color = CaptureOverlaySupporting,
-                fontSize = 14.sp,
+                style = TigerText.overlaySupporting,
             )
         } else {
-            Text(text = failure, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+            Text(text = failure, style = TigerText.overlayTitle)
             Button(onClick = onDismissFailure) { Text(stringResource(R.string.action_confirm)) }
         }
     }
@@ -178,9 +175,7 @@ fun CaptureWorkspaceStatus(
     val label = stringResource(labelRes)
     Text(
         text = label,
-        color = Color.White,
-        fontWeight = FontWeight.Medium,
-        fontSize = 13.sp,
+        style = TigerText.overlayBadge,
         modifier =
             modifier
                 .background(CaptureOverlayScrim, CircleShape)
@@ -269,9 +264,8 @@ fun CaptureWorkspaceExitControls(
         ) {
             Text(
                 text = stringResource(R.string.control_close),
+                style = TigerText.overlayGlyph,
                 color = if (enabled) Color.White else CaptureControlDisabled,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
             )
         }
     }
@@ -292,9 +286,7 @@ fun CaptureWorkspaceResolution(
     val description = stringResource(R.string.capture_resolution_content_description, resolution.width, resolution.height)
     Text(
         text = label,
-        color = Color.White,
-        fontWeight = FontWeight.Medium,
-        fontSize = 13.sp,
+        style = TigerText.overlayBadge,
         modifier =
             modifier
                 .background(CaptureOverlayScrim, CircleShape)

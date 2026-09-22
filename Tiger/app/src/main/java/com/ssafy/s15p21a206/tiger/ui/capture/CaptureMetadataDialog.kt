@@ -17,7 +17,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
@@ -42,6 +41,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.ssafy.s15p21a206.tiger.R
 import com.ssafy.s15p21a206.tiger.episode.RecordingInputValidator
 import com.ssafy.s15p21a206.tiger.episode.RecordingResolution
+import com.ssafy.s15p21a206.tiger.ui.theme.TigerText
 
 /**
  * 수집을 시작하기 전에 Task·Object·해상도를 받는다.
@@ -152,7 +152,7 @@ private fun RecordingResolutionPicker(
     Column(modifier = Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
             text = stringResource(R.string.capture_metadata_resolution),
-            style = MaterialTheme.typography.labelLarge,
+            style = TigerText.formLabel,
         )
         RecordingInputValidator.supportedResolutions.forEach { option ->
             Row(

@@ -48,12 +48,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.round
 import com.ssafy.s15p21a206.tiger.R
 import com.ssafy.s15p21a206.tiger.episode.SessionSummary
-import com.ssafy.s15p21a206.tiger.ui.common.IdentifierText
 import com.ssafy.s15p21a206.tiger.ui.common.ListSectionHeader
-import com.ssafy.s15p21a206.tiger.ui.common.MetaText
 import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeader
 import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeaderTitleCenter
-import com.ssafy.s15p21a206.tiger.ui.common.SupportingText
+import com.ssafy.s15p21a206.tiger.ui.theme.TigerText
 import com.ssafy.s15p21a206.tiger.ui.upload.labelRes
 
 @Suppress("FunctionName")
@@ -69,7 +67,7 @@ fun SessionListScreen(
     // 이 화면에는 헤더가 없다. Task를 열면 나오는 화면의 헤더 제목과 이름표가 같은 높이에
     // 놓여야 화면을 오갈 때 글자가 제자리에 머무르는 것으로 보인다. 글자 높이는 사용자가 고른
     // 글꼴 크기에 따라 달라지므로 값을 박지 않고 줄 높이에서 끌어낸다.
-    val sectionTitleLineHeight = MaterialTheme.typography.titleLarge.lineHeight
+    val sectionTitleLineHeight = TigerText.sectionName.lineHeight
     val sectionTopPadding =
         with(LocalDensity.current) {
             (NavigationHeaderTitleCenter - sectionTitleLineHeight.toDp() / 2).coerceAtLeast(0.dp)
@@ -198,8 +196,7 @@ private fun EmptyListMessage(
     Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Text(
             text = text,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = TigerText.guidance,
             textAlign = TextAlign.Center,
         )
     }
@@ -289,8 +286,8 @@ private fun TaskSummaryItem(
     ) {
         Column(modifier = Modifier.padding(CARD_CONTENT_PADDING), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             // 카드는 섹션 이름표 아래에 놓이므로 제목보다 한 단계 작아야 한다.
-            Text(text = taskName, style = MaterialTheme.typography.titleMedium)
-            SupportingText(stringResource(R.string.task_list_session_count, sessionCount))
+            Text(text = taskName, style = TigerText.itemName)
+            Text(text = stringResource(R.string.task_list_session_count, sessionCount), style = TigerText.supporting)
         }
     }
 }
@@ -384,14 +381,15 @@ private fun SessionSummaryItem(
                 ) {
                     Text(
                         text = captureTime,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = TigerText.itemName,
                         modifier =
                             Modifier
                                 .weight(1f)
                                 .alignByBaseline(),
                     )
-                    IdentifierText(
+                    Text(
                         text = stringResource(R.string.session_list_short_id, summary.sessionId.take(8)),
+                        style = TigerText.identifier,
                         modifier = Modifier.alignByBaseline(),
                     )
                 }
@@ -402,8 +400,9 @@ private fun SessionSummaryItem(
                     // Object는 이름에 딸린 값이라 시각 바로 아래 둔다. 없으면 왼쪽을 비워 둔 채로
                     // 오른쪽 상태만 남는다. 빈 이름표를 세우지 않는다.
                     if (summary.objectName.isNotBlank()) {
-                        SupportingText(
+                        Text(
                             text = stringResource(R.string.session_object, summary.objectName),
+                            style = TigerText.supporting,
                             modifier =
                                 Modifier
                                     .weight(1f)
@@ -415,12 +414,16 @@ private fun SessionSummaryItem(
                     // 오른쪽 단은 한 크기로 묶는다. 식별자와 크기가 다르면 두 값이 한 단으로 읽히지
                     // 않고, 같은 14sp라도 한글은 em 상자를 꽉 채워 왼쪽의 라틴 글자보다 커 보여
                     // 행이 어긋난 것처럼 보인다. baseline은 어느 쪽이든 맞아 있다.
-                    MetaText(
+                    Text(
                         text = stringResource(summary.uploadState.labelRes),
+                        style = TigerText.meta,
                         modifier = Modifier.alignByBaseline(),
                     )
                 }
-                SupportingText(stringResource(R.string.session_list_episode_count, summary.completedEpisodeCount))
+                Text(
+                    text = stringResource(R.string.session_list_episode_count, summary.completedEpisodeCount),
+                    style = TigerText.supporting,
+                )
             }
         }
         // 메뉴는 누른 손가락 자리에서 열린다. 카드를 앵커로 쓰면 폭이 화면을 꽉 채우므로 어디를

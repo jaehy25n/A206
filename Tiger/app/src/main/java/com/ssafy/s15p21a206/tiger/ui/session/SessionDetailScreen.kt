@@ -39,9 +39,8 @@ import com.ssafy.s15p21a206.tiger.episode.SessionBundle
 import com.ssafy.s15p21a206.tiger.episode.SessionSummary
 import com.ssafy.s15p21a206.tiger.episode.UploadState
 import com.ssafy.s15p21a206.tiger.ui.common.ListSectionHeader
-import com.ssafy.s15p21a206.tiger.ui.common.MetaText
 import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeader
-import com.ssafy.s15p21a206.tiger.ui.common.SupportingText
+import com.ssafy.s15p21a206.tiger.ui.theme.TigerText
 import com.ssafy.s15p21a206.tiger.ui.upload.labelRes
 import com.ssafy.s15p21a206.tiger.ui.video.SharedVideoPlayer
 import com.ssafy.s15p21a206.tiger.ui.video.VideoPlayer
@@ -133,12 +132,15 @@ internal fun SessionDetailScreen(
                     // 이름은 위의 수집 일시가 혼자 맡는다.
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         if (summary.taskName.isNotBlank()) {
-                            SupportingText(stringResource(R.string.session_task, summary.taskName))
+                            Text(text = stringResource(R.string.session_task, summary.taskName), style = TigerText.supporting)
                         }
                         if (summary.objectName.isNotBlank()) {
-                            SupportingText(stringResource(R.string.session_object, summary.objectName))
+                            Text(text = stringResource(R.string.session_object, summary.objectName), style = TigerText.supporting)
                         }
-                        SupportingText(stringResource(R.string.session_list_short_id, summary.sessionId.take(8)))
+                        Text(
+                            text = stringResource(R.string.session_list_short_id, summary.sessionId.take(8)),
+                            style = TigerText.supporting,
+                        )
                     }
                 }
                 // 전송 상태는 이름에 딸린 정보가 아니라 지금 무엇을 할 수 있는지를 말하므로,
@@ -149,17 +151,17 @@ internal fun SessionDetailScreen(
                 if (summary.uploadState != UploadState.LOCAL_ONLY) {
                     Text(
                         text = stringResource(summary.uploadState.labelRes),
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = TigerText.body,
                     )
                 }
                 // 무엇이 막았는지 알아야 다시 걸어 볼지 판단할 수 있다. 앱을 다시 켜면 남지 않는다.
                 // 전송 실패는 기록하는 컬럼이 없다.
                 if (summary.uploadState == UploadState.FAILED && uploadFailureReason != null) {
-                    SupportingText(uploadFailureReason)
+                    Text(text = uploadFailureReason, style = TigerText.supporting)
                 }
                 // 지우지 못했으면 화면이 그대로 남는다. 아무 말이 없으면 눌리지 않은 것처럼 보인다.
                 if (deleteFailureReason != null) {
-                    SupportingText(deleteFailureReason)
+                    Text(text = deleteFailureReason, style = TigerText.supporting)
                 }
                 if (presentation.uploadAction != null) {
                     Button(onClick = onUpload) {
@@ -302,7 +304,7 @@ private fun SessionInfoSheet(
         ) {
             Text(
                 text = stringResource(R.string.session_info_title),
-                style = MaterialTheme.typography.titleMedium,
+                style = TigerText.itemName,
             )
             SessionInfoRow(stringResource(R.string.session_info_id), summary.sessionId)
             SessionInfoRow(
@@ -341,15 +343,14 @@ private fun SessionInfoRow(
     value: String,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        MetaText(label)
+        Text(text = label, style = TigerText.meta)
         // 값은 시트 제목보다 작아야 한다. 전에는 값이 `bodyLarge`라 제목과 같은 16sp였고, 그래서
         // 제목이 목록의 첫 항목처럼 읽히며 큰 글자 다섯 개가 사다리처럼 쌓였다. 한 단계 내리면
         // 제목이 이 시트의 유일한 최상위가 되고, 라벨과의 낙차도 4sp에서 2sp로 좁아져 두 줄이
         // 한 묶음으로 붙는다. 36자 식별자도 한 줄에 들어가 행 높이가 고르게 된다.
         Text(
             text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+            style = TigerText.value,
         )
     }
 }
