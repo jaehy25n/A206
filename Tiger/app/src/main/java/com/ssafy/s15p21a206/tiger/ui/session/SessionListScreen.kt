@@ -206,6 +206,15 @@ private fun EmptyListMessage(
 /** 카드가 안쪽에 두는 여백. 카드 바깥의 글자를 카드 안 글자와 맞출 때 같은 값을 쓴다. */
 private val CARD_CONTENT_PADDING = 16.dp
 
+/**
+ * 카드 안 두 줄 사이.
+ *
+ * 안쪽 여백의 절반이다. 이름과 그에 딸린 값이 한 덩어리로 읽히려면 둘을 가르는 간격이 덩어리를
+ * 감싸는 여백보다 뚜렷하게 작아야 한다. 전에는 줄상자의 남는 여백까지 더해져 실제 13dp였고, 카드
+ * 여백 18~20dp와 맞먹어 두 줄이 따로 떴다.
+ */
+private val CARD_LINE_GAP = 8.dp
+
 @Composable
 @Suppress("FunctionName")
 fun TaskSessionListScreen(
@@ -285,7 +294,7 @@ private fun TaskSummaryItem(
                 .semantics { contentDescription = taskName }
                 .clickable(role = Role.Button, onClick = onOpenTask),
     ) {
-        Column(modifier = Modifier.padding(CARD_CONTENT_PADDING), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(modifier = Modifier.padding(CARD_CONTENT_PADDING), verticalArrangement = Arrangement.spacedBy(CARD_LINE_GAP)) {
             // 카드는 섹션 이름표 아래에 놓이므로 제목보다 한 단계 작아야 한다.
             Text(text = taskName, style = TigerText.itemName)
             Text(text = stringResource(R.string.task_list_session_count, sessionCount), style = TigerText.supporting)
@@ -350,7 +359,7 @@ private fun SessionSummaryItem(
                         onClick = { onOpenSession(summary.sessionId) },
                     ),
         ) {
-            Column(modifier = Modifier.padding(CARD_CONTENT_PADDING), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(modifier = Modifier.padding(CARD_CONTENT_PADDING), verticalArrangement = Arrangement.spacedBy(CARD_LINE_GAP)) {
                 // 이름과 상태를 한 행에 둔다. 상태는 이름에 딸린 값이 아니라 그 세션이 지금 어떤지를
                 // 말하므로 왼쪽 더미에 끼워 넣지 않는다. Material 3 리스트가 개수·날짜 같은 부수
                 // 정보를 trailing에 두는 자리다.

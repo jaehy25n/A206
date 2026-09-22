@@ -127,7 +127,7 @@ internal fun SessionDetailScreen(
                     // 세 값이 한 스타일을 함께 쓴다. 이름표와 값을 쌓는 자리에서는 층을 더 가를
                     // 이유가 없고, 각자 다른 조합을 주면 세 줄이 세 가지로 보여 읽히지 않는다.
                     // 이름은 위의 수집 일시가 혼자 맡는다.
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         if (summary.taskName.isNotBlank()) {
                             Text(text = stringResource(R.string.session_task, summary.taskName), style = TigerText.supporting)
                         }
@@ -336,7 +336,7 @@ private fun SessionInfoRow(
     label: String,
     value: String,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(text = label, style = TigerText.meta)
         // 값은 시트 제목보다 작아야 한다. 전에는 값이 `bodyLarge`라 제목과 같은 16sp였고, 그래서
         // 제목이 목록의 첫 항목처럼 읽히며 큰 글자 다섯 개가 사다리처럼 쌓였다. 한 단계 내리면

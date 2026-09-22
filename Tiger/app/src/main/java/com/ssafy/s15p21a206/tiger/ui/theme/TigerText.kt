@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.sp
 
 /**
@@ -37,10 +38,11 @@ object TigerText {
     /** 한 묶음을 이끄는 이름. 홈의 `Tasks`, Task Session 목록의 Task 이름이 여기 해당한다. */
     val sectionName: TextStyle
         @Composable get() =
-            MaterialTheme.typography.titleLarge.copy(
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
+            MaterialTheme.typography.titleLarge
+                .copy(
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                ).hugged
 
     /**
      * 한 항목 또는 한 화면의 이름. 카드의 Task 이름과 수집 일시, 화면 헤더 제목, 세션 정보 제목.
@@ -48,15 +50,24 @@ object TigerText {
      * 진한 잉크다. 이름은 [identifier]나 [supporting]보다 약해질 수 없다.
      */
     val itemName: TextStyle
-        @Composable get() = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.onSurface)
+        @Composable get() =
+            MaterialTheme.typography.titleMedium
+                .copy(color = MaterialTheme.colorScheme.onSurface)
+                .hugged
 
     /** 문장으로 읽는 글. 상세의 전송 상태처럼 그 자리에서 무엇을 할 수 있는지 말하는 한 줄. */
     val body: TextStyle
-        @Composable get() = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface)
+        @Composable get() =
+            MaterialTheme.typography.bodyLarge
+                .copy(color = MaterialTheme.colorScheme.onSurface)
+                .hugged
 
     /** 목록이 비었을 때 남은 공간 가운데 서는 안내. 본문과 크기는 같고 색을 낮춰 둔다. */
     val guidance: TextStyle
-        @Composable get() = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+        @Composable get() =
+            MaterialTheme.typography.bodyLarge
+                .copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                .hugged
 
     /**
      * 이름표가 가리키는 내용. 세션 정보의 값이 여기 해당한다.
@@ -65,7 +76,10 @@ object TigerText {
      * 글자가 사다리처럼 쌓인다. [meta]인 이름표와는 크기 한 단계와 색으로 갈린다.
      */
     val value: TextStyle
-        @Composable get() = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface)
+        @Composable get() =
+            MaterialTheme.typography.bodyMedium
+                .copy(color = MaterialTheme.colorScheme.onSurface)
+                .hugged
 
     /**
      * 이름에 딸려 그것을 설명하는 값. 카드의 Object, 상세의 Task·Object·짧은 ID, 세션 개수,
@@ -75,7 +89,10 @@ object TigerText {
      * 2sp 안팎의 크기 차이만으로는 의도한 단계로 읽히지 않는다.
      */
     val supporting: TextStyle
-        @Composable get() = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+        @Composable get() =
+            MaterialTheme.typography.bodyMedium
+                .copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                .hugged
 
     /**
      * 기계가 부르는 이름. 목록 카드 오른쪽 끝의 짧은 Session 식별자.
@@ -88,7 +105,10 @@ object TigerText {
      * 위계를 가리는 손해가 크다.
      */
     val identifier: TextStyle
-        @Composable get() = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurface)
+        @Composable get() =
+            MaterialTheme.typography.labelMedium
+                .copy(color = MaterialTheme.colorScheme.onSurface)
+                .hugged
 
     /**
      * 항목을 특정해 주지 않는 곁가지와 이름표. 카드의 전송 상태, 세션 정보의 이름표.
@@ -96,11 +116,17 @@ object TigerText {
      * 무엇을 찍은 것인지 알려 주지 않는 값의 자리다. [supporting]보다 한 단계 더 내린다.
      */
     val meta: TextStyle
-        @Composable get() = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+        @Composable get() =
+            MaterialTheme.typography.bodySmall
+                .copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                .hugged
 
     /** 입력 모달에서 한 무리의 입력을 이끄는 이름표. */
     val formLabel: TextStyle
-        @Composable get() = MaterialTheme.typography.labelLarge.copy(color = MaterialTheme.colorScheme.onSurface)
+        @Composable get() =
+            MaterialTheme.typography.labelLarge
+                .copy(color = MaterialTheme.colorScheme.onSurface)
+                .hugged
 
     /**
      * 프리뷰를 덮은 판 위의 이름. 마감 진행과 마감 실패 문구.
@@ -152,3 +178,31 @@ object TigerText {
     val onVideoBody: TextStyle
         @Composable get() = MaterialTheme.typography.bodyLarge.copy(color = Color.White)
 }
+
+/**
+ * 줄상자가 글자를 감싸게 한다.
+ *
+ * Material 3의 타입 스케일은 줄 높이를 글자 크기보다 크게 잡는다. 16sp 글자에 24dp 줄상자다. 그
+ * 차이는 상자 위아래의 여백으로 남고, 화면에서 `spacedBy`로 준 간격은 그 상자 **바깥**에 더해진다.
+ * 그래서 쓴 값과 보이는 값이 달랐다. 목록 카드에서 `spacedBy(4.dp)`를 준 자리의 실제 간격은
+ * `SM-G973N`에서 13dp였다.
+ *
+ * 간격을 눈으로 맞추려면 숫자를 올렸다 내렸다 해야 하고, 그렇게 맞춘 값은 글꼴이나 타입 스케일이
+ * 바뀌는 순간 다시 어긋난다. 상자가 글자를 감싸게 해 두면 쓴 값이 곧 보이는 값이 되고, 간격은
+ * 그 자리에서 의도한 대로 정할 수 있다.
+ *
+ * 여러 줄인 글에서는 첫 줄 위와 마지막 줄 아래만 깎는다. 줄과 줄 사이의 간격은 그대로 두므로 문단이
+ * 빽빽해지지 않는다.
+ *
+ * 프리뷰·영상 위 역할에는 걸지 않는다. 그쪽은 알약 배지처럼 제 배경을 갖는 자리라 상자의 여백이
+ * 배지 안쪽 여백 노릇을 하고 있다.
+ */
+private val TextStyle.hugged: TextStyle
+    get() =
+        copy(
+            lineHeightStyle =
+                LineHeightStyle(
+                    alignment = LineHeightStyle.Alignment.Center,
+                    trim = LineHeightStyle.Trim.Both,
+                ),
+        )
