@@ -129,14 +129,14 @@ internal fun SessionDetailScreen(
                     // 이름은 위의 수집 일시가 혼자 맡는다.
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         if (summary.taskName.isNotBlank()) {
-                            Text(text = stringResource(R.string.session_task, summary.taskName), style = TigerText.supporting)
+                            Text(text = stringResource(R.string.session_task, summary.taskName), style = TigerText.bodyMuted)
                         }
                         if (summary.objectName.isNotBlank()) {
-                            Text(text = stringResource(R.string.session_object, summary.objectName), style = TigerText.supporting)
+                            Text(text = stringResource(R.string.session_object, summary.objectName), style = TigerText.bodyMuted)
                         }
                         Text(
                             text = stringResource(R.string.session_list_short_id, summary.sessionId.take(8)),
-                            style = TigerText.supporting,
+                            style = TigerText.bodyMuted,
                         )
                     }
                 }
@@ -148,17 +148,17 @@ internal fun SessionDetailScreen(
                 if (summary.uploadState != UploadState.LOCAL_ONLY) {
                     Text(
                         text = stringResource(summary.uploadState.labelRes),
-                        style = TigerText.value,
+                        style = TigerText.body,
                     )
                 }
                 // 무엇이 막았는지 알아야 다시 걸어 볼지 판단할 수 있다. 앱을 다시 켜면 남지 않는다.
                 // 전송 실패는 기록하는 컬럼이 없다.
                 if (summary.uploadState == UploadState.FAILED && uploadFailureReason != null) {
-                    Text(text = uploadFailureReason, style = TigerText.supporting)
+                    Text(text = uploadFailureReason, style = TigerText.bodyMuted)
                 }
                 // 지우지 못했으면 화면이 그대로 남는다. 아무 말이 없으면 눌리지 않은 것처럼 보인다.
                 if (deleteFailureReason != null) {
-                    Text(text = deleteFailureReason, style = TigerText.supporting)
+                    Text(text = deleteFailureReason, style = TigerText.bodyMuted)
                 }
                 if (presentation.uploadAction != null) {
                     Button(onClick = onUpload) {

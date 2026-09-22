@@ -197,7 +197,7 @@ private fun EmptyListMessage(
     Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Text(
             text = text,
-            style = TigerText.guidance,
+            style = TigerText.bodyMuted,
             textAlign = TextAlign.Center,
         )
     }

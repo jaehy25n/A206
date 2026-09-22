@@ -21,14 +21,21 @@ import androidx.compose.ui.unit.sp
  * 역할은 두 무리다. 표면 위에서 읽는 글과 프리뷰·영상 위에서 읽는 글은 색 체계가 다르다. 뒤가
  * 장면이면 표면 색을 쓸 수 없으므로 흰색으로 고정한다.
  *
- * 표면 위에서 읽는 일곱 역할은 모두 잉크 두 단계 중 하나를 골라 색을 명시한다. 진한 `onSurface`는
- * 그 항목을 짚는 글([sectionName], [itemName], [value], [identifier], [formLabel])이고, 옅은
- * `onSurfaceVariant`는 딸린 값과 이름표와 안내([supporting], [guidance])다.
+ * 표면 위에서 읽는 여덟 역할은 모두 잉크 두 단계 중 하나를 골라 색을 명시한다. 진한 `onSurface`는
+ * 그 항목을 짚는 글([sectionName], [itemName], [body], [value], [identifier], [formLabel])이고, 옅은
+ * `onSurfaceVariant`는 딸린 값과 이름표와 안내([bodyMuted], [supporting])다.
  *
- * 크기는 둘이다. 이름([sectionName], [itemName])과 값이다. 값 쪽 넷([value], [supporting],
- * [identifier], [formLabel])은 크기가 같고 굵기와 잉크로만 갈린다. 전에는 셋이었고, 카드에서 이름과
- * 가장 작은 값의 차이가 1.33배로 벌어져 이름만 과하게 커 보였다. 값이 여럿이라고 크기를 한 단계씩
- * 더 내리면, 층이 늘어나는 것이 아니라 맨 위가 홀로 커진다.
+ * 크기는 셋이다. 제목 22sp, 본문 16sp, 목록 값 14sp. 다만 **한 화면이 쓰는 크기는 둘**이고 그 둘은
+ * 늘 이웃한 칸이다. 목록은 이름([itemName], 16)과 값([supporting], [identifier], 14), 상세는
+ * 제목([sectionName], 22)과 본문([body], [bodyMuted], 16)이다. 짝이 화면마다 다를 뿐이다.
+ *
+ * 한 칸을 건너뛰면 위가 홀로 커 보인다. 상세가 본문 층 없이 제목 22sp에서 값 14sp로 곧장 떨어지던
+ * 동안 그랬다. 목록 카드가 16·14·12로 세 칸을 쓰던 동안에도 같은 일이 났는데, 이름과 가장 작은
+ * 값의 차이가 1.33배로 벌어졌다.
+ *
+ * 같은 층에 값이 여럿이라고 크기를 한 단계씩 더 내리지 않는다. 층이 늘어나는 것이 아니라 맨 위가
+ * 홀로 커진다. 값들끼리는 굵기와 잉크로 가른다. 값이 넷인 GitHub의 커밋 행도 조합 셋으로 끝내면서
+ * 글꼴은 하나, 크기는 둘만 쓴다.
  *
  * 색을 비워 두지 않는 것이 규칙이다. 비우면 놓인 자리의 콘텐츠 색을 따르는데, 그러면 같은 역할이
  * 자리마다 다르게 렌더된다. 실제로 그랬다. [itemName]이 Card 안에서 `onSurfaceVariant`로, 밖에서
@@ -59,22 +66,43 @@ object TigerText {
                 .copy(color = MaterialTheme.colorScheme.onSurface)
                 .hugged
 
-    /** 목록이 비었을 때 남은 공간 가운데 서는 안내. 화면에 혼자 있는 문장이라 값들보다 크게 둔다. */
-    val guidance: TextStyle
+    /**
+     * 화면이 제 내용으로 읽히는 자리의 글. 상세의 전송 상태가 여기 해당한다.
+     *
+     * 목록 카드의 값보다 한 단계 크다. 상세는 훑는 화면이 아니라 확인하는 화면이라 줄을 아낄 이유가
+     * 없고, 줄을 아끼지 않기로 했으면 크기도 목록의 밀도를 따를 이유가 없다.
+     *
+     * 이 층이 없던 동안 상세는 제목 22sp에서 값 14sp로 곧장 떨어져, 타입 스케일의 한 칸을 건너뛰었다.
+     * 제목과 본문 사이가 두 계단이면 제목만 홀로 커 보인다. 한 화면에서 쓰는 크기는 여전히 둘이고,
+     * 무엇과 무엇이 짝인지가 화면마다 다를 뿐이다. 목록은 [itemName]과 [supporting], 상세는
+     * [sectionName]과 이 층이다.
+     */
+    val body: TextStyle
+        @Composable get() =
+            MaterialTheme.typography.bodyLarge
+                .copy(color = MaterialTheme.colorScheme.onSurface)
+                .hugged
+
+    /**
+     * 본문 층의 옅은 잉크. 상세의 Task·Object·짧은 ID, 실패 사유, 목록이 비었을 때의 안내.
+     *
+     * [body]와 크기가 같고 잉크로만 갈린다. 상세에서 이름에 딸린 값들이 여기 들고, 지금 무엇을 할 수
+     * 있는지 말하는 줄은 [body]로 진하게 둔다.
+     */
+    val bodyMuted: TextStyle
         @Composable get() =
             MaterialTheme.typography.bodyLarge
                 .copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 .hugged
 
     /**
-     * 이름표가 가리키는 내용과, 지금 이 항목이 어떤지를 말하는 한 줄. 세션 정보의 값, 상세의 전송 상태.
+     * 이름표가 가리키는 내용. 세션 정보 시트의 값이 여기 해당한다.
      *
-     * 이름([itemName])보다 한 단계 작다. 같은 크기이면 이름이 목록의 첫 항목처럼 읽히고 큰 글자가
-     * 사다리처럼 쌓인다. 이름표인 [supporting]과는 크기가 아니라 잉크로 갈린다.
+     * 시트 제목([itemName])보다 한 단계 작다. 같은 크기이면 제목이 목록의 첫 항목처럼 읽히고 큰
+     * 글자가 사다리처럼 쌓인다. 이름표인 [supporting]과는 크기가 아니라 잉크로 갈린다.
      *
-     * 전송 상태가 여기 드는 것은 그것이 이름에 딸린 값이 아니라 지금 무엇을 할 수 있는지를 말하기
-     * 때문이다. 옅게 두지 않는 이유가 그것이고, 크기까지 올릴 이유는 아니었다. 한 단계 큰 조합을
-     * 그 한 줄만 쓰던 동안, 상세에서 그 줄만 위아래와 다른 글자로 보였다.
+     * 시트는 상세와 달리 목록의 밀도를 따른다. 훑어 확인하고 닫는 판이고, 전체 식별자가 한 줄에
+     * 들어가야 행 높이가 고르다.
      */
     val value: TextStyle
         @Composable get() =
@@ -83,8 +111,8 @@ object TigerText {
                 .hugged
 
     /**
-     * 이름에 딸려 그것을 설명하는 값과 이름표. 카드의 Object와 전송 상태, 상세의 Task·Object·짧은
-     * ID, 세션 정보의 이름표, 세션 개수, 실패 사유.
+     * 목록에서 이름에 딸려 그것을 설명하는 값과 이름표. 카드의 Object와 전송 상태, 세션 개수,
+     * 세션 정보 시트의 이름표.
      *
      * 이름과는 크기와 굵기로, 같은 크기인 [value]·[identifier]와는 잉크로 갈린다.
      */

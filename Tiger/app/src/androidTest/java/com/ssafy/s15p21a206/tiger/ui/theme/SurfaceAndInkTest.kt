@@ -50,7 +50,8 @@ class SurfaceAndInkTest {
                             mapOf(
                                 "sectionName" to TigerText.sectionName,
                                 "itemName" to TigerText.itemName,
-                                "guidance" to TigerText.guidance,
+                                "body" to TigerText.body,
+                                "bodyMuted" to TigerText.bodyMuted,
                                 "value" to TigerText.value,
                                 "supporting" to TigerText.supporting,
                                 "identifier" to TigerText.identifier,
