@@ -53,13 +53,15 @@ Room Flow에서 목록이 나오고 화면은 값과 콜백만 받는다. 상태
 
 앞의 둘은 평소 작업에서 걸린다. 걸렸다는 것은 이 절의 결정이 규모를 감당하지 못하게 됐다는 신호다.
 
-## `CaptureScreen`의 예외
+## `CaptureWorkspace`의 예외
 
-`CaptureScreen.kt`의 `CaptureScreen`은 위 세 번째 규칙을 절반만 지킨다. 새로 만드는 화면의 기준으로 삼지 않는다.
+`CaptureWorkspace`는 위 세 번째 규칙을 절반만 지킨다. 새로 만드는 화면의 기준으로 삼지 않는다.
 
-**상태 hoisting은 지켜진다.** `CaptureScreen`이 상태를 소유하고, 자식 Composable은 값과 콜백만 받는다. 자식 쪽에 자체 상태가 없다.
+**상태 hoisting은 지켜진다.** `CaptureUiState`는 `TigerApp`이 소유하고 `CaptureWorkspace`는 값과 `onIntent`만 받는다. 작업 공간을 여는 것이 조회 화면의 동작이기 때문이다.
 
-**"렌더링과 사용자 이벤트 처리로 한정"은 지켜지지 않는다.** `CaptureScreen`은 `repository.save`를 직접 호출하고, 내보내기·전송·삭제와 `NavHost`를 함께 들고 있다.
+**"렌더링과 사용자 이벤트 처리로 한정"은 지켜지지 않는다.** `CaptureWorkspace`는 `AndroidCaptureRuntime`과 `CaptureSessionCoordinator`를 만들고, Session 행을 `repository.save`로 직접 쓰며, tracking을 100ms로 폴링한다.
+
+아래 이유로 이 부분은 그대로 둔다. 다만 목적지는 모른다 — 마감된 세션을 `onCompleted`로 올려 보내고 어디로 갈지는 `TigerApp`이 정한다.
 
 ### composition에 묶여 있어 올릴 수 없는 것
 
@@ -72,12 +74,16 @@ Room Flow에서 목록이 나오고 화면은 값과 콜백만 받는다. 상태
 
 ### 데이터·업로드 계층은 올렸다 (해결)
 
-Room 데이터베이스와 `SessionRepository`, `SessionUploadService`는 `TigerApplication`이 소유한다. `CaptureScreen`은 받아 쓰기만 한다.
+Room 데이터베이스와 `SessionRepository`, `SessionUploadService`는 `TigerApplication`이 소유한다. `TigerApp`이 받아 쓰고, 세션 저장에 필요한 `repository`만 `CaptureWorkspace`에 넘긴다.
 
 2026-09-17에는 "현재 동작에 결함이 없으므로 미룬다"고 두었으나 그 전제가 사실이 아니었다. `configChanges`에 `uiMode`·`locale`·`fontScale`·`density`가 없어, 다크 모드 전환만으로 Activity가 재생성되고 `remember`가 다시 돌아 인스턴스가 하나씩 더 생겼다. 닫는 경로는 없었다.
 
 이 계층을 다시 화면 안으로 내리지 않는다. 회귀는 계측 `ApplicationScopedDependencyTest`가 잡는다.
 
-### 남은 것
+### 화면은 갈랐다 (해결)
 
-`CaptureScreen`은 아직 앱 루트이면서 수집 화면이다. `NavHost`와 조회 흐름의 운용(내보내기·전송·삭제)을 함께 들고 있고, 수집 마감이 `navController`를 직접 민다. 위 "Presentation 계층"의 결정에 따라 `TigerApp`과 `CaptureWorkspace`로 가른다. 그때 이 예외 절은 없어진다.
+`TigerApp`이 앱 루트다. `NavHost`와 조회 흐름의 운용(내보내기·전송·삭제), 그리고 수집 상태를 소유한다. `CaptureWorkspace`는 수집 파이프라인만 가져간다.
+
+이전에는 한 함수가 둘을 다 들고 있었고, 수집 마감이 `navController`를 직접 밀었다. 지금은 `onCompleted(sessionId, uploadable)` 하나가 경계다. **수집 쪽에서 `NavController`나 route 타입을 참조하지 않는다.**
+
+`MainActivity`는 `TigerApp`을 띄우는 것 외에 아무것도 하지 않는다.
