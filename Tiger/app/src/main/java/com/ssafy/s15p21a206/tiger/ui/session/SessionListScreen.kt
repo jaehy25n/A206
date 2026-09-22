@@ -421,10 +421,9 @@ private fun SessionSummaryItem(
                         modifier = Modifier.alignByBaseline(),
                     )
                 }
-                Text(
-                    text = stringResource(R.string.session_list_episode_count, summary.completedEpisodeCount),
-                    style = TigerText.supporting,
-                )
+                // Episode 개수는 여기 두지 않는다. 목록에서 세션을 고를 때 쓰는 값이 아니고,
+                // 왼쪽 단을 3층으로 만들어 Object가 없는 세션에서는 시각과 개수 사이가 빈 줄로
+                // 벌어졌다. 분량은 상세의 세션 정보가 말한다.
             }
         }
         // 메뉴는 누른 손가락 자리에서 열린다. 카드를 앵커로 쓰면 폭이 화면을 꽉 채우므로 어디를
