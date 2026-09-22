@@ -53,15 +53,24 @@ Room Flow에서 목록이 나오고 화면은 값과 콜백만 받는다. 상태
 
 앞의 둘은 평소 작업에서 걸린다. 걸렸다는 것은 이 절의 결정이 규모를 감당하지 못하게 됐다는 신호다.
 
-## `CaptureWorkspace`의 예외
+## 수집 화면의 구성
 
-`CaptureWorkspace`는 위 세 번째 규칙을 절반만 지킨다. 새로 만드는 화면의 기준으로 삼지 않는다.
+수집은 파일 넷으로 갈라져 있다. 새 화면을 만들 때 참고할 수 있는 배치다.
 
-**상태 hoisting은 지켜진다.** `CaptureUiState`는 `TigerApp`이 소유하고 `CaptureWorkspace`는 값과 `onIntent`만 받는다. 작업 공간을 여는 것이 조회 화면의 동작이기 때문이다.
+| | 맡는 것 |
+|---|---|
+| `CaptureWorkspace` | 그리기만 한다. 카메라도 목적지도 모른다 |
+| `rememberCaptureDriver` | 카메라 세션·ARCore·권한·tracking 폴링·마감 |
+| `CapturePreviewSurface` | `TextureView`와 `SurfaceTexture`의 수명 |
+| `CaptureMetadataDialog` | Task·Object·해상도 입력 |
 
-**"렌더링과 사용자 이벤트 처리로 한정"은 지켜지지 않는다.** `CaptureWorkspace`는 `AndroidCaptureRuntime`과 `CaptureSessionCoordinator`를 만들고, Session 행을 `repository.save`로 직접 쓰며, tracking을 100ms로 폴링한다.
+상태는 `TigerApp`이 소유하고 화면은 값과 `onIntent`만 받는다. 작업 공간을 여는 것이 조회 화면의 동작이기 때문이다.
 
-아래 이유로 이 부분은 그대로 둔다. 다만 목적지는 모른다 — 마감된 세션을 `onCompleted`로 올려 보내고 어디로 갈지는 `TigerApp`이 정한다.
+### 드라이버가 평범한 클래스가 아닌 이유
+
+`rememberCaptureDriver`는 Composable이다. 권한 `rememberLauncherForActivityResult`는 composition에서만 만들 수 있고, tracking 폴링과 `ON_STOP`·`ON_START` 처리도 composition의 effect다. 무거운 것들은 `remember`로 한 번만 만들고, 돌려주는 `CaptureDriver`는 매 composition 새로 만든다 — 콜백이 `remember`에 갇히면 옛 상태를 보게 된다.
+
+`previewSurface`·`previewTexture`가 드라이버에 있는 것은 Camera2 session을 여는 쪽이 거기이기 때문이다. 화면은 Surface가 생기고 사라졌다는 사실만 알린다.
 
 ### composition에 묶여 있어 올릴 수 없는 것
 
