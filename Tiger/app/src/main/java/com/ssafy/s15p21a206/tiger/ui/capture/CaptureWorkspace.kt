@@ -4,14 +4,10 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Matrix
 import android.graphics.SurfaceTexture
-import android.hardware.camera2.CameraCharacteristics
-import android.hardware.camera2.CameraManager
 import android.net.Uri
 import android.os.SystemClock
 import android.view.Surface
-import android.view.TextureView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -42,7 +38,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -52,7 +47,6 @@ import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException
 import com.ssafy.s15p21a206.tiger.R
 import com.ssafy.s15p21a206.tiger.capture.AndroidCaptureRuntime
 import com.ssafy.s15p21a206.tiger.capture.CameraPreviewController
-import com.ssafy.s15p21a206.tiger.capture.CameraPreviewTransform
 import com.ssafy.s15p21a206.tiger.capture.CapturePreviewController
 import com.ssafy.s15p21a206.tiger.capture.CapturePreviewPreflight
 import com.ssafy.s15p21a206.tiger.capture.CapturePreviewState
@@ -392,67 +386,25 @@ internal fun CaptureWorkspace(
     // 프리뷰가 옆으로 누운 채 비율까지 어긋나 보인다. 저장되는 영상도 가로다.
     LockLandscapeWhileVisible()
     Box(Modifier.fillMaxSize().background(Color.Black)) {
-        AndroidView(
-            factory = { viewContext ->
-                TextureView(viewContext).apply {
-                    surfaceTextureListener =
-                        object : TextureView.SurfaceTextureListener {
-                            override fun onSurfaceTextureAvailable(
-                                surfaceTexture: SurfaceTexture,
-                                width: Int,
-                                height: Int,
-                            ) {
-                                surfaceTexture.setDefaultBufferSize(state.idlePreviewSize.width, state.idlePreviewSize.height)
-                                previewTexture = surfaceTexture
-                                previewSurface = Surface(surfaceTexture)
-                                applyIdlePreviewTransform(
-                                    this@apply,
-                                    width,
-                                    height,
-                                    state.idlePreviewSize.width,
-                                    state.idlePreviewSize.height,
-                                )
-                                if (capturePreviewController.prepare() is CapturePreviewState.Failed) {
-                                    onIntent(CaptureIntent.PreviewFailed(previewFailureMessage))
-                                }
-                            }
-
-                            override fun onSurfaceTextureSizeChanged(
-                                surfaceTexture: SurfaceTexture,
-                                width: Int,
-                                height: Int,
-                            ) = applyIdlePreviewTransform(
-                                this@apply,
-                                width,
-                                height,
-                                state.idlePreviewSize.width,
-                                state.idlePreviewSize.height,
-                            )
-
-                            override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean {
-                                capturePreviewController.release()
-                                previewSurface?.release()
-                                previewSurface = null
-                                previewTexture = null
-                                onIntent(CaptureIntent.PreviewReleased)
-                                return true
-                            }
-
-                            // 실패한 프리뷰는 늦게 온 프레임으로 되살아나지 않는다. reduce가 막는다.
-                            override fun onSurfaceTextureUpdated(surfaceTexture: SurfaceTexture) =
-                                onIntent(CaptureIntent.PreviewFrameArrived)
-                        }
+        CapturePreviewSurface(
+            bufferSize = state.idlePreviewSize,
+            // 수집이 시작되면 ARCore가 직접 그리므로 변환을 걷는다.
+            applyTransform = state.phase == CaptureWorkspaceControlState.Idle,
+            onSurfaceAvailable = { surface, texture ->
+                previewSurface = surface
+                previewTexture = texture
+                if (capturePreviewController.prepare() is CapturePreviewState.Failed) {
+                    onIntent(CaptureIntent.PreviewFailed(previewFailureMessage))
                 }
             },
-            // 변환은 유휴 프리뷰에만 건다. 수집이 시작되면 ARCore가 같은 Surface에 표시 기하를
-            // 반영해 직접 그리므로, TextureView 변환이 남아 있으면 그 위에 한 번 더 돌아간다.
-            update = { view ->
-                if (state.phase != CaptureWorkspaceControlState.Idle) {
-                    view.setTransform(Matrix())
-                } else {
-                    applyIdlePreviewTransform(view, view.width, view.height, state.idlePreviewSize.width, state.idlePreviewSize.height)
-                }
+            onSurfaceDestroyed = {
+                capturePreviewController.release()
+                previewSurface?.release()
+                previewSurface = null
+                previewTexture = null
+                onIntent(CaptureIntent.PreviewReleased)
             },
+            onFrame = { onIntent(CaptureIntent.PreviewFrameArrived) },
             // 프리뷰는 가로 16:9다. 화면이 세로면 위아래에 검은 영역이 남고, 가로면 꽉 찬다.
             // 늘이거나 잘라내지 않아야 저장되는 영상과 화각이 같다.
             modifier = Modifier.align(Alignment.Center).aspectRatio(PREVIEW_ASPECT_RATIO),
@@ -560,40 +512,6 @@ internal fun CaptureWorkspace(
             onDismiss = { onIntent(CaptureIntent.StopDismissed) },
         )
     }
-}
-
-/**
- * 유휴 프리뷰의 회전을 맞춘다.
- *
- * Camera2는 SurfaceTexture에 센서 방향 그대로 프레임을 넣고 TextureView는 회전을 반영하지 않는다.
- * 수집 중 프리뷰는 ARCore가 처리하지만 이 경로는 앱이 직접 걸어야 한다.
- */
-private fun applyIdlePreviewTransform(
-    view: TextureView,
-    viewWidth: Int,
-    viewHeight: Int,
-    bufferWidth: Int,
-    bufferHeight: Int,
-) {
-    val activity = view.context.findActivity() ?: return
-    val manager = view.context.getSystemService(CameraManager::class.java) ?: return
-    val rotation =
-        runCatching {
-            val cameraId =
-                manager.cameraIdList.first {
-                    manager.getCameraCharacteristics(it).get(CameraCharacteristics.LENS_FACING) ==
-                        CameraCharacteristics.LENS_FACING_BACK
-                }
-            val sensorOrientation =
-                manager.getCameraCharacteristics(cameraId).get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 0
-
-            @Suppress("DEPRECATION")
-            val displayRotation = activity.windowManager.defaultDisplay.rotation
-            CameraPreviewTransform.rotationDegrees(sensorOrientation, displayRotation)
-        }.getOrNull() ?: return
-    view.setTransform(
-        CameraPreviewTransform.matrix(viewWidth, viewHeight, bufferWidth, bufferHeight, rotation),
-    )
 }
 
 private fun Context.openArCoreStore() {
