@@ -29,16 +29,6 @@
     <string name="action_delete">삭제</string>
     <string name="data_collection_start">DATA COLLECTION START</string><string name="data_collection_end">DATA COLLECTION END</string><string name="episode_start">EPISODE START</string><string name="episode_end">EPISODE END</string><string name="episode_cancel">EPISODE CANCEL</string><string name="episode_task">Task</string><string name="episode_object">Object</string><string name="active_episode_end_required">ACTIVE Episode를 먼저 END 또는 CANCEL 하세요.</string>
     <string name="capture_finalize_failed">녹화를 완료할 수 없습니다</string>
-    <string name="export_session">Export session</string>
-    <string name="export_select_tree">Select export folder</string>
-    <string name="export_retry">Retry export</string>
-    <string name="export_exporting">Exporting…</string>
-    <string name="export_exported">Exported</string>
-    <string name="export_failed">Export failed: %1$s</string>
-    <string name="export_tree_required">Select a folder to export this completed session.</string>
-    <string name="export_picker_cancelled">Folder selection was cancelled</string>
-    <string name="export_grant_failed">The selected folder could not be authorized for export.</string>
-    <string name="export_failed_unexpected">Unexpected export failure</string>
     <string name="session_list_title">Tasks</string>
     <string name="task_name_unknown">이름 없는 Task</string>
     <string name="task_list_session_count">세션 %1$d개</string>

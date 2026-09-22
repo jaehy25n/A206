@@ -69,7 +69,7 @@ Session마다 하나의 작업만 소유할 수 있다. 진행 표시는 Session
 ## 고아 번들 수명주기
 
 1. 삭제가 색인을 먼저 지우고 디렉터리를 지운다. 디렉터리 삭제가 실패하면 그 디렉터리는 고아가 된다.
-2. 고아는 색인에 행이 없으므로 목록·상세·전송·export 어디에도 나타나지 않는다. 저장 공간만 차지한다.
+2. 고아는 색인에 행이 없으므로 목록·상세·전송 어디에도 나타나지 않는다. 저장 공간만 차지한다.
 3. 다음 앱 시작에서 `SessionRepository.purgeOrphanBundles()`가 회수한다. 실행 순서는 staging 구제
    → 중단된 업로드 정리 → 순번 정규화 → 고아 회수다. 구제가 staging에서 옮겨 온 번들은 색인에 행이
    있어 고아가 아니지만, 회수를 구제보다 먼저 돌리면 옮겨지기 전 상태를 보고 판단하게 된다.
@@ -77,7 +77,7 @@ Session마다 하나의 작업만 소유할 수 있다. 진행 표시는 Session
 ## 저장소 불변식
 
 - staging과 completed bundle은 분리하고 metadata-last 공개 규칙을 유지한다.
-- 원시 bundle은 업로드·export 중 수정하지 않는다.
+- 원시 bundle은 업로드 중 수정하지 않는다.
 - `filesDir/capture/completed/<session_id>/`만 이 기능이 관리하는 completed source root다.
-- 외부 저장소 Session 경로는 복사·삭제·목록·상세·export·업로드하지 않는다.
+- 외부 저장소 Session 경로는 복사·삭제·목록·상세·업로드하지 않는다.
 - 삭제는 관리하는 completed 번들에만 미친다. 색인을 먼저 지우므로 재생·전송이 불가능한 Session이 목록에 남지 않는다.

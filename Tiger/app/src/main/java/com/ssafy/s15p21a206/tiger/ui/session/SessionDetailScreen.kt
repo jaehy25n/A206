@@ -34,7 +34,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ssafy.s15p21a206.tiger.R
-import com.ssafy.s15p21a206.tiger.episode.ExportState
 import com.ssafy.s15p21a206.tiger.episode.SessionBundle
 import com.ssafy.s15p21a206.tiger.episode.SessionSummary
 import com.ssafy.s15p21a206.tiger.episode.UploadState
@@ -54,9 +53,6 @@ internal fun SessionDetailScreen(
     summary: SessionSummary?,
     onBack: () -> Unit,
     onUpload: () -> Unit,
-    exportState: ExportState,
-    exportMessage: String?,
-    onExport: () -> Unit,
     onDelete: () -> Unit,
     deleteFailureReason: String?,
     uploadFailureReason: String?,
@@ -178,9 +174,6 @@ internal fun SessionDetailScreen(
                             ),
                         )
                     }
-                }
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ExportControls(exportState, exportMessage, onExport)
                 }
             }
         }

@@ -6,6 +6,7 @@ import androidx.room.Room
 import com.ssafy.s15p21a206.tiger.data.local.MIGRATION_2_3
 import com.ssafy.s15p21a206.tiger.data.local.MIGRATION_3_4
 import com.ssafy.s15p21a206.tiger.data.local.MIGRATION_4_5
+import com.ssafy.s15p21a206.tiger.data.local.MIGRATION_5_6
 import com.ssafy.s15p21a206.tiger.data.local.TigerDatabase
 import com.ssafy.s15p21a206.tiger.episode.SessionBundleStore
 import com.ssafy.s15p21a206.tiger.episode.SessionRepository
@@ -31,7 +32,7 @@ class TigerApplication : Application() {
     val database: TigerDatabase by lazy {
         Room
             .databaseBuilder(this, TigerDatabase::class.java, "tiger.db")
-            .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+            .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
             .build()
     }
 

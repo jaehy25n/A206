@@ -21,9 +21,6 @@ data class CaptureSessionEntity(
     val recordingStartNs: Long,
     val recordingEndNs: Long?,
     val bundlePath: String,
-    val exportState: String = "NOT_EXPORTED",
-    val exportTreeUri: String? = null,
-    val exportFailureReason: String? = null,
     val recordingStartEpochMs: Long = 0L,
     /**
      * 수집을 시작할 때 입력받은 Task와 Object.
@@ -118,16 +115,6 @@ interface CaptureSessionDao {
     @Query("UPDATE sessions SET uploadState = 'FAILED' WHERE uploadState = 'UPLOADING'")
     suspend fun failInterruptedUploads()
 
-    @Query(
-        "UPDATE sessions SET exportState = :state, exportTreeUri = :treeUri, exportFailureReason = :failureReason WHERE sessionId = :sessionId",
-    )
-    suspend fun updateExport(
-        sessionId: String,
-        state: String,
-        treeUri: String?,
-        failureReason: String?,
-    )
-
     @Query("SELECT * FROM sessions WHERE sessionId = :sessionId AND recordingState = 'COMPLETED' LIMIT 1")
     suspend fun completedSession(sessionId: String): CaptureSessionEntity?
 
@@ -189,7 +176,7 @@ interface CaptureLogDao {
     suspend fun clearAll()
 }
 
-@Database(entities = [CaptureSessionEntity::class, EpisodeMarkerEntity::class, CaptureLogEntity::class], version = 5, exportSchema = false)
+@Database(entities = [CaptureSessionEntity::class, EpisodeMarkerEntity::class, CaptureLogEntity::class], version = 6, exportSchema = false)
 abstract class TigerDatabase : RoomDatabase() {
     abstract fun captureSessionDao(): CaptureSessionDao
 
@@ -254,4 +241,50 @@ val SESSION_METADATA_MIGRATION_SQL =
                 FROM episode_markers WHERE episode_markers.sessionId = sessions.sessionId
             ), '')
         """,
+    )
+
+val MIGRATION_5_6 =
+    object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            EXPORT_REMOVAL_MIGRATION_SQL.forEach(db::execSQL)
+        }
+    }
+
+/**
+ * SAF 내보내기를 걷어 내면서 그 세 컬럼을 지운다.
+ *
+ * `DROP COLUMN`을 쓰지 않는다. SQLite가 그것을 받는 것은 3.35부터이고 minSdk 28의 기기에는 더 낮은
+ * 버전이 실린다. 테이블을 다시 만들어 옮긴다.
+ *
+ * 컬럼을 남겨 두는 쪽이 싸 보이지만 그렇지 않다. Room은 엔티티에서 만든 스키마와 실제 스키마를
+ * 견주므로, 엔티티에서만 빼면 불일치로 잡힌다. 남기려면 쓰지 않는 필드를 엔티티에 영구히 들고
+ * 있어야 한다.
+ *
+ * 2→3이 이 컬럼들을 더하는 이관은 그대로 둔다. 버전 2에서 올라오는 기기는 여전히 그 길을 지나야
+ * 하고, 이관 이력은 지난 일이라 고쳐 쓰는 것이 아니다.
+ */
+val EXPORT_REMOVAL_MIGRATION_SQL =
+    listOf(
+        """
+        CREATE TABLE sessions_without_export (
+            sessionId TEXT NOT NULL PRIMARY KEY,
+            displayNumber INTEGER NOT NULL,
+            recordingState TEXT NOT NULL,
+            uploadState TEXT NOT NULL,
+            recordingStartNs INTEGER NOT NULL,
+            recordingEndNs INTEGER,
+            bundlePath TEXT NOT NULL,
+            recordingStartEpochMs INTEGER NOT NULL,
+            task TEXT NOT NULL,
+            objectName TEXT NOT NULL
+        )
+        """,
+        """
+        INSERT INTO sessions_without_export
+        SELECT sessionId, displayNumber, recordingState, uploadState, recordingStartNs, recordingEndNs,
+               bundlePath, recordingStartEpochMs, task, objectName
+        FROM sessions
+        """,
+        "DROP TABLE sessions",
+        "ALTER TABLE sessions_without_export RENAME TO sessions",
     )

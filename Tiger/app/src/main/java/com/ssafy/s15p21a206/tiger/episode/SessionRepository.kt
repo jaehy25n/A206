@@ -46,15 +46,6 @@ class SessionRepository(
 
     suspend fun failInterruptedUploads() = sessionDao.failInterruptedUploads()
 
-    suspend fun exportFor(sessionId: String): SessionExport? =
-        sessionDao
-            .session(sessionId)
-            ?.takeIf { bundleStore.isManagedCompletedDirectory(it.bundlePath) }
-            ?.toSessionExport()
-
-    suspend fun updateExport(export: SessionExport) =
-        sessionDao.updateExport(export.sessionId, export.state.name, export.treeUri, export.failureReason)
-
     /**
      * staging에 남은 Session을 구제한다.
      *
@@ -190,6 +181,3 @@ private fun EpisodeMarkerEntity.toEpisodeMarker() =
 
 private fun EpisodeMarker.toEntity() =
     EpisodeMarkerEntity(episodeId, sessionId, startTimestampNs, endTimestampNs, task, objectName, outcome.name)
-
-private fun CaptureSessionEntity.toSessionExport() =
-    SessionExport(sessionId, ExportState.valueOf(exportState), exportTreeUri, exportFailureReason)

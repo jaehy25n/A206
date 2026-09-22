@@ -290,13 +290,6 @@ class SessionRepositoryTest {
 
         override suspend fun failInterruptedUploads() = Unit
 
-        override suspend fun updateExport(
-            sessionId: String,
-            state: String,
-            treeUri: String?,
-            failureReason: String?,
-        ) = Unit
-
         override suspend fun completedSession(sessionId: String): CaptureSessionEntity? =
             values[sessionId]?.takeIf {
                 it.recordingState ==

@@ -9,7 +9,6 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.ssafy.s15p21a206.tiger.R
-import com.ssafy.s15p21a206.tiger.episode.ExportState
 import com.ssafy.s15p21a206.tiger.episode.SessionSummary
 import com.ssafy.s15p21a206.tiger.episode.UploadState
 import com.ssafy.s15p21a206.tiger.string
@@ -80,9 +79,6 @@ class SessionDetailObjectTest {
                 summary = summary,
                 onBack = {},
                 onUpload = {},
-                exportState = ExportState.NOT_EXPORTED,
-                exportMessage = null,
-                onExport = {},
                 onDelete = {},
                 deleteFailureReason = null,
                 uploadFailureReason = null,
