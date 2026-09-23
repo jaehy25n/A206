@@ -12,6 +12,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/EEActionChunk.msg"
   "msg/EETarget.msg"
   "msg/ModeState.msg"
+  "msg/MotorState.msg"
   DEPENDENCIES std_msgs geometry_msgs builtin_interfaces
 )
 

@@ -23,7 +23,7 @@ from std_msgs.msg import Float32
 from omx_msgs.msg import EETarget
 
 from . import action_format as af
-from .kinematics import DEFAULT_LOWER, DEFAULT_UPPER, JOINT_NAMES, Kinematics, wrap
+from .kinematics import BASE_X, DEFAULT_LOWER, DEFAULT_UPPER, JOINT_NAMES, Kinematics, wrap
 
 
 class IkNode(Node):
@@ -39,6 +39,9 @@ class IkNode(Node):
         self.declare_parameter('seed_timeout_s', 0.5)          # reuse last command as seed if newer
         self.declare_parameter('workspace_min', [-0.45, -0.45, -0.05])
         self.declare_parameter('workspace_max', [0.45, 0.45, 0.45])
+        # Horizontal reach limit from the joint1 axis [m]. Holding the arm near full
+        # extension (0.40 m) overloads the joint2 XL430 (alarm shutdown), so stay well inside.
+        self.declare_parameter('max_reach_m', 0.32)
         self.declare_parameter('yaw_drop_warn_deg', 20.0)
 
         p = self.get_parameter
@@ -52,6 +55,7 @@ class IkNode(Node):
         self.seed_timeout = float(p('seed_timeout_s').value)
         self.ws_min = [float(v) for v in p('workspace_min').value]
         self.ws_max = [float(v) for v in p('workspace_max').value]
+        self.max_reach = float(p('max_reach_m').value)
         self.yaw_warn = math.radians(float(p('yaw_drop_warn_deg').value))
 
         self.q_now = None                 # from /joint_states (5 arm joints)
@@ -86,6 +90,12 @@ class IkNode(Node):
                     f'target {axis}={p[i]:.3f} outside workspace box, holding',
                     throttle_duration_sec=2.0)
                 return
+        reach = math.hypot(p[0] - BASE_X, p[1])
+        if reach > self.max_reach:
+            self.get_logger().warn(
+                f'target reach {reach:.3f} m > max_reach_m {self.max_reach:.2f} (joint2 overload risk), holding',
+                throttle_duration_sec=2.0)
+            return
 
         now = self.get_clock().now()
         seed = self.q_now

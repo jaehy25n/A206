@@ -21,6 +21,7 @@ struct MotorConfig
   uint32_t profile_velocity{50};
   uint32_t profile_acceleration{25};
   uint16_t position_p_gain{1000};
+  uint16_t position_i_gain{0};
   uint16_t position_d_gain{1000};
   uint16_t goal_current{0};       // used only when operating_mode == 5
 };
@@ -30,6 +31,7 @@ struct MotorState
   int32_t position_ticks{0};
   int32_t velocity_raw{0};        // unit 0.229 rpm
   int16_t current_raw{0};         // XL330: mA, XL430: load in 0.1 %
+  int16_t pwm_raw{0};             // Present PWM, 885 = 100 %
   uint8_t temperature_c{0};
   uint16_t voltage_raw{0};        // unit 0.1 V
   uint8_t hardware_error{0};
@@ -44,8 +46,12 @@ public:
   virtual bool open(std::string & err) = 0;
   virtual void close() = 0;
 
-  // Ping every motor, torque off, write configuration (EEPROM fields only if changed).
-  virtual bool configure(const std::vector<MotorConfig> & motors, std::string & err) = 0;
+  // Ping every motor, clear hardware errors (reboot, if allowed), torque off,
+  // write configuration (EEPROM fields only if changed). `warn` collects
+  // non-fatal findings for the caller to log.
+  virtual bool configure(
+    const std::vector<MotorConfig> & motors, bool reboot_on_hardware_error,
+    std::string & err, std::string & warn) = 0;
 
   // Present position / velocity / current for every motor (one SyncRead).
   virtual bool readStates(std::vector<MotorState> & out, std::string & err) = 0;
@@ -59,6 +65,9 @@ public:
 
   virtual const char * name() const = 0;
 };
+
+// Human readable decode of the Hardware Error Status register (addr 70).
+std::string describeHardwareError(uint8_t status);
 
 std::unique_ptr<DxlBus> makeRealBus(const std::string & port_name, int baud_rate);
 

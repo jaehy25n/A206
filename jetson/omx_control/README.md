@@ -58,7 +58,20 @@ ros2 topic pub -1 /e_stop   std_msgs/msg/Bool   "{data: true}"
 
 # 라이브 그래프를 rqt_graph 스타일 DOT/PNG로
 ros2 run omx_bringup graph_dump.py -o rosgraph.dot --png
+
+# 모터 진단
+ros2 topic echo /dxl_driver/motor_state           # 스택 실행 중: PWM·부하·온도·전압·알람 (10 Hz)
+ros2 topic echo /dxl_driver/tracking_error        # 목표 − 실제 [rad], 처짐 확인
+ros2 run omx_driver dxl_scan.py                   # 드라이버 OFF: 어떤 ID가 어떤 baud에 응답하나
+ros2 run omx_driver dxl_diag.py                   # 드라이버 OFF: EEPROM/RAM 전체 스냅샷
+ros2 run omx_driver dxl_diag.py --watch 0.5 --csv hold.csv   # 유지 테스트 기록
+ros2 run omx_driver dxl_diag.py --reboot 12       # 특정 모터 알람 해제
+ros2 run omx_driver fit_sag.py --duration 90      # 중력 처짐 보정(goal_offset, compliance) 식별
 ```
+
+중력 처짐 보정: 드라이버가 URDF 질량 + `payload_mass_kg`(웹캠·마운트, link5 기준 `payload_offset_xyz`)로
+joint2~4의 중력 토크를 계산해 `offset = goal_offset_rad − sag_compliance_rad_per_nm × τ`를 명령에 더한다.
+I 게인은 쓰지 않는다(정지 부하에서 모터가 중력 전체를 떠안아 XL430 과부하 셧다운).
 
 ## 테스트
 

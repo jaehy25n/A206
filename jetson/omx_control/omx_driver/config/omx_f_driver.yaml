@@ -10,6 +10,7 @@ dxl_driver_node:
     command_timeout_ms: 200.0        # no /joint_command for this long -> hold
     max_velocity_rad_s: 1.5          # goal ramp limit applied per joint
     torque_on_start: false
+    reboot_on_hardware_error: true   # motors in alarm shutdown (InputVoltage/Overload/...) are rebooted once at start
 
     joint_names: [joint1, joint2, joint3, joint4, joint5, gripper_joint_1]
     dxl_ids: [11, 12, 13, 14, 15, 16]
@@ -29,8 +30,27 @@ dxl_driver_node:
     drive_mode: 4                    # bit2: time-based profile
     profile_velocity: 50             # ms (time-based)
     profile_acceleration: 25         # ms (time-based)
-    position_p_gain: 1000
-    position_d_gain: 1000
+    # Position PID per joint [joint1..joint5, gripper]. Register units: P/128, I/65536, D/16.
+    # ROBOTIS baseline: P 1000, I 0, D 1000.
+    # KEEP I = 0 on the arm joints. With P only, the pitch joints rest on the gearbox friction
+    # (joint2 PWM ~20 %); an I term makes the motor carry the whole gravity load (~56 % PWM
+    # measured) and the XL430 overload protection cuts torque after a while.
+    position_p_gains: [1000, 2000, 2000, 1500, 1000, 1000]
+    position_i_gains: [0, 0, 0, 0, 0, 0]
+    position_d_gains: [1000, 1000, 1000, 1000, 1000, 1000]
+
+    # ---- feed-forward gravity sag compensation ----
+    # offset_j = goal_offset_rad[j] - sag_compliance_rad_per_nm[j] * gravity_torque_j(q_cmd)
+    # gravity_torque comes from the planar link model (URDF masses) + the payload below.
+    # Identify both arrays with:  ros2 run omx_driver fit_sag.py   (see jetson_runbook 7c)
+    # Constant part, measured 2026-09-23 at the working pose ("정자세"), P 2000 on joints 2-4:
+    goal_offset_rad: [0.0, -0.023, -0.015, -0.009, 0.0, 0.0]
+    # Load-proportional part [rad per N m]; 0 = constant offsets only (until identified)
+    sag_compliance_rad_per_nm: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    # Wrist camera + mount as a point mass in the link5 (joint5) frame [m]:
+    # between the joint5 motor and the gripper motor, above the link. TODO: weigh it.
+    payload_mass_kg: 0.065
+    payload_offset_xyz: [0.015, 0.0, 0.04]
     gripper_goal_current: 600        # mA, XL330 in current-based position mode
 
     # mock bus

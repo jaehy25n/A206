@@ -14,6 +14,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(diagnostic_msgs REQUIRED)
 find_package(dynamixel_sdk REQUIRED)
+find_package(omx_msgs REQUIRED)
 
 add_executable(dxl_driver_node
   src/dxl_driver_node.cpp
@@ -24,10 +25,13 @@ target_include_directories(dxl_driver_node PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 ament_target_dependencies(dxl_driver_node
-  rclcpp sensor_msgs std_srvs diagnostic_msgs dynamixel_sdk
+  rclcpp sensor_msgs std_srvs diagnostic_msgs dynamixel_sdk omx_msgs
 )
 
 install(TARGETS dxl_driver_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+install(PROGRAMS scripts/dxl_scan.py scripts/dxl_diag.py scripts/fit_sag.py
   DESTINATION lib/${PROJECT_NAME}
 )
 install(DIRECTORY config launch udev

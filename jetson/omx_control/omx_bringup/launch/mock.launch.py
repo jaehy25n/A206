@@ -43,8 +43,11 @@ def generate_launch_description():
         DeclareLaunchArgument('time_scale', default_value='1.0'),
 
         # A. driver (mock bus) + robot_state_publisher
+        # mock bus has no gravity: disable the feed-forward sag offsets tuned for the real arm
         Node(package='omx_driver', executable='dxl_driver_node', name='dxl_driver_node',
-             parameters=[driver_cfg, limits, {'mock': True}], output='screen'),
+             parameters=[driver_cfg, limits,
+                         {'mock': True, 'goal_offset_rad': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}],
+             output='screen'),
         Node(package='robot_state_publisher', executable='robot_state_publisher',
              parameters=[{'robot_description': robot_description}], output='screen'),
 

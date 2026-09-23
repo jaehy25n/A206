@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cmath>
 #include <sstream>
+#include <thread>
 
 #include "dynamixel_sdk/dynamixel_sdk.h"
 
@@ -18,15 +19,17 @@ constexpr uint16_t ADDR_OPERATING_MODE = 11;          // 1 B, EEPROM
 constexpr uint16_t ADDR_TORQUE_ENABLE = 64;           // 1 B
 constexpr uint16_t ADDR_HARDWARE_ERROR_STATUS = 70;   // 1 B
 constexpr uint16_t ADDR_POSITION_D_GAIN = 80;         // 2 B
+constexpr uint16_t ADDR_POSITION_I_GAIN = 82;         // 2 B
 constexpr uint16_t ADDR_POSITION_P_GAIN = 84;         // 2 B
 constexpr uint16_t ADDR_GOAL_CURRENT = 102;           // 2 B
 constexpr uint16_t ADDR_PROFILE_ACCELERATION = 108;   // 4 B
 constexpr uint16_t ADDR_PROFILE_VELOCITY = 112;       // 4 B
 constexpr uint16_t ADDR_GOAL_POSITION = 116;          // 4 B
+constexpr uint16_t ADDR_PRESENT_PWM = 124;            // 2 B
 constexpr uint16_t ADDR_PRESENT_CURRENT = 126;        // 2 B
 constexpr uint16_t ADDR_PRESENT_VELOCITY = 128;       // 4 B
 constexpr uint16_t ADDR_PRESENT_POSITION = 132;       // 4 B
-constexpr uint16_t LEN_STATE_BLOCK = 10;              // 126..135 in one read
+constexpr uint16_t LEN_STATE_BLOCK = 12;              // 124..135 in one read
 constexpr uint16_t ADDR_PRESENT_INPUT_VOLTAGE = 144;  // 2 B
 constexpr uint16_t ADDR_PRESENT_TEMPERATURE = 146;    // 1 B
 constexpr uint16_t LEN_HEALTH_BLOCK = 3;              // 144..146
@@ -39,6 +42,22 @@ std::string idStr(uint8_t id, uint16_t addr)
   return os.str();
 }
 }  // namespace
+
+std::string describeHardwareError(uint8_t status)
+{
+  if (status == 0) {
+    return "none";
+  }
+  std::string s;
+  auto add = [&s](const char * name) {s += (s.empty() ? "" : "+"); s += name;};
+  if (status & 0x01) {add("InputVoltage");}
+  if (status & 0x04) {add("Overheating");}
+  if (status & 0x08) {add("MotorEncoder");}
+  if (status & 0x10) {add("ElectricalShock");}
+  if (status & 0x20) {add("Overload");}
+  if (status & 0xC2) {add("unknown-bits");}
+  return s + " (0x" + [status] {std::ostringstream o; o << std::hex << static_cast<int>(status); return o.str();}() + ")";
+}
 
 // ---------------------------------------------------------------------------
 class RealBus : public DxlBus
@@ -76,21 +95,81 @@ public:
     }
   }
 
-  bool configure(const std::vector<MotorConfig> & motors, std::string & err) override
+  bool configure(
+    const std::vector<MotorConfig> & motors, bool reboot_on_hardware_error,
+    std::string & err, std::string & warn) override
   {
     ids_.clear();
     for (const auto & m : motors) {
       ids_.push_back(m.id);
     }
+    // Ping every motor first and report ALL silent ones at once: "13 answers,
+    // 14-16 do not" is far more useful than the first failure alone.
+    std::string found, missing;
     for (const auto & m : motors) {
       uint16_t model = 0;
       uint8_t dxl_err = 0;
       int rc = packet_->ping(port_, m.id, &model, &dxl_err);
-      if (rc != COMM_SUCCESS) {
-        err = idStr(m.id, 0) + "ping failed: " + packet_->getTxRxResult(rc);
-        return false;
+      if (rc == COMM_SUCCESS) {
+        found += (found.empty() ? "" : ", ") + std::to_string(m.id) + "(model " + std::to_string(model) + ")";
+      } else {
+        missing += (missing.empty() ? "" : ", ") + std::to_string(m.id);
       }
     }
+    if (!missing.empty()) {
+      err = "no response from id " + missing + " at " + std::to_string(baud_rate_) + " baud on " +
+        port_name_ + "; responding: " + (found.empty() ? "none" : found) +
+        ". Try: ros2 run omx_driver dxl_scan.py --port " + port_name_;
+      return false;
+    }
+
+    // Hardware Error Status: a motor in alarm shutdown ignores torque-on until
+    // it is rebooted. Report the cause; reboot once if allowed; fail if it persists.
+    std::vector<uint8_t> faulty;
+    for (const auto & m : motors) {
+      uint8_t hw = 0;
+      if (!read1(m.id, ADDR_HARDWARE_ERROR_STATUS, hw, err)) {return false;}
+      if (hw != 0) {
+        faulty.push_back(m.id);
+        warn += "id " + std::to_string(m.id) + " hardware error " + describeHardwareError(hw) +
+          (reboot_on_hardware_error ? " -> rebooting; " : "; ");
+      }
+    }
+    if (!faulty.empty() && reboot_on_hardware_error) {
+      for (auto id : faulty) {
+        uint8_t dxl_err = 0;
+        packet_->reboot(port_, id, &dxl_err);
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(800));
+      std::string still;
+      for (auto id : faulty) {
+        uint8_t hw = 0;
+        if (!read1(id, ADDR_HARDWARE_ERROR_STATUS, hw, err)) {return false;}
+        if (hw != 0) {
+          still += (still.empty() ? "" : ", ") + std::to_string(id) + ": " + describeHardwareError(hw);
+        }
+      }
+      if (!still.empty()) {
+        err = "hardware error persists after reboot (" + still +
+          "). InputVoltage -> check the 12 V supply; Overload -> free the joint; "
+          "Overheating -> let it cool";
+        return false;
+      }
+    } else if (!faulty.empty()) {
+      err = "motors in hardware error state (see warnings); set reboot_on_hardware_error or "
+        "call /dxl_driver/reboot after fixing the cause";
+      return false;
+    }
+    for (const auto & m : motors) {
+      uint16_t v = 0;
+      if (read2(m.id, ADDR_PRESENT_INPUT_VOLTAGE, v, err)) {
+        if (v < 100) {   // 10.0 V: XL430 needs >= 6.5 V, but a healthy 12 V supply reads ~11.5-12.5
+          warn += "id " + std::to_string(m.id) + " input voltage " + std::to_string(v / 10.0) +
+            " V is low (12 V supply connected?); ";
+        }
+      }
+    }
+
     // EEPROM fields can only be written with torque off. Only write when the
     // stored value differs, to spare the EEPROM write cycles.
     for (const auto & m : motors) {
@@ -100,6 +179,7 @@ public:
       if (!ensure1(m.id, ADDR_OPERATING_MODE, m.operating_mode, err)) {return false;}
       // RAM fields: always write
       if (!write2(m.id, ADDR_POSITION_P_GAIN, m.position_p_gain, err)) {return false;}
+      if (!write2(m.id, ADDR_POSITION_I_GAIN, m.position_i_gain, err)) {return false;}
       if (!write2(m.id, ADDR_POSITION_D_GAIN, m.position_d_gain, err)) {return false;}
       if (!write4(m.id, ADDR_PROFILE_ACCELERATION, m.profile_acceleration, err)) {return false;}
       if (!write4(m.id, ADDR_PROFILE_VELOCITY, m.profile_velocity, err)) {return false;}
@@ -108,7 +188,7 @@ public:
       }
     }
     sync_read_state_ = std::make_unique<dynamixel::GroupSyncRead>(
-      port_, packet_, ADDR_PRESENT_CURRENT, LEN_STATE_BLOCK);
+      port_, packet_, ADDR_PRESENT_PWM, LEN_STATE_BLOCK);
     sync_read_health_ = std::make_unique<dynamixel::GroupSyncRead>(
       port_, packet_, ADDR_PRESENT_INPUT_VOLTAGE, LEN_HEALTH_BLOCK);
     sync_read_error_ = std::make_unique<dynamixel::GroupSyncRead>(
@@ -134,10 +214,11 @@ public:
     for (size_t i = 0; i < ids_.size(); ++i) {
       const auto id = ids_[i];
       auto & s = out[i];
-      if (!sync_read_state_->isAvailable(id, ADDR_PRESENT_CURRENT, LEN_STATE_BLOCK)) {
+      if (!sync_read_state_->isAvailable(id, ADDR_PRESENT_PWM, LEN_STATE_BLOCK)) {
         s.valid = false;
         continue;
       }
+      s.pwm_raw = static_cast<int16_t>(sync_read_state_->getData(id, ADDR_PRESENT_PWM, 2));
       s.current_raw = static_cast<int16_t>(sync_read_state_->getData(id, ADDR_PRESENT_CURRENT, 2));
       s.velocity_raw = static_cast<int32_t>(sync_read_state_->getData(id, ADDR_PRESENT_VELOCITY, 4));
       s.position_ticks = static_cast<int32_t>(sync_read_state_->getData(id, ADDR_PRESENT_POSITION, 4));
@@ -223,11 +304,19 @@ private:
       err = idStr(id, addr) + packet_->getTxRxResult(rc);
       return false;
     }
+    // bit7 is the Alert flag: the instruction itself succeeded but the motor
+    // carries a hardware error. configure() deals with it explicitly.
+    dxl_err &= 0x7F;
     if (dxl_err != 0) {
       err = idStr(id, addr) + packet_->getRxPacketError(dxl_err);
       return false;
     }
     return true;
+  }
+  bool read2(uint8_t id, uint16_t addr, uint16_t & v, std::string & err)
+  {
+    uint8_t e = 0;
+    return check(packet_->read2ByteTxRx(port_, id, addr, &v, &e), e, id, addr, err);
   }
   bool write1(uint8_t id, uint16_t addr, uint8_t v, std::string & err)
   {
@@ -288,7 +377,8 @@ public:
   bool open(std::string &) override {return true;}
   void close() override {}
 
-  bool configure(const std::vector<MotorConfig> & motors, std::string & err) override
+  bool configure(
+    const std::vector<MotorConfig> & motors, bool, std::string & err, std::string &) override
   {
     if (motors.size() != pos_.size()) {
       err = "mock: motor count (" + std::to_string(motors.size()) +
@@ -319,6 +409,8 @@ public:
       // ticks/s -> rev/s -> rpm -> raw (0.229 rpm per unit)
       s.velocity_raw = static_cast<int32_t>(std::lround(vel_[i] / 4096.0 * 60.0 / 0.229));
       s.current_raw = 0;
+      // fake effort: proportional to how far the goal is ahead (so plots look alive)
+      s.pwm_raw = static_cast<int16_t>(std::clamp((goal_[i] - pos_[i]) * 8.0, -885.0, 885.0));
       s.valid = true;
     }
     return true;
