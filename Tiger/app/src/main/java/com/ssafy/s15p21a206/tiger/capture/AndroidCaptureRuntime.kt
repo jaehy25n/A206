@@ -510,7 +510,7 @@ class AndroidCaptureRuntime(
          * 돌리게 하면 세로 모양이 된 이미지를 가로 표시 기하에 맞추느라 크게 잘라내고 확대해,
          * 비율이 어긋나고 화질이 떨어진다. 수집 화면을 가로로 고정해 두므로 값이 바뀌지 않는다.
          */
-        val SENSOR_DISPLAY_ROTATION = Surface.ROTATION_90
+        const val SENSOR_DISPLAY_ROTATION = Surface.ROTATION_90
 
         /** capture session 닫힘을 기다리는 한계. 넘기면 기다림을 포기하고 나머지 정리를 이어간다. */
         const val CLOSE_TIMEOUT_SECONDS = 2L
