@@ -50,7 +50,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.ssafy.s15p21a206.tiger.R
-import com.ssafy.s15p21a206.tiger.episode.RecordingResolution
 import com.ssafy.s15p21a206.tiger.ui.common.DestructiveConfirmationDialog
 import com.ssafy.s15p21a206.tiger.ui.theme.CaptureCenterGuide
 import com.ssafy.s15p21a206.tiger.ui.theme.CaptureControlDisabled
@@ -289,30 +288,6 @@ fun CaptureWorkspaceExitControls(
             )
         }
     }
-}
-
-/**
- * 이번 Session이 녹화할 해상도를 프리뷰 위에 표시한다.
- *
- * Session마다 다르게 고를 수 있으므로, 촬영을 시작하기 전에 무엇으로 찍는지 확인할 수 있어야 한다.
- */
-@Composable
-@Suppress("FunctionName")
-fun CaptureWorkspaceResolution(
-    resolution: RecordingResolution,
-    modifier: Modifier = Modifier,
-) {
-    val label = stringResource(R.string.capture_resolution_option, resolution.width, resolution.height)
-    val description = stringResource(R.string.capture_resolution_content_description, resolution.width, resolution.height)
-    Text(
-        text = label,
-        style = TigerText.overlayBadge,
-        modifier =
-            modifier
-                .background(CaptureOverlayScrim, CircleShape)
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .semantics { contentDescription = description },
-    )
 }
 
 /**

@@ -120,7 +120,7 @@ stream이 함께 커지면서 대상 기기가 stream 조합을 거부한다(`Er
 
 ### 녹화 해상도 선택
 
-`textureSize`는 Session마다 다를 수 있다. 수집자가 수집 정보 입력 화면에서 `1920×1080` 또는
+`textureSize`는 Session마다 다를 수 있다. 수집자가 Session 전에 카메라 설정에서 `1920×1080` 또는
 `1280×720`을 고르면, `INITIALIZING`으로 들어가기 전에 그 `textureSize`와 `imageSize` 640×480을
 함께 가진 ARCore Camera config를 골라 `setCameraConfig()`로 지정한다. 위 문단대로 `imageSize`는
 항상 640×480으로 남긴다.
@@ -132,8 +132,8 @@ stream이 함께 커지면서 대상 기기가 stream 조합을 거부한다(`Er
 따른다. 수집 전에는 사용자가 고른 값이고, 수집을 시작하면 ARCore가 실제로 고른 `textureSize`로
 갱신된다. 위 폴백으로 기본 config에 머문 Session에서도 프리뷰와 저장본이 어긋나지 않는다.
 
-유휴 프리뷰는 Camera2 경로라 stream 크기가 capture session을 만들 때 정해진다. 수집 정보 입력을
-확정할 때 고른 해상도가 직전과 다르면 `SurfaceTexture` 버퍼를 바꾼 뒤 session을 다시 연다.
+유휴 프리뷰는 Camera2 경로라 stream 크기가 capture session을 만들 때 정해진다. 카메라 설정에서
+고른 해상도가 직전과 다르면 `SurfaceTexture` 버퍼를 바꾼 뒤 session을 다시 연다.
 버퍼만 바꾸면 이미 열린 session에는 반영되지 않는다.
 
 이 선택은 상태와 전이를 바꾸지 않는다. `metadata.json`의 `image_width`·`image_height`가 고른

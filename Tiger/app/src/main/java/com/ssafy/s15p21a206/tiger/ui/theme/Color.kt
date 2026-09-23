@@ -44,6 +44,16 @@ val CaptureOverlaySupporting = Color(0xE6FFFFFF)
 /** 거치 기준선의 색. 프리뷰 위에서 보여야 하지만 1dp 선이 영상의 윤곽처럼 읽히지 않게 조금 비친다. */
 val CaptureCenterGuide = Color(0xB3FFFFFF)
 
+/**
+ * 카메라 설정에서 고른 항목의 판과 글자. 어두운 시트 위에서 가장 대비가 큰 조합이다.
+ *
+ * [CaptureStart]를 쓰지 않는다. 그 색은 "시작"이라는 뜻을 이미 갖고 있다.
+ */
+val CaptureChoiceSelected = Color.White
+
+// getter로 둔다. [InkStrong]이 이 파일 아래에 선언돼 있어, 필드로 읽으면 초기화 전의 0(투명)을 읽는다.
+val CaptureChoiceSelectedInk: Color get() = InkStrong
+
 /** 비활성 제어의 색. 의미색을 흐리기만 하면 여전히 그 색으로 읽히므로 색상을 빼고 중성으로 떨어뜨린다. */
 val CaptureControlDisabled = Color(0x61FFFFFF)
 

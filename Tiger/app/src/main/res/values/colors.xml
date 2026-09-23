@@ -7,4 +7,9 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <!--
+        카메라 설정 시트의 판. ui/theme/Color.kt의 CaptureOverlayScrim과 같은 회색이되 불투명하다.
+        배지 크기의 판은 조금 비쳐도 되지만, 시트는 모달이라 뒤의 제어가 비쳐 보이면 눌릴 것처럼 읽힌다.
+    -->
+    <color name="capture_camera_sheet">#FF3A3A3C</color>
 </resources>

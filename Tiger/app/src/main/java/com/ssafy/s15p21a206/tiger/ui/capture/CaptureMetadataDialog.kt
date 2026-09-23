@@ -2,15 +2,11 @@ package com.ssafy.s15p21a206.tiger.ui.capture
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -18,7 +14,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -26,25 +21,23 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.ssafy.s15p21a206.tiger.R
-import com.ssafy.s15p21a206.tiger.episode.RecordingInputValidator
-import com.ssafy.s15p21a206.tiger.episode.RecordingResolution
-import com.ssafy.s15p21a206.tiger.ui.theme.TigerText
 
 /**
- * 수집을 시작하기 전에 Task·Object·해상도를 받는다.
+ * 수집을 시작하기 전에 Task·Object를 받는다.
+ *
+ * 무엇을 찍는지만 묻는다. 해상도처럼 어떻게 찍는지는 초점·ISO와 함께 카메라 설정 시트에서
+ * 고른다. 셋 다 Session 내내 고정되는 촬영 조건이라 한곳에서 정한다.
  *
  * 프리뷰나 카메라를 알지 못한다. 값과 콜백만 받고, 확정이 무엇을 여는지는 부모가 정한다.
  *
@@ -58,10 +51,8 @@ import com.ssafy.s15p21a206.tiger.ui.theme.TigerText
 internal fun CaptureMetadataDialog(
     task: String,
     objectName: String,
-    resolution: RecordingResolution,
     onTaskChange: (String) -> Unit,
     onObjectNameChange: (String) -> Unit,
-    onResolutionChange: (RecordingResolution) -> Unit,
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
 ) {
@@ -130,48 +121,7 @@ internal fun CaptureMetadataDialog(
                                 },
                             ),
                     )
-                    RecordingResolutionPicker(selected = resolution, onSelect = onResolutionChange)
                 }
-            }
-        }
-    }
-}
-
-/**
- * 이번 Session으로 녹화할 해상도를 고른다.
- *
- * Session마다 다르게 갈 수 있으므로 Task·Object와 함께 매번 고른다. 후보는 실기기에서 확인한
- * ARCore Camera config의 `textureSize`이며, 순서는 [RecordingInputValidator.supportedResolutions]를 따른다.
- */
-@Suppress("FunctionName")
-@Composable
-private fun RecordingResolutionPicker(
-    selected: RecordingResolution,
-    onSelect: (RecordingResolution) -> Unit,
-) {
-    Column(modifier = Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            text = stringResource(R.string.capture_metadata_resolution),
-            style = TigerText.formLabel,
-        )
-        RecordingInputValidator.supportedResolutions.forEach { option ->
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .selectable(
-                            selected = option == selected,
-                            role = Role.RadioButton,
-                            onClick = { onSelect(option) },
-                        ).padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // 선택은 Row가 받는다. RadioButton에 onClick을 주면 터치 영역이 둘로 갈린다.
-                RadioButton(selected = option == selected, onClick = null)
-                Text(
-                    text = stringResource(R.string.capture_resolution_option, option.width, option.height),
-                    modifier = Modifier.padding(start = 8.dp),
-                )
             }
         }
     }

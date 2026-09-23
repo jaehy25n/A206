@@ -74,6 +74,8 @@ internal class CaptureDriver(
     val requestExit: () -> Unit,
     val confirmStop: () -> Unit,
     val confirmMetadata: () -> Unit,
+    /** 녹화 해상도를 바꾼다. 유휴 프리뷰를 그 크기로 다시 연다. */
+    val selectResolution: (RecordingResolution) -> Unit,
     /** 작업 공간을 벗어날 때 유휴 프리뷰 Camera2 session을 놓는다. */
     val releaseIdlePreview: () -> Unit,
     /** 초점·ISO·셔터를 바꾼다. 바뀐 값은 곧바로 프리뷰에 걸린다. */
@@ -458,11 +460,12 @@ internal fun rememberCaptureDriver(
             onIntent(CaptureIntent.StopDismissed)
             finalizeCapture()
         },
-        // 확정한 선택만 기억한다. 취소하고 나간 선택은 다음 수집의 기본값이 되지 않는다.
-        confirmMetadata = {
-            val chosen = state.resolution
+        confirmMetadata = { onIntent(CaptureIntent.ConfirmMetadata) },
+        // 다른 촬영 조건처럼 고르는 즉시 기억하고 프리뷰에 건다. Session이 시작되면 상태 전이가 막는다.
+        selectResolution = select@{ chosen ->
+            if (state.phase != CaptureWorkspaceControlState.Idle || state.busy) return@select
+            onIntent(CaptureIntent.SelectResolution(chosen))
             resolutionStore.save(chosen)
-            onIntent(CaptureIntent.ConfirmMetadata)
             // 유휴 프리뷰도 고른 해상도로 다시 연다. Camera2는 session을 만들 때 stream 크기를
             // 정하므로, 버퍼 크기만 바꾸면 이미 열린 session에는 반영되지 않는다.
             if (state.idlePreviewSize != chosen) {

@@ -3,7 +3,6 @@ package com.ssafy.s15p21a206.tiger.ui.capture
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -92,41 +91,43 @@ internal fun CaptureWorkspace(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top,
             ) {
-                Column(
+                Row(
                     // fill = false라야 배지가 제 너비만 쓰고, 길어져도 닫기 버튼 자리를 침범하지 않는다.
                     modifier = Modifier.weight(1f, fill = false),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    CaptureWorkspaceStatus(state = state.phase)
-                    // 어느 해상도로 찍는지 촬영 직전에 보여 준다. Session마다 달라질 수 있다.
-                    CaptureWorkspaceResolution(resolution = state.resolution)
-                    // 촬영 조건은 Session 시작 전에만 만질 수 있다. 시작한 뒤에도 패널은 열리며,
-                    // 무엇으로 찍고 있는지 읽을 수 있게 값만 보여 준다.
-                    CaptureCameraPanelButton(
-                        enabled = !state.manualCamera.panelOpen,
-                        onClick = { onIntent(CaptureIntent.ToggleManualCameraPanel(true)) },
-                    )
+                    // 한 자리를 두 구간이 나눠 쓴다. Session 전에는 상태가 늘 IDLE이라 배지가 알려 줄 것이
+                    // 없고, 할 일은 촬영 조건(해상도 포함)을 정하는 것이다. 시작한 뒤에는 조건이 잠겨
+                    // 설정을 열 일이 없고, 알아야 할 것은 tracking 상태다.
+                    if (state.phase == CaptureWorkspaceControlState.Idle) {
+                        CaptureCameraSettingsButton(
+                            // Session 요청이 걸린 사이에는 열지 않는다.
+                            enabled = !state.busy,
+                            onClick = { onIntent(CaptureIntent.ToggleManualCameraPanel(true)) },
+                        )
+                    } else {
+                        CaptureWorkspaceStatus(state = state.phase)
+                    }
                 }
                 CaptureWorkspaceExitControls(policy = state.policy, onExit = driver.requestExit)
             }
         }
         if (state.manualCamera.panelOpen && state.chromeVisible) {
-            CaptureCameraPanel(
-                state = state.manualCamera,
-                // Session이 시작되면 값을 잠근다. 촬영 도중 조건이 바뀌면 그 Session의 데이터는
-                // 한 조건으로 찍혔다고 말할 수 없게 된다.
-                enabled = state.phase == CaptureWorkspaceControlState.Idle,
-                onChange = driver.editManualCamera,
-                onFixWhiteBalance = driver.fixWhiteBalance,
-                onClearWhiteBalance = driver.releaseWhiteBalance,
-                onClose = { onIntent(CaptureIntent.ToggleManualCameraPanel(false)) },
-                modifier =
-                    Modifier
-                        .align(Alignment.TopEnd)
-                        .safeDrawingPadding()
-                        // 닫기 버튼 아래에서 시작한다. 겹쳐 두면 세션을 벗어날 길이 가려진다.
-                        .padding(top = 92.dp, end = 20.dp, bottom = 20.dp),
-            )
+            val closePanel = { onIntent(CaptureIntent.ToggleManualCameraPanel(false)) }
+            CaptureCameraSheet(onDismiss = closePanel) {
+                CaptureCameraPanel(
+                    state = state.manualCamera,
+                    resolution = state.resolution,
+                    // 시트는 Idle에서만 열리지만, 연 채로 Session 요청이 걸린 사이에도 값을 받지 않는다.
+                    enabled = state.phase == CaptureWorkspaceControlState.Idle && !state.busy,
+                    onChange = driver.editManualCamera,
+                    onResolutionChange = driver.selectResolution,
+                    onFixWhiteBalance = driver.fixWhiteBalance,
+                    onClearWhiteBalance = driver.releaseWhiteBalance,
+                    onClose = closePanel,
+                )
+            }
         }
         SnackbarHost(driver.snackbarHostState, Modifier.align(Alignment.TopCenter).padding(top = 80.dp))
         if (!state.showMetadataDialog && state.chromeVisible) {
@@ -145,10 +146,8 @@ internal fun CaptureWorkspace(
         CaptureMetadataDialog(
             task = state.task,
             objectName = state.objectName,
-            resolution = state.resolution,
             onTaskChange = { onIntent(CaptureIntent.EditTask(it)) },
             onObjectNameChange = { onIntent(CaptureIntent.EditObjectName(it)) },
-            onResolutionChange = { onIntent(CaptureIntent.SelectResolution(it)) },
             onConfirm = driver.confirmMetadata,
             onCancel = { onIntent(CaptureIntent.Close) },
         )

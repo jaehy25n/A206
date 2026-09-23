@@ -208,7 +208,10 @@ internal fun CaptureUiState.reduce(intent: CaptureIntent): CaptureUiState =
         CaptureIntent.Close -> CaptureUiState()
         is CaptureIntent.EditTask -> copy(task = intent.value)
         is CaptureIntent.EditObjectName -> copy(objectName = intent.value)
-        is CaptureIntent.SelectResolution -> copy(resolution = intent.value)
+        // 해상도도 초점·ISO와 같은 촬영 조건이다. Session이 시작되면 바뀌지 않는다. 시작 직전에
+        // ARCore가 실제로 고른 값으로 맞추는 갱신은 아직 Idle일 때 오므로 여기에 걸리지 않는다.
+        is CaptureIntent.SelectResolution ->
+            if (phase == CaptureWorkspaceControlState.Idle) copy(resolution = intent.value) else this
         is CaptureIntent.ManualCameraProfiled ->
             copy(
                 manualCamera =
@@ -225,7 +228,14 @@ internal fun CaptureUiState.reduce(intent: CaptureIntent): CaptureUiState =
                 manualCamera.capabilities == null -> this
                 else -> copy(manualCamera = manualCamera.copy(config = manualCamera.capabilities.coerce(intent.value)))
             }
-        is CaptureIntent.ToggleManualCameraPanel -> copy(manualCamera = manualCamera.copy(panelOpen = intent.open))
+        // 촬영 중에는 설정을 열지 않는다. 시트는 모달이라 열려 있는 동안 정지를 누를 수 없고,
+        // 값도 잠겨 있어 열어 봐야 할 일이 없다. 닫는 요청은 언제나 받는다.
+        is CaptureIntent.ToggleManualCameraPanel ->
+            if (intent.open && phase != CaptureWorkspaceControlState.Idle) {
+                this
+            } else {
+                copy(manualCamera = manualCamera.copy(panelOpen = intent.open))
+            }
         CaptureIntent.ConfirmMetadata -> copy(showMetadataDialog = false)
         is CaptureIntent.IdlePreviewResized -> copy(idlePreviewSize = intent.value)
         CaptureIntent.PreviewFrameArrived -> if (previewFailed) this else copy(previewReady = true)

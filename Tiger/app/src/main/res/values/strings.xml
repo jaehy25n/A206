@@ -88,10 +88,8 @@
     <string name="capture_metadata_title">수집 정보 입력</string>
     <string name="capture_metadata_task">Task</string>
     <string name="capture_metadata_object">Object</string>
-    <string name="capture_metadata_resolution">녹화 해상도</string>
     <string name="capture_metadata_confirm">준비 완료</string>
     <string name="capture_resolution_option">%1$d×%2$d</string>
-    <string name="capture_resolution_content_description">녹화 해상도 %1$d×%2$d</string>
     <string name="capture_control_start">세션 시작</string>
     <string name="capture_control_resume">작업 구간 시작</string>
     <string name="capture_control_pause">작업 구간 일시 정지</string>
@@ -100,8 +98,9 @@
     <string name="capture_finalizing_warning">저장이 끝날 때까지 앱을 닫지 마세요.</string>
     <string name="capture_preview_failed">프리뷰를 준비할 수 없습니다. 카메라 권한을 허용한 뒤 수집 화면을 다시 열어 주세요.</string>
     <string name="capture_operation_failed">수집 조작을 완료할 수 없습니다. 다시 시도해 주세요.</string>
-    <string name="capture_camera_title">카메라</string>
-    <string name="capture_camera_apply">적용</string>
+    <string name="capture_camera_title">카메라 설정</string>
+    <string name="capture_camera_close">카메라 설정 닫기</string>
+    <string name="capture_camera_resolution">녹화 해상도</string>
     <string name="capture_camera_reading">카메라 정보를 읽는 중입니다.</string>
     <string name="capture_camera_focus">초점</string>
     <string name="capture_camera_focus_value">%1$.2f D</string>

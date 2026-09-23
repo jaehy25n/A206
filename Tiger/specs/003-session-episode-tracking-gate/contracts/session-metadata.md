@@ -148,7 +148,7 @@ Session 번들의 `metadata.json`이 수신 측에 제공하는 형식. 기존 �
 
 ## 녹화 해상도 (2026-09-16 갱신)
 
-`main_rgb.mp4`의 해상도는 Session마다 다를 수 있다. 수집자가 수집 정보 입력 화면에서
+`main_rgb.mp4`의 해상도는 Session마다 다를 수 있다. 수집자가 Session 전에 카메라 설정에서
 `1920×1080` 또는 `1280×720`을 고르며, 기본값은 `1920×1080`이다.
 
 `image_width` × `image_height`는 언제나 그 Session이 실제로 녹화한 해상도이고, `fx`·`fy`·`cx`·`cy`도
