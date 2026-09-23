@@ -120,3 +120,19 @@ Room 데이터베이스와 `SessionRepository`, `SessionUploadService`는 `Tiger
 이전에는 한 함수가 둘을 다 들고 있었고, 수집 마감이 `navController`를 직접 밀었다. 지금은 `onCompleted(sessionId, uploadable)` 하나가 경계다. **수집 쪽에서 `NavController`나 route 타입을 참조하지 않는다.**
 
 `MainActivity`는 `TigerApp`을 띄우는 것 외에 아무것도 하지 않는다.
+
+## 수집 파이프라인의 구성
+
+`capture/`도 책임별로 갈라져 있다. `AndroidCaptureRuntime`이 한 번의 수집을 시작하고 마감하되, 실제 일은 아래에 맡긴다.
+
+| | 맡는 것 |
+|---|---|
+| `AndroidCaptureRuntime` | 여닫는 순서. 무엇을 언제 열고 닫는지만 안다 |
+| `ArSharedCameraSession` | Camera2 device·capture session·핸들러 스레드의 수명 |
+| `ArPoseCollector` | ARCore 프레임 스레드. pose 기록·프리뷰 그리기·tracking 노출·Intrinsic 확보 |
+| `SensorLogWriter` | IMU 표본 CSV |
+| `EpisodeLogWriter` | 에피소드 경계 CSV |
+
+**순서가 이 배치의 전부다.** ARCore Session은 capture session이 완전히 닫힌 뒤에 닫아야 하고, pose 스레드는 Session을 닫기 전에 멈춰야 한다. 어긋나면 네이티브에서 죽는다. 그래서 닫기가 `closeSession`과 `closeThread` 둘로 나뉘어 있고, 사이에 ARCore Session이 들어간다. 한 함수로 합치지 않는다.
+
+기록 클래스를 다시 runtime 안으로 넣지 않는다. CSV 형식은 수신 측과의 계약이고, 밖에 있어야 단위 테스트가 붙는다.
