@@ -1,0 +1,21 @@
+# 카메라별 캡처 설정. 해상도는 양쪽 모두 1920x1080 (16:9) 로 고정한다.
+# 요청과 실제가 다르면 도구가 예외로 멈춘다. 조용히 다른 해상도로 넘어가지 않는다.
+cameras:
+  luaz:
+    device_index: 0        # USB 재연결/재부팅 시 바뀔 수 있다. 세션 시작 시 미리보기로 확인
+    width: 1920
+    height: 1080
+    fourcc: MJPG           # MSMF 는 되읽기가 불가하므로 실측 fps 로 간접 확인한다
+    fps: 30
+    backend: msmf          # msmf | dshow | any. 이 노트북에서 index 로 열리는 것은 msmf 뿐
+
+    # Windows 장치 이름 (Get-PnpDevice -Class Camera 의 FriendlyName).
+    # OpenCV 는 index 로만 열 수 있고 어느 장치인지 알려주지 않는다. 그래서 이 이름이
+    # 실제로 연결돼 있는지 따로 확인한다 - 안 그러면 내장 카메라를 열어놓고
+    # LUAZ 라고 믿게 된다 (2026-09-21 에 실제로 그랬다).
+    pnp_name: "Web Camera"
+
+  s10:
+    width: 1920
+    height: 1080
+    # 후면 메인(camera 0) 고정은 브라우저 deviceId 로 한다 (2단계 웹앱).

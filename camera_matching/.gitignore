@@ -1,0 +1,31 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- 가상환경 ---
+.venv/
+venv/
+env/
+
+# --- 1회차 산출물 (읽기 전용 아카이브, 199MB) ---
+legacy/
+
+# --- 촬영 세션 / 변환 출력 ---
+data/
+out/
+
+# --- S10 웹앱이 런타임에 생성하는 self-signed 인증서 ---
+*.pem
+*.key
+*.crt
+certs/
+
+# --- 에디터 / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

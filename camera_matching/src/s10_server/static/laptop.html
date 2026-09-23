@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S10 capture — 노트북</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #0e0e10; color: #e8e8ea; padding: 20px;
+    font: 14px/1.55 system-ui, -apple-system, sans-serif;
+  }
+  h1 { font-size: 16px; margin: 0 0 4px; font-weight: 600; }
+  .sub { color: #888; font-size: 13px; margin-bottom: 18px; }
+  .wrap { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .wrap { grid-template-columns: 1fr; } }
+
+  .card { background: #171719; border: 1px solid #2a2a2e; border-radius: 12px; padding: 14px; margin-bottom: 16px; }
+  .card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em;
+             color: #8a8a92; margin: 0 0 10px; font-weight: 600; }
+  .imgbox { background: #000; border-radius: 8px; overflow: hidden; aspect-ratio: 16/9;
+            display: flex; align-items: center; justify-content: center; }
+  .imgbox img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .imgbox .empty { color: #555; font-size: 13px; }
+
+  .verdict { margin-top: 10px; padding: 9px 12px; border-radius: 8px; font-weight: 600; }
+  .verdict.ok { background: #12281c; color: #6ee7a0; border: 1px solid #2a7; }
+  .verdict.fail { background: #2a1515; color: #ffb4b4; border: 1px solid #a33; }
+  .verdict .why { font-weight: 400; color: #bbb; margin-left: 6px; }
+
+  /* 3x3 커버리지 격자. 셀 하나가 화면의 1/9 이다. */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; aspect-ratio: 16/9; }
+  .cell { border-radius: 6px; display: flex; flex-direction: column;
+          align-items: center; justify-content: center; font-size: 12px;
+          background: #241616; border: 1px solid #5a2a2a; color: #d98b8b; }
+  .cell.filled { background: #12281c; border-color: #2a7; color: #6ee7a0; }
+  .cell .n { font-size: 16px; font-weight: 700; }
+
+  .rows { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; }
+  .rows dt { color: #8a8a92; }
+  .rows dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .good { color: #6ee7a0; } .bad { color: #ff8f8f; } .warn { color: #e8c468; }
+
+  button { font: inherit; border-radius: 8px; border: 1px solid #3a3a40;
+           background: #232328; color: #e8e8ea; padding: 9px 12px; cursor: pointer; width: 100%; }
+  button:hover:not(:disabled) { background: #2d2d34; }
+  button:disabled { opacity: .4; cursor: default; }
+  button.primary { background: #1d4ed8; border-color: #2563eb; }
+  button.primary:hover:not(:disabled) { background: #2563eb; }
+  button.danger { background: #3a1a1a; border-color: #7a2a2a; }
+  .btnrow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .slider { display: flex; align-items: center; gap: 10px; margin: 12px 0 4px; }
+  .slider input { flex: 1; }
+  #log { font: 12px/1.6 ui-monospace, monospace; color: #9a9aa2; max-height: 150px;
+         overflow-y: auto; white-space: pre-wrap; }
+  .hint { color: #7a7a82; font-size: 12px; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<h1>S10 원격 촬영</h1>
+<div class="sub">폰은 삼각대에 두고 건드리지 않는다. 조작은 전부 여기서.</div>
+
+<div class="wrap">
+  <div>
+    <div class="card">
+      <h2>실시간 프리뷰 (320×180, 5fps)</h2>
+      <div class="imgbox"><img id="preview" alt=""><span class="empty" id="previewEmpty">폰 연결 대기</span></div>
+    </div>
+
+    <div class="card">
+      <h2>마지막 업로드 프레임 + 검출</h2>
+      <div class="imgbox"><img id="lastFrame" alt=""><span class="empty" id="lastEmpty">아직 없음</span></div>
+      <div id="verdict" class="verdict fail">대기 중</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <h2>연결 상태</h2>
+      <dl class="rows">
+        <dt>폰</dt><dd id="phoneConn">—</dd>
+        <dt>실제 해상도</dt><dd id="phoneRes">—</dd>
+        <dt>manual 제약</dt><dd id="phoneManual">—</dd>
+        <dt>보드</dt><dd id="boardInfo">—</dd>
+      </dl>
+      <div class="hint" id="phoneError"></div>
+    </div>
+
+    <div class="card">
+      <h2>세션</h2>
+      <dl class="rows">
+        <dt>session_id</dt><dd id="sessId">없음</dd>
+        <dt>저장</dt><dd id="nSaved">0</dd>
+        <dt>업로드 / 미검출</dt><dd id="nUp">0 / 0</dd>
+        <dt>커버리지</dt><dd id="covRatio">—</dd>
+        <dt>빈 셀</dt><dd id="covEmpty">—</dd>
+      </dl>
+      <div class="btnrow" style="margin-top:12px">
+        <button id="btnStart">세션 시작</button>
+        <button id="btnClose" class="danger">세션 종료</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>커버리지 3×3</h2>
+      <div class="grid" id="grid"></div>
+      <div class="hint">숫자 = 그 셀에 보드가 들어간 프레임 수. 왜곡 계수는 가장자리 데이터가 있어야 풀린다.</div>
+    </div>
+
+    <div class="card">
+      <h2>촬영</h2>
+      <button id="btnShot" class="primary" style="margin-bottom:8px">즉시 촬영</button>
+      <div class="btnrow">
+        <button id="btnAutoOn">자동 시작</button>
+        <button id="btnAutoOff">자동 정지</button>
+      </div>
+      <div class="slider">
+        <span>간격</span>
+        <input type="range" id="interval" min="1" max="10" step="0.5" value="3">
+        <span id="intervalVal">3.0s</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>기록</h2>
+      <div id="log"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+let state = null;
+let lastSeq = -1;
+let previewUrl = null;
+
+function log(line) {
+  const el = $("log");
+  const t = new Date().toTimeString().slice(0, 8);
+  el.textContent = `${t}  ${line}\n` + el.textContent;
+}
+
+// --- 소켓 ---
+
+function connect() {
+  const proto = location.protocol === "https:" ? "wss://" : "ws://";
+  const ws = new WebSocket(proto + location.host + "/ws/laptop");
+  ws.binaryType = "blob";
+
+  ws.onmessage = (ev) => {
+    if (typeof ev.data === "string") {
+      render(JSON.parse(ev.data));
+    } else {
+      // 바이너리 = 폰 프리뷰 JPEG
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = URL.createObjectURL(ev.data);
+      $("preview").src = previewUrl;
+      $("previewEmpty").style.display = "none";
+    }
+  };
+  ws.onclose = () => { log("서버 연결 끊김 — 3초 후 재연결"); setTimeout(connect, 3000); };
+  ws.onopen = () => log("서버 연결됨");
+  setInterval(() => { if (ws.readyState === WebSocket.OPEN) ws.send("ping"); }, 20000);
+}
+
+// --- 렌더 ---
+
+function render(s) {
+  state = s;
+
+  // 폰
+  $("phoneConn").innerHTML = s.phone.connected
+    ? '<span class="good">연결됨</span>' : '<span class="bad">끊김</span>';
+  $("phoneRes").textContent = s.phone.resolution ? s.phone.resolution.join(" × ") : "—";
+  const m = s.phone.manual || {};
+  const applied = Object.keys(m.applied || {});
+  const failed = Object.keys(m.failed || {});
+  $("phoneManual").innerHTML = (applied.length || failed.length)
+    ? `<span class="good">${applied.join(", ") || "없음"}</span>` +
+      (failed.length ? ` <span class="warn">(미지원: ${failed.join(", ")})</span>` : "")
+    : "—";
+  $("phoneError").innerHTML = s.phone.error
+    ? `<span class="bad">폰 오류: ${s.phone.error}</span>` : "";
+
+  const b = s.board;
+  $("boardInfo").innerHTML =
+    `${b.cols}×${b.rows}, ${b.square_mm}mm ` +
+    (b.square_mm_measured ? '<span class="good">실측</span>'
+                          : '<span class="bad">미실측</span>');
+
+  // 세션
+  $("sessId").textContent = s.session ? s.session.session_id : "없음";
+  $("nSaved").textContent = s.session ? s.session.n_saved : 0;
+  $("nUp").textContent = `${s.counters.uploaded} / ${s.counters.rejected_detect}`;
+  $("covRatio").textContent = s.coverage ? Math.round(s.coverage.ratio * 100) + "%" : "—";
+  $("covEmpty").innerHTML = s.coverage
+    ? (s.coverage.empty.length
+        ? `<span class="warn">${s.coverage.empty.join(", ")}</span>`
+        : '<span class="good">없음</span>')
+    : "—";
+
+  renderGrid(s.coverage);
+
+  // 버튼 활성
+  const hasSession = !!s.session;
+  const phoneOk = s.phone.connected;
+  $("btnStart").disabled = hasSession;
+  $("btnClose").disabled = !hasSession;
+  $("btnShot").disabled = !(hasSession && phoneOk);
+  $("btnAutoOn").disabled = !(hasSession && phoneOk) || s.auto.on;
+  $("btnAutoOff").disabled = !s.auto.on;
+  $("interval").value = s.auto.interval;
+  $("intervalVal").textContent = Number(s.auto.interval).toFixed(1) + "s";
+
+  // 마지막 프레임
+  if (s.last_frame_seq !== lastSeq) {
+    lastSeq = s.last_frame_seq;
+    if (lastSeq > 0) {
+      $("lastFrame").src = "/api/last_frame.jpg?seq=" + lastSeq;
+      $("lastEmpty").style.display = "none";
+    }
+  }
+  const v = $("verdict");
+  if (!s.last) { v.className = "verdict fail"; v.textContent = "대기 중"; }
+  else if (s.last.ok) {
+    v.className = "verdict ok";
+    v.innerHTML = `OK — ${s.last.saved} 저장<span class="why">코너 ${s.last.n_corners} · 셀 ${(s.last.cells||[]).join(", ")}</span>`;
+  } else {
+    v.className = "verdict fail";
+    v.innerHTML = `FAIL<span class="why">${s.last.reason}</span>`;
+  }
+}
+
+function renderGrid(cov) {
+  const grid = $("grid");
+  grid.innerHTML = "";
+  const labels = [["TL","T","TR"],["L","C","R"],["BL","B","BR"]];
+  const counts = cov ? cov.counts : [[0,0,0],[0,0,0],[0,0,0]];
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) {
+      const n = counts[r][c];
+      const cell = document.createElement("div");
+      cell.className = "cell" + (n > 0 ? " filled" : "");
+      cell.innerHTML = `<span class="n">${n}</span>${labels[r][c]}`;
+      grid.appendChild(cell);
+    }
+  }
+}
+
+// --- 조작 ---
+
+async function post(url, body) {
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body || {}),
+  });
+  const out = await resp.json().catch(() => ({}));
+  if (!resp.ok) { log("거부: " + (out.detail || resp.status)); return null; }
+  return out;
+}
+
+$("btnStart").onclick = async () => {
+  const out = await post("/api/session/start");
+  if (out) log("세션 시작 " + out.session_id);
+};
+$("btnClose").onclick = async () => {
+  const out = await post("/api/session/close");
+  if (out) log(`세션 종료 ${out.session_id} — ${out.n_saved}장`);
+};
+$("btnShot").onclick = () => post("/api/command", { type: "capture_now" });
+$("btnAutoOn").onclick = () => post("/api/command", { type: "start_auto" });
+$("btnAutoOff").onclick = () => post("/api/command", { type: "stop_auto" });
+$("interval").oninput = (e) => { $("intervalVal").textContent = Number(e.target.value).toFixed(1) + "s"; };
+$("interval").onchange = (e) => post("/api/command", { type: "set_interval", interval: Number(e.target.value) });
+
+connect();
+</script>
+</body>
+</html>

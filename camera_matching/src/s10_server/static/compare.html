@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LUAZ ↔ S10 라이브 비교</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #0e0e10; color: #e8e8ea; padding: 20px;
+    font: 14px/1.55 system-ui, -apple-system, sans-serif;
+  }
+  h1 { font-size: 16px; margin: 0 0 4px; font-weight: 600; }
+  .sub { color: #888; font-size: 13px; margin-bottom: 16px; }
+  .wrap { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .wrap { grid-template-columns: 1fr; } }
+
+  .card { background: #171719; border: 1px solid #2a2a2e; border-radius: 12px; padding: 14px; margin-bottom: 16px; }
+  .card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em;
+             color: #8a8a92; margin: 0 0 10px; font-weight: 600; }
+
+  /* 겹쳐 보기: 두 이미지를 같은 자리에 쌓는다 */
+  .stage { position: relative; background: #000; border-radius: 8px; overflow: hidden;
+           aspect-ratio: 16/9; }
+  .stage img { position: absolute; inset: 0; width: 100%; height: 100%;
+               object-fit: contain; display: block; }
+  #imgS10 { mix-blend-mode: normal; }
+  .stage.diff #imgS10 { mix-blend-mode: difference; }
+  .stage .empty { position: absolute; inset: 0; display: flex; align-items: center;
+                  justify-content: center; color: #666; font-size: 13px; }
+
+  /* 나란히 보기 */
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .pair figure { margin: 0; }
+  .pair figcaption { font-size: 12px; color: #8a8a92; margin-top: 6px; text-align: center; }
+  .pair .stage { aspect-ratio: 16/9; }
+
+  .rows { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; }
+  .rows dt { color: #8a8a92; }
+  .rows dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .good { color: #6ee7a0; } .bad { color: #ff8f8f; } .warn { color: #e8c468; }
+
+  button { font: inherit; border-radius: 8px; border: 1px solid #3a3a40;
+           background: #232328; color: #e8e8ea; padding: 8px 12px; cursor: pointer; width: 100%; }
+  button.on { background: #1d4ed8; border-color: #2563eb; }
+  .btnrow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+  .slider { display: flex; align-items: center; gap: 10px; margin: 10px 0 2px; }
+  .slider input { flex: 1; }
+  label.check { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; }
+  .hint { color: #7a7a82; font-size: 12px; margin-top: 10px; }
+  .err { color: #ff8f8f; font-size: 12px; margin-top: 8px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+
+<h1>LUAZ ↔ S10 라이브 비교</h1>
+<div class="sub">두 카메라를 같은 target 공간으로 옮겨 겹쳐 본다. 삼각대는 같은 자리에 두고 카메라만 바꾼다.</div>
+
+<div class="wrap">
+  <div>
+    <div class="card" id="cardOverlay">
+      <h2>겹쳐 보기</h2>
+      <div class="stage" id="stage">
+        <img id="imgLuaz" alt="">
+        <img id="imgS10" alt="">
+        <span class="empty" id="stageEmpty">대기 중</span>
+      </div>
+      <div class="slider">
+        <span>LUAZ</span>
+        <input type="range" id="alpha" min="0" max="100" value="50">
+        <span>S10</span>
+        <span id="alphaVal" style="width:3em;text-align:right">50%</span>
+      </div>
+    </div>
+
+    <div class="card" id="cardPair" hidden>
+      <h2>나란히 보기</h2>
+      <div class="pair">
+        <figure><div class="stage"><img id="pairLuaz" alt=""></div><figcaption>LUAZ (USB)</figcaption></figure>
+        <figure><div class="stage"><img id="pairS10" alt=""></div><figcaption>S10 (웹앱 프리뷰)</figcaption></figure>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <h2>보기 방식</h2>
+      <div class="btnrow">
+        <button id="mBlend" class="on">블렌드</button>
+        <button id="mDiff">차이</button>
+        <button id="mPair">나란히</button>
+      </div>
+      <label class="check">
+        <input type="checkbox" id="remap" checked>
+        target 공간으로 변환
+      </label>
+      <div class="hint" id="remapHint"></div>
+    </div>
+
+    <div class="card">
+      <h2>상태</h2>
+      <dl class="rows">
+        <dt>LUAZ</dt><dd id="stLuaz">—</dd>
+        <dt>S10</dt><dd id="stS10">—</dd>
+        <dt>target</dt><dd id="stTarget">—</dd>
+        <dt>intrinsics</dt><dd id="stIntr">—</dd>
+        <dt>갱신</dt><dd id="stFps">—</dd>
+      </dl>
+      <div class="err" id="errors"></div>
+    </div>
+
+    <div class="card">
+      <h2>무엇을 보는가</h2>
+      <div class="hint">
+        <b>차이 모드</b>에서 체커보드 코너가 겹치면 검게, 어긋나면 밝게 보인다.
+        어긋남이 화면 가장자리에서 크다면 왜곡 추정이 부족한 것이고,
+        전체가 한쪽으로 밀려 있다면 두 카메라의 위치가 다른 것이다
+        (시차 - 같은 삼각대에서 찍어야 한다).
+        <br><br>
+        평면 차트만 정렬된다. <b>3D 장면은 시차 때문에 겹치지 않는다.</b>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+
+//: 몇 번 갱신할지. 폰 프리뷰가 5fps 라 그보다 빠르게 받아도 의미가 없다.
+const FPS = 5;
+
+let mode = "blend";       // blend | diff | pair
+let remap = true;
+let ticks = 0, lastFpsAt = performance.now();
+
+function setMode(next) {
+  mode = next;
+  for (const [id, name] of [["mBlend","blend"],["mDiff","diff"],["mPair","pair"]]) {
+    $(id).classList.toggle("on", mode === name);
+  }
+  $("cardOverlay").hidden = mode === "pair";
+  $("cardPair").hidden = mode !== "pair";
+  $("stage").classList.toggle("diff", mode === "diff");
+  applyAlpha();
+}
+
+function applyAlpha() {
+  const a = Number($("alpha").value) / 100;
+  $("alphaVal").textContent = Math.round(a * 100) + "%";
+  // 차이 모드에서는 blend-mode 가 섞으므로 불투명하게 둔다
+  $("imgS10").style.opacity = mode === "diff" ? 1 : a;
+  $("imgLuaz").style.opacity = 1;
+}
+
+$("mBlend").onclick = () => setMode("blend");
+$("mDiff").onclick = () => setMode("diff");
+$("mPair").onclick = () => setMode("pair");
+$("alpha").oninput = applyAlpha;
+$("remap").onchange = (e) => { remap = e.target.checked; };
+
+// --- 프레임 받아오기 ---
+// 각 이미지를 따로 폴링한다. 한쪽이 없어도 다른 쪽은 계속 보여야 한다.
+
+function refresh(imgIds, url, onFail) {
+  const src = url + (url.includes("?") ? "&" : "?") + "remap=" + (remap ? 1 : 0)
+              + "&t=" + Date.now();
+  const probe = new Image();
+  probe.onload = () => {
+    for (const id of imgIds) {
+      const el = $(id);
+      if (el) el.src = src;
+    }
+    $("stageEmpty").style.display = "none";
+    onFail(null);
+  };
+  probe.onerror = () => onFail("프레임 없음");
+  probe.src = src;
+}
+
+const errors = { luaz: null, s10: null };
+function showErrors() {
+  const out = [];
+  if (errors.luaz) out.push("LUAZ: " + errors.luaz);
+  if (errors.s10) out.push("S10: " + errors.s10);
+  $("errors").textContent = out.join("\n");
+}
+
+setInterval(() => {
+  refresh(["imgLuaz", "pairLuaz"], "/api/live/luaz.jpg",
+          (e) => { errors.luaz = e; showErrors(); });
+  refresh(["imgS10", "pairS10"], "/api/live/s10.jpg",
+          (e) => { errors.s10 = e; showErrors(); });
+  ticks += 1;
+}, 1000 / FPS);
+
+// --- 상태 ---
+
+async function pollStatus() {
+  try {
+    const s = await (await fetch("/api/live/status")).json();
+
+    // "열려 있다" 와 "그 장치가 꽂혀 있다" 는 다르다.
+    // USB 를 빼도 열린 객체는 남아 "연결됨" 으로 보였다 (2026-09-21).
+    if (!s.luaz.opened) {
+      $("stLuaz").innerHTML = '<span class="bad">안 열림</span>';
+    } else if (s.luaz.device_present === false) {
+      $("stLuaz").innerHTML = '<span class="bad">장치 빠짐</span>';
+    } else if (s.luaz.error) {
+      $("stLuaz").innerHTML = '<span class="bad">읽기 실패</span>';
+    } else {
+      $("stLuaz").innerHTML = `<span class="good">연결됨</span> ${s.luaz.resolution ? s.luaz.resolution.join("×") : ""}`;
+    }
+    if (s.luaz.device_message && s.luaz.device_present === false) {
+      errors.luaz = s.luaz.device_message;
+    }
+    $("stS10").innerHTML = s.s10.preview
+      ? '<span class="good">프리뷰 수신</span>'
+      : (s.s10.connected ? '<span class="warn">연결됨 (프리뷰 대기)</span>'
+                         : '<span class="bad">끊김</span>');
+    $("stTarget").innerHTML = s.target.ready
+      ? `<span class="good">설계 ${s.target.design}</span>`
+      : '<span class="bad">없음</span>';
+    $("stIntr").textContent = s.intrinsics.length ? s.intrinsics.join(", ") : "없음";
+
+    const missing = [];
+    if (!s.target.ready) missing.push("target 공간");
+    if (s.intrinsics.length < 2) missing.push("intrinsics");
+    $("remapHint").innerHTML = missing.length
+      ? `<span class="warn">변환 불가 (${missing.join(", ")} 없음). 원본 그대로 보여준다.</span>`
+      : "두 카메라를 같은 공간으로 옮겨 겹친다.";
+
+    if (!s.luaz.connected && s.luaz.error) errors.luaz = s.luaz.error;
+    if (!s.target.ready && s.target.error) $("errors").textContent = s.target.error;
+  } catch (e) { /* 서버가 잠깐 끊긴 것 */ }
+}
+pollStatus();
+setInterval(pollStatus, 2000);
+
+setInterval(() => {
+  const now = performance.now();
+  $("stFps").textContent = (ticks / ((now - lastFpsAt) / 1000)).toFixed(1) + " /s";
+  ticks = 0; lastFpsAt = now;
+}, 2000);
+
+setMode("blend");
+</script>
+</body>
+</html>

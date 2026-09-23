@@ -1,0 +1,15 @@
+# 체커보드 규격. capture / calibrate 양쪽이 이 파일 하나만 읽는다.
+# cols, rows 는 **내부 코너(inner corner)** 개수다. 물리적인 칸 수가 아니다.
+#   예) 10x7 칸짜리 보드 → cols=9, rows=6
+board:
+  cols: 9
+  rows: 6
+
+  # 2026-09-18 확정. 사용자가 이 보드의 한 칸이 25.0 mm 임을 보장했다.
+  # 이 값은 K(fx, fy, cx, cy)에는 영향이 없고, 거리 t 의 단위를 정한다.
+  # **보드를 바꾸면 반드시 다시 재고 measured 를 false 로 되돌린다.**
+  square_mm: 25.0
+  square_mm_measured: true
+
+  # 보드 설명. meta.json 에 그대로 복사되어 세션마다 어떤 보드였는지 남는다.
+  note: "9x6 inner corners, square 25.0mm (2026-09-18 사용자 보장)"
