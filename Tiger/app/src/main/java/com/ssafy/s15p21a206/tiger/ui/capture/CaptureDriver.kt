@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.SurfaceTexture
+import android.hardware.camera2.CameraManager
 import android.net.Uri
 import android.os.SystemClock
 import android.view.Surface
@@ -33,6 +34,9 @@ import com.ssafy.s15p21a206.tiger.capture.CapturePreviewController
 import com.ssafy.s15p21a206.tiger.capture.CapturePreviewPreflight
 import com.ssafy.s15p21a206.tiger.capture.CapturePreviewState
 import com.ssafy.s15p21a206.tiger.capture.CaptureSessionCoordinator
+import com.ssafy.s15p21a206.tiger.capture.ManualCameraConfig
+import com.ssafy.s15p21a206.tiger.capture.ManualCameraConfigStore
+import com.ssafy.s15p21a206.tiger.capture.ManualCameraProfile
 import com.ssafy.s15p21a206.tiger.capture.MonotonicClock
 import com.ssafy.s15p21a206.tiger.capture.PreviewRuntime
 import com.ssafy.s15p21a206.tiger.capture.RecordingResolutionStore
@@ -72,6 +76,11 @@ internal class CaptureDriver(
     val confirmMetadata: () -> Unit,
     /** 작업 공간을 벗어날 때 유휴 프리뷰 Camera2 session을 놓는다. */
     val releaseIdlePreview: () -> Unit,
+    /** 초점·ISO·셔터를 바꾼다. 바뀐 값은 곧바로 프리뷰에 걸린다. */
+    val editManualCamera: (ManualCameraConfig) -> Unit,
+    /** 지금 프리뷰가 수렴시킨 화이트 밸런스를 붙잡는다. */
+    val fixWhiteBalance: () -> Unit,
+    val releaseWhiteBalance: () -> Unit,
 )
 
 /**
@@ -133,6 +142,23 @@ internal fun rememberCaptureDriver(
                     },
             )
         }
+    val manualCameraStore = remember { ManualCameraConfigStore(context.applicationContext) }
+    val manualCameraProfile =
+        remember {
+            ManualCameraProfile(context.applicationContext, context.getSystemService(CameraManager::class.java))
+        }
+    val whiteBalancePendingMessage = stringResource(R.string.capture_camera_white_balance_pending)
+
+    // 녹화에 쓰일 카메라의 능력은 한 번만 읽는다. ARCore에게 어느 카메라인지 물으려면 Session을
+    // 잠깐 만들어야 해 수백 ms가 걸리므로 배경에서 한다. 읽지 못하면 패널이 사유를 보여 주고,
+    // 수집은 기존 자동 동작 그대로 돈다.
+    LaunchedEffect(state.open) {
+        if (!state.open || state.manualCamera.capabilities != null) return@LaunchedEffect
+        val capabilities = withContext(Dispatchers.IO) { manualCameraProfile.read() } ?: return@LaunchedEffect
+        val config = capabilities.coerce(manualCameraStore.load() ?: capabilities.defaultConfig())
+        onIntent(CaptureIntent.ManualCameraProfiled(capabilities, config))
+        previewController.apply(config)
+    }
     val episodeInvalidatedMessage = stringResource(R.string.capture_episode_invalid_tracking)
     val coordinator =
         remember {
@@ -194,15 +220,21 @@ internal fun rememberCaptureDriver(
                             // ARCore가 고른 해상도로 버퍼를 맞춰 프리뷰 화각을 저장 영상과 일치시킨다.
                             // 이 람다는 Main dispatcher에서 실행되므로 Compose 상태를 직접 갱신해도 된다.
                             // 프리뷰용 Camera2 세션은 play에서 이미 닫혔으므로 버퍼 크기를 바꿔도 안전하다.
-                            captureRuntime.start(displayNumber, state.resolution) { width, height ->
-                                // ARCore가 실제로 고른 크기다. 후보 config가 없어 기본값으로 물러났으면
-                                // 고른 값과 다를 수 있으므로, 표시와 프리뷰를 여기에 맞춘다.
-                                val actual = RecordingResolution(width, height)
-                                onIntent(CaptureIntent.SelectResolution(actual))
-                                onIntent(CaptureIntent.IdlePreviewResized(actual))
-                                previewTexture?.setDefaultBufferSize(width, height)
-                                previewSurface
-                            }
+                            captureRuntime.start(
+                                displayNumber = displayNumber,
+                                resolution = state.resolution,
+                                previewSurfaces = { width, height ->
+                                    // ARCore가 실제로 고른 크기다. 후보 config가 없어 기본값으로 물러났으면
+                                    // 고른 값과 다를 수 있으므로, 표시와 프리뷰를 여기에 맞춘다.
+                                    val actual = RecordingResolution(width, height)
+                                    onIntent(CaptureIntent.SelectResolution(actual))
+                                    onIntent(CaptureIntent.IdlePreviewResized(actual))
+                                    previewTexture?.setDefaultBufferSize(width, height)
+                                    previewSurface
+                                },
+                                // 프리뷰에서 맞춘 값을 그대로 녹화에 건다. Session이 시작된 뒤에는 바뀌지 않는다.
+                                manual = state.manualCamera.appliedConfig,
+                            )
                         }.onSuccess { bundle ->
                             val startedAtNs = SystemClock.elapsedRealtimeNanos()
                             // Session 시작은 Episode를 만들지 않는다. Tracking 안정화 뒤 사용자가 따로 시작한다.
@@ -440,6 +472,35 @@ internal fun rememberCaptureDriver(
             }
         },
         releaseIdlePreview = capturePreviewController::release,
+        // 값이 바뀌면 곧바로 프리뷰에 건다. 초점을 화면으로 보고 고르는 것이 이 기능의 목적이다.
+        // 기억까지 여기서 하는 것은, 다음에 앱을 켰을 때도 같은 조건으로 찍어야 하기 때문이다.
+        editManualCamera = { requested ->
+            val coerced = state.manualCamera.capabilities?.coerce(requested) ?: requested
+            onIntent(CaptureIntent.EditManualCamera(coerced))
+            previewController.apply(coerced)
+            manualCameraStore.save(coerced)
+        },
+        fixWhiteBalance = fix@{
+            val current = state.manualCamera.config ?: return@fix
+            // 프리뷰가 아직 수렴시키지 못했으면 붙잡을 값이 없다. 중립값으로 채우면 색이 틀어진 채
+            // 고정돼, 고정하지 않은 것보다 나쁘다.
+            val converged =
+                previewController.convergedWhiteBalance ?: run {
+                    onIntent(CaptureIntent.Notify(whiteBalancePendingMessage))
+                    return@fix
+                }
+            val fixed = current.copy(whiteBalance = converged)
+            onIntent(CaptureIntent.EditManualCamera(fixed))
+            previewController.apply(fixed)
+            manualCameraStore.save(fixed)
+        },
+        releaseWhiteBalance = release@{
+            val current = state.manualCamera.config ?: return@release
+            val released = current.copy(whiteBalance = null)
+            onIntent(CaptureIntent.EditManualCamera(released))
+            previewController.apply(released)
+            manualCameraStore.save(released)
+        },
     )
 }
 

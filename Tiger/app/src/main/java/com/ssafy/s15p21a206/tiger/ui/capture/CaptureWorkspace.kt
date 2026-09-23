@@ -100,9 +100,33 @@ internal fun CaptureWorkspace(
                     CaptureWorkspaceStatus(state = state.phase)
                     // 어느 해상도로 찍는지 촬영 직전에 보여 준다. Session마다 달라질 수 있다.
                     CaptureWorkspaceResolution(resolution = state.resolution)
+                    // 촬영 조건은 Session 시작 전에만 만질 수 있다. 시작한 뒤에도 패널은 열리며,
+                    // 무엇으로 찍고 있는지 읽을 수 있게 값만 보여 준다.
+                    CaptureCameraPanelButton(
+                        enabled = !state.manualCamera.panelOpen,
+                        onClick = { onIntent(CaptureIntent.ToggleManualCameraPanel(true)) },
+                    )
                 }
                 CaptureWorkspaceExitControls(policy = state.policy, onExit = driver.requestExit)
             }
+        }
+        if (state.manualCamera.panelOpen && state.chromeVisible) {
+            CaptureCameraPanel(
+                state = state.manualCamera,
+                // Session이 시작되면 값을 잠근다. 촬영 도중 조건이 바뀌면 그 Session의 데이터는
+                // 한 조건으로 찍혔다고 말할 수 없게 된다.
+                enabled = state.phase == CaptureWorkspaceControlState.Idle,
+                onChange = driver.editManualCamera,
+                onFixWhiteBalance = driver.fixWhiteBalance,
+                onClearWhiteBalance = driver.releaseWhiteBalance,
+                onClose = { onIntent(CaptureIntent.ToggleManualCameraPanel(false)) },
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .safeDrawingPadding()
+                        // 닫기 버튼 아래에서 시작한다. 겹쳐 두면 세션을 벗어날 길이 가려진다.
+                        .padding(top = 92.dp, end = 20.dp, bottom = 20.dp),
+            )
         }
         SnackbarHost(driver.snackbarHostState, Modifier.align(Alignment.TopCenter).padding(top = 80.dp))
         if (!state.showMetadataDialog && state.chromeVisible) {

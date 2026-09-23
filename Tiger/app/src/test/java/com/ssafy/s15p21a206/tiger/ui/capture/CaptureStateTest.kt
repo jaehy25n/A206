@@ -1,9 +1,12 @@
 package com.ssafy.s15p21a206.tiger.ui.capture
 
+import com.ssafy.s15p21a206.tiger.capture.ManualCameraCapabilities
+import com.ssafy.s15p21a206.tiger.capture.ManualCameraConfig
 import com.ssafy.s15p21a206.tiger.episode.RecordingResolution
 import com.ssafy.s15p21a206.tiger.episode.SessionBundle
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
@@ -184,5 +187,106 @@ class CaptureStateTest {
             )
 
         assertEquals(CaptureWorkspaceControlState.entries.toSet(), reached)
+    }
+
+    private val capabilities =
+        ManualCameraCapabilities(
+            cameraId = "0",
+            manualSensor = true,
+            aeOffSupported = true,
+            afOffSupported = true,
+            awbOffSupported = true,
+            awbLockSupported = true,
+            maxFocusDiopter = 10f,
+            isoRange = 50..3200,
+            exposureRangeNs = 85_000L..100_000_000L,
+            maxFrameDurationNs = 142_857_142L,
+        )
+
+    private fun profiled(state: CaptureUiState) =
+        state.reduce(CaptureIntent.ManualCameraProfiled(capabilities, capabilities.defaultConfig()))
+
+    @Test
+    fun theChosenSettingsAreNarrowedToWhatTheCameraAccepts() {
+        val state =
+            profiled(CaptureUiState().reduce(CaptureIntent.Open("task", hd)))
+                .reduce(
+                    CaptureIntent.EditManualCamera(
+                        ManualCameraConfig(focusDistanceDiopter = 99f, iso = 5, exposureTimeNs = 100_000_000L),
+                    ),
+                )
+
+        val config = state.manualCamera.config!!
+        assertEquals(10f, config.focusDistanceDiopter, 0f)
+        assertEquals(50, config.iso)
+        // 노출이 프레임 간격을 넘으면 센서가 간격을 늘려 30 fps가 깨진다.
+        assertEquals(ManualCameraConfig.TARGET_FRAME_DURATION_NS, config.exposureTimeNs)
+    }
+
+    /**
+     * 촬영이 시작되면 값이 잠긴다.
+     *
+     * 화면에서도 막지만 상태 전이로 한 번 더 막는다. 도중에 조건이 바뀌면 그 Session의 데이터를
+     * 한 조건으로 찍었다고 말할 수 없기 때문이다.
+     */
+    @Test
+    fun theSettingsStopAcceptingChangesOnceTheSessionStarts() {
+        val recording = profiled(collecting())
+        val before = recording.manualCamera.config
+
+        val attempted =
+            recording.reduce(
+                CaptureIntent.EditManualCamera(
+                    ManualCameraConfig(focusDistanceDiopter = 1f, iso = 3200, exposureTimeNs = 2_000_000L),
+                ),
+            )
+
+        assertEquals(before, attempted.manualCamera.config)
+    }
+
+    @Test
+    fun startingASessionFoldsTheSettingsPanelAway() {
+        val opened =
+            profiled(CaptureUiState().reduce(CaptureIntent.Open("task", hd)))
+                .reduce(CaptureIntent.ToggleManualCameraPanel(true))
+        assertTrue(opened.manualCamera.panelOpen)
+
+        val recording =
+            opened
+                .reduce(CaptureIntent.ConfirmMetadata)
+                .reduce(CaptureIntent.SessionRequested)
+                .reduce(CaptureIntent.SessionStarted(bundle, 42L, hd))
+
+        assertFalse(recording.manualCamera.panelOpen)
+    }
+
+    /** 능력을 읽기 전에는 좁힐 기준이 없다. 범위를 모르는 값을 담아 두면 그대로 카메라에 걸린다. */
+    @Test
+    fun noSettingIsHeldBeforeTheCameraHasBeenProfiled() {
+        val state =
+            CaptureUiState()
+                .reduce(CaptureIntent.Open("task", hd))
+                .reduce(
+                    CaptureIntent.EditManualCamera(
+                        ManualCameraConfig(focusDistanceDiopter = 4f, iso = 100, exposureTimeNs = 8_333_333L),
+                    ),
+                )
+
+        assertNull(state.manualCamera.config)
+        assertNull(state.manualCamera.appliedConfig)
+    }
+
+    /** 수동 제어를 못 하는 기기에서는 수집을 막지 않고 기존 자동 동작으로 찍는다. */
+    @Test
+    fun aCameraWithoutManualSupportRecordsTheWayItAlwaysDid() {
+        val unsupported = capabilities.copy(manualSensor = false)
+        val state =
+            CaptureUiState()
+                .reduce(CaptureIntent.Open("task", hd))
+                .reduce(CaptureIntent.ManualCameraProfiled(unsupported, unsupported.defaultConfig()))
+
+        assertNotNull(state.manualCamera.unsupportedReason)
+        assertFalse(state.manualCamera.supported)
+        assertNull(state.manualCamera.appliedConfig)
     }
 }

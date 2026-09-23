@@ -1,7 +1,37 @@
 package com.ssafy.s15p21a206.tiger.ui.capture
 
+import com.ssafy.s15p21a206.tiger.capture.ManualCameraCapabilities
+import com.ssafy.s15p21a206.tiger.capture.ManualCameraConfig
 import com.ssafy.s15p21a206.tiger.episode.RecordingResolution
 import com.ssafy.s15p21a206.tiger.episode.SessionBundle
+
+/**
+ * 수동 촬영 설정 패널의 상태.
+ *
+ * [config] 하나가 프리뷰와 녹화가 함께 쓰는 값이다. 화면용 값과 카메라용 값을 따로 들지 않는 것이
+ * 이 기능의 요점이므로, 여기에도 사본을 만들지 않는다.
+ */
+internal data class ManualCameraUiState(
+    /** 기기가 무엇을 지원하는지. 아직 읽기 전이면 null이다. */
+    val capabilities: ManualCameraCapabilities? = null,
+    val config: ManualCameraConfig? = null,
+    val panelOpen: Boolean = false,
+) {
+    /** 수동 설정을 쓸 수 없는 이유. 패널은 조작 대신 이 문구를 보여 준다. */
+    val unsupportedReason: String? get() = capabilities?.unsupportedReason
+
+    val supported: Boolean get() = capabilities != null && unsupportedReason == null
+
+    /**
+     * 녹화에 걸 값.
+     *
+     * 지원하지 않는 기기에서는 null이라 수집이 기존 자동 동작 그대로 돈다. 수동 설정 하나 때문에
+     * 수집 자체를 막지 않는다.
+     */
+    val appliedConfig: ManualCameraConfig? get() = config.takeIf { supported }
+
+    val whiteBalanceFixed: Boolean get() = config?.awbFixed == true
+}
 
 /**
  * 수집 작업 공간의 상태 전부.
@@ -36,6 +66,8 @@ internal data class CaptureUiState(
     val notice: String = "",
     val activeBundle: SessionBundle? = null,
     val recordingStartNs: Long = 0L,
+    /** 이번 Session에 쓸 촬영 조건. Session이 시작되면 잠긴다. */
+    val manualCamera: ManualCameraUiState = ManualCameraUiState(),
 ) {
     /** 수집을 시작하거나 Episode를 시작할 수 있는 상태인지. */
     val ready: Boolean
@@ -78,6 +110,21 @@ internal sealed interface CaptureIntent {
 
     data class SelectResolution(
         val value: RecordingResolution,
+    ) : CaptureIntent
+
+    /** 녹화 카메라의 능력과 불러온 설정을 받았다. 수집 화면을 열 때 한 번 온다. */
+    data class ManualCameraProfiled(
+        val capabilities: ManualCameraCapabilities,
+        val config: ManualCameraConfig,
+    ) : CaptureIntent
+
+    /** 사용자가 초점·ISO·셔터·WB를 건드렸다. */
+    data class EditManualCamera(
+        val value: ManualCameraConfig,
+    ) : CaptureIntent
+
+    data class ToggleManualCameraPanel(
+        val open: Boolean,
     ) : CaptureIntent
 
     data object ConfirmMetadata : CaptureIntent
@@ -162,6 +209,23 @@ internal fun CaptureUiState.reduce(intent: CaptureIntent): CaptureUiState =
         is CaptureIntent.EditTask -> copy(task = intent.value)
         is CaptureIntent.EditObjectName -> copy(objectName = intent.value)
         is CaptureIntent.SelectResolution -> copy(resolution = intent.value)
+        is CaptureIntent.ManualCameraProfiled ->
+            copy(
+                manualCamera =
+                    manualCamera.copy(
+                        capabilities = intent.capabilities,
+                        config = intent.capabilities.coerce(intent.config),
+                    ),
+            )
+        // Session이 시작된 뒤에는 값을 바꾸지 않는다. 화면에서도 막지만, 상태 전이로 한 번 더
+        // 막는 것은 이 값이 촬영 도중 흔들리지 않는 것이 기능의 전부이기 때문이다.
+        is CaptureIntent.EditManualCamera ->
+            when {
+                phase != CaptureWorkspaceControlState.Idle -> this
+                manualCamera.capabilities == null -> this
+                else -> copy(manualCamera = manualCamera.copy(config = manualCamera.capabilities.coerce(intent.value)))
+            }
+        is CaptureIntent.ToggleManualCameraPanel -> copy(manualCamera = manualCamera.copy(panelOpen = intent.open))
         CaptureIntent.ConfirmMetadata -> copy(showMetadataDialog = false)
         is CaptureIntent.IdlePreviewResized -> copy(idlePreviewSize = intent.value)
         CaptureIntent.PreviewFrameArrived -> if (previewFailed) this else copy(previewReady = true)
@@ -177,6 +241,8 @@ internal fun CaptureUiState.reduce(intent: CaptureIntent): CaptureUiState =
                 activeBundle = intent.bundle,
                 recordingStartNs = intent.startedAtNs,
                 busy = false,
+                // 촬영이 시작되면 설정은 잠긴다. 열린 패널은 더 이상 아무것도 받지 않으므로 접는다.
+                manualCamera = manualCamera.copy(panelOpen = false),
             )
         is CaptureIntent.TrackingSampled ->
             when (phase) {

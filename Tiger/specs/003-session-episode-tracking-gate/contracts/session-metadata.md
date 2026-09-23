@@ -2,7 +2,7 @@
 
 **작성일**: 2026-09-14 | **명세**: [spec.md](../spec.md)
 
-Session 번들의 `metadata.json`이 수신 측에 제공하는 형식. 이번 변경은 **`camera` 객체 추가만** 수행하며 기존 키는 건드리지 않는다.
+Session 번들의 `metadata.json`이 수신 측에 제공하는 형식. 기존 키는 건드리지 않고 객체를 더하기만 한다. 2026-09-14에 `camera`를, 2026-09-23에 `capture_settings`를 더했다.
 
 ## 형식
 
@@ -12,6 +12,27 @@ Session 번들의 `metadata.json`이 수신 측에 제공하는 형식. 이번 �
   "camera_streams": {
     "main": true,
     "ultrawide": false
+  },
+  "capture_settings": {
+    "mode": "manual",
+    "requested": {
+      "focus_distance_diopter": 4.0,
+      "iso": 100,
+      "exposure_time_ns": 8333333,
+      "frame_duration_ns": 33333333,
+      "fps_target": 30
+    },
+    "actual": {
+      "focus_distance_diopter": 3.9916728,
+      "iso": 100,
+      "exposure_time_ns": 8333000,
+      "frame_duration_ns": 33333000,
+      "af_mode": "OFF",
+      "ae_mode": "OFF",
+      "awb_mode": "OFF",
+      "awb_locked": false
+    },
+    "awb_fixed": true
   },
   "camera": {
     "camera_id": "0",
@@ -41,7 +62,8 @@ Session 번들의 `metadata.json`이 수신 측에 제공하는 형식. 이번 �
 | `session_id` | 유지 | Session UUID |
 | `camera_streams.main` | 유지 | 항상 `true` |
 | `camera_streams.ultrawide` | 유지 | 이번 범위에서는 항상 `false` |
-| `camera` | **신규** | 촬영에 사용된 Camera 정보. 획득 실패 시 키 자체가 생략된다 |
+| `camera` | 2026-09-14 추가 | 촬영에 사용된 Camera 정보. 획득 실패 시 키 자체가 생략된다 |
+| `capture_settings` | 2026-09-23 추가 | 그 Session의 촬영 조건. 수동 설정을 쓰지 않은 Session은 키 자체가 생략된다 |
 | `files` | 유지 | 번들 파일 manifest. `metadata.json` 자신은 포함하지 않는다 |
 
 ### `camera` 객체
@@ -61,6 +83,50 @@ Session 번들의 `metadata.json`이 수신 측에 제공하는 형식. 이번 �
 | `distortion_coefficients` | number[] | 아니오 | 기기 미제공 시 키 생략. 순서는 Camera2 `LENS_DISTORTION` 정의를 따른다 |
 | `video_rotation_degrees` | int | 아니오 | `main_rgb.mp4`에 적용된 시계 방향 회전. 기본 `0`. 아래 [영상 회전](#영상-회전-2026-09-16-갱신) 참고 |
 
+### `capture_settings` 객체
+
+수집자가 정한 촬영 조건과, 센서가 실제로 사용한 값. 둘을 나눠 담는 것이 이 객체의 요점이다.
+`CaptureRequest`에 넣었다고 센서가 그 값을 썼다고 볼 수 없고, calibration은 실제로 쓰인 값 위에서만
+뜻이 있다.
+
+| 키 | 타입 | 필수 | 비고 |
+|---|---|---|---|
+| `mode` | string | 예 | 수동 설정을 쓴 Session은 `manual` |
+| `requested` | object | 아니오 | 사용자가 정해 `CaptureRequest`에 건 값 |
+| `actual` | object | 아니오 | 첫 유효 프레임 이후 `CaptureResult`에서 읽은 값. 프레임을 받지 못하면 키 생략 |
+| `awb_fixed` | bool | 예 | 화이트 밸런스를 고정했는지. 고정하지 않았으면 `false`로 적으며 키를 생략하지 않는다 |
+
+`requested` 객체:
+
+| 키 | 타입 | 필수 | 비고 |
+|---|---|---|---|
+| `focus_distance_diopter` | number | 예 | `0`이 무한대, 클수록 가깝다. 단위는 diopter(1/m) |
+| `iso` | int | 예 | `SENSOR_SENSITIVITY` |
+| `exposure_time_ns` | int | 예 | `SENSOR_EXPOSURE_TIME` |
+| `frame_duration_ns` | int | 예 | `SENSOR_FRAME_DURATION`. 30 fps면 `33333333` |
+| `fps_target` | int | 예 | 항상 `30`. 기본값과 같아도 생략하지 않는다 |
+
+`actual` 객체. 읽지 못한 항목은 **키를 생략한다.** 값을 계산해 채우지 않는다.
+
+| 키 | 타입 | 비고 |
+|---|---|---|
+| `focus_distance_diopter` | number | `LENS_FOCUS_DISTANCE` |
+| `iso` | int | `SENSOR_SENSITIVITY` |
+| `exposure_time_ns` | int | `SENSOR_EXPOSURE_TIME` |
+| `frame_duration_ns` | int | `SENSOR_FRAME_DURATION` |
+| `af_mode` | string | `OFF`, `AUTO`, `CONTINUOUS_VIDEO` 등 |
+| `ae_mode` | string | `OFF`, `ON` 등 |
+| `awb_mode` | string | `OFF`, `AUTO` 등 |
+| `awb_locked` | bool | `CONTROL_AWB_LOCK` |
+
+수신 측이 알아 둘 것이 둘 있다.
+
+- **`requested`와 `actual`은 정확히 같지 않다.** 센서가 노출과 프레임 간격을 µs로 양자화해 돌려주므로
+  `8333333`을 요청하면 `8333000`이 온다. 초점도 렌즈 스텝 해상도만큼 어긋난다(요청 `4.0` D에 대해
+  실측 `3.9916728` D). 비교할 때는 허용 오차를 둔다.
+- **`awb_fixed`가 `false`인데 `actual.awb_mode`가 `AUTO`인 것은 정상이다.** 화이트 밸런스를 고정하지
+  않고 찍은 Session이며, 그 Session의 색은 촬영 중 변했다고 보아야 한다.
+
 ## 불변식
 
 1. `fx` / `fy` / `cx` / `cy`는 `camera_id`와 `image_width` × `image_height` 조합에 대응하는 값이다. 기기 일반 대표값이 아니다.
@@ -68,12 +134,17 @@ Session 번들의 `metadata.json`이 수신 측에 제공하는 형식. 이번 �
 3. 선택 키는 값을 계산해 채우지 않는다. 확보하지 못하면 키를 생략한다.
 4. `camera` 객체 전체를 확보하지 못해도 Session 마감과 업로드는 정상 완료된다.
 5. 기존 키 세 개(`session_id`, `camera_streams`, `files`)의 형식과 의미는 변경되지 않는다.
+6. `capture_settings`의 값은 그 Session **전체**에 적용된다. 촬영 도중 조건이 바뀌지 않는 것이 이 기능의
+   전제이며, 앱은 Session이 시작되면 설정을 잠근다.
+7. `capture_settings` 전체를 확보하지 못해도 Session 마감과 업로드는 정상 완료된다.
 
 ## 하위 호환
 
-수신 측 파이프라인과 앱의 `SessionBundleValidator`는 모두 `session_id`, `camera_streams`, `files`만 읽고 알 수 없는 키를 무시한다. `camera` 추가는 하위 호환 변경이며, 기존 EC2 업로드 경로 수정이 필요하지 않다.
+수신 측 파이프라인과 앱의 `SessionBundleValidator`는 모두 `session_id`, `camera_streams`, `files`만 읽고 알 수 없는 키를 무시한다. `camera`와 `capture_settings` 추가는 모두 하위 호환 변경이며, 기존 EC2 업로드 경로 수정이 필요하지 않다.
 
 `camera` 키가 없는 과거 Session도 계속 유효하다. 수신 측은 키 부재를 "해당 Session에 Camera 정보 없음"으로 해석한다.
+
+`capture_settings` 키가 없는 Session은 **촬영 조건을 기기 자동에 맡긴 수집**이다. 그 Session의 노출·ISO·화이트 밸런스는 프레임마다 변했다고 보아야 하며, 다른 Session에서 구한 intrinsic이나 LUT를 그대로 적용할 근거가 없다. 수동 설정을 지원하지 않는 기기에서 찍은 Session과, 이 항목이 생기기 전에 찍은 Session이 여기 해당한다.
 
 ## 녹화 해상도 (2026-09-16 갱신)
 

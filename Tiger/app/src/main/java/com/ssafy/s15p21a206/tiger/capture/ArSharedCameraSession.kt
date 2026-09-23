@@ -15,10 +15,12 @@ import android.hardware.camera2.params.SessionConfiguration
 import android.media.MediaRecorder
 import android.os.Handler
 import android.os.HandlerThread
+import android.os.SystemClock
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.google.ar.core.Session
 import com.google.ar.core.SharedCamera
+import com.ssafy.s15p21a206.tiger.episode.ActualCaptureSettings
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.CountDownLatch
@@ -48,8 +50,22 @@ class ArSharedCameraSession(
     /** capture session이 완전히 닫혔음을 알린다. ARCore Session을 닫기 전에 기다린다. */
     @Volatile private var closedLatch: CountDownLatch? = null
 
+    /** ARCore가 가져간 repeating request를 되받는 감시자. 수동 설정을 쓸 때만 선다. */
+    @Volatile private var manualGuard: ManualRequestGuard? = null
+
+    /**
+     * 센서가 실제로 사용한 값. 프레임이 한 장도 오기 전과 정리 후에는 null이다.
+     *
+     * 카메라 스레드가 매 프레임 갱신하고 마감이 읽는다.
+     */
+    @Volatile var appliedSettings: ActualCaptureSettings? = null
+        private set
+
     /**
      * 카메라를 열어 recorder에 프레임을 흘려보낸다. 스트림이 돌기 시작하면 돌아온다.
+     *
+     * [manual]이 있으면 녹화 요청에 수동 값을 걸고, ARCore가 그것을 덮으면 되받는다. null이면
+     * template의 자동 설정으로 찍는다.
      *
      * [onStreaming]은 스트림이 실제로 돌기 시작한 시점에 카메라 스레드에서 한 번 불린다. 여기서
      * 난 예외는 [open]이 그대로 올린다. 즉 호출부는 열기 실패와 시작 실패를 같은 자리에서 받는다.
@@ -60,12 +76,14 @@ class ArSharedCameraSession(
     suspend fun open(
         arSession: Session,
         recorder: MediaRecorder,
+        manual: ManualCameraConfig?,
         onStreaming: () -> Unit,
     ) {
         check(ContextCompat.checkSelfPermission(appContext, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             "Camera permission is required for ARCore capture"
         }
-        val request = CameraOpenRequest(arSession, recorder, onStreaming)
+        appliedSettings = null
+        val request = CameraOpenRequest(arSession, recorder, manual, onStreaming)
         check(usesRealtimeTimestamps(request.cameraId)) { "Camera timestamp source is not REALTIME" }
         closedLatch = CountDownLatch(1)
         val handler = startCameraThread()
@@ -81,6 +99,8 @@ class ArSharedCameraSession(
 
     /** 프레임 공급을 끊는다. 이미 진행 중인 프레임은 계속 인코딩된다. */
     fun stopRepeating() {
+        // 감시자를 먼저 내린다. 남겨 두면 정지 중에 반복 요청을 다시 걸어 프레임 공급이 되살아난다.
+        manualGuard = null
         runCatching { session?.stopRepeating() }
             .onFailure { Log.w(CAPTURE_LOG_TAG, "Could not stop the repeating request", it) }
     }
@@ -174,7 +194,13 @@ class ArSharedCameraSession(
             request.sharedCamera.arCoreSurfaces
                 .toMutableList()
                 .apply { add(request.recorder.surface) }
-        val repeating = camera.createCaptureRequest(CameraDevice.TEMPLATE_RECORD).apply { surfaces.forEach(::addTarget) }
+        val repeating =
+            camera
+                .createCaptureRequest(CameraDevice.TEMPLATE_RECORD)
+                .apply {
+                    surfaces.forEach(::addTarget)
+                    applyManualCamera(request.manual)
+                }.build()
         camera.createCaptureSession(
             SessionConfiguration(
                 SessionConfiguration.SESSION_REGULAR,
@@ -187,20 +213,24 @@ class ArSharedCameraSession(
 
     /** capture session의 상태 콜백. [repeating]은 구성이 끝난 뒤 반복 요청으로 건다. */
     private fun sessionCallback(
-        repeating: CaptureRequest.Builder,
+        repeating: CaptureRequest,
         request: CameraOpenRequest,
         handler: Handler,
         streaming: CompletableDeferred<Unit>,
     ) = object : CameraCaptureSession.StateCallback() {
         override fun onConfigured(configured: CameraCaptureSession) {
             session = configured
-            configured.setRepeatingRequest(repeating.build(), frameCallback, handler)
+            configured.setRepeatingRequest(repeating, frameCallback, handler)
         }
 
         override fun onActive(activeSession: CameraCaptureSession) {
             try {
                 request.arSession.resume()
                 request.sharedCamera.setCaptureCallback(frameCallback, handler)
+                // ARCore는 resume에서 repeating request를 제 것으로 갈아 끼운다. 여기서 감시자를
+                // 세워 두면 다음 프레임에서 그것을 알아채고 우리 요청을 되돌린다. 근거는
+                // [ManualRequestGuard]에 적었다.
+                manualGuard = request.manual?.let { ManualRequestGuard(it, repeating, handler) }
                 request.onStreaming()
                 streaming.complete(Unit)
             } catch (error: Exception) {
@@ -234,8 +264,60 @@ class ArSharedCameraSession(
             ) {
                 val timestampNs = result.get(CaptureResult.SENSOR_TIMESTAMP) ?: return
                 onFrameTimestamp(timestampNs)
+                manualGuard?.observe(cameraSession, request, result)
             }
         }
+
+    /**
+     * ARCore가 가져간 repeating request를 되받고, 실제로 쓰인 값을 읽어 둔다.
+     *
+     * ARCore는 `Session.resume()`에서 repeating request를 제 것으로 바꿔 끼운다. 그래서 resume 전에
+     * 건 수동 값은 한 프레임만 살아남고, 그다음부터 노출과 화이트 밸런스가 자동으로 돌아간다.
+     * 기기에서 확인한 사실이며, 되받아 걸면 그 뒤로는 ARCore가 다시 가져가지 않는다.
+     *
+     * SharedCamera 문서는 ARCore가 도는 동안 `setRepeatingRequest`를 부르지 말라고 한다. 그러나
+     * ARCore 공식 샘플도 초점 모드를 바꿀 때 같은 일을 하고, 1분 녹화에서 프레임 공급도 pose
+     * 수급도 끊기지 않았다. 이 한 번 없이는 기능 자체가 성립하지 않는다.
+     *
+     * 되받기는 횟수와 간격으로 묶는다. ARCore와 매 프레임 요청을 주고받는 상태가 되면 그것대로
+     * 망가진 것이고, 그때는 조용히 싸우기보다 로그를 남기고 멈추는 편이 낫다.
+     */
+    private inner class ManualRequestGuard(
+        private val config: ManualCameraConfig,
+        private val repeating: CaptureRequest,
+        private val handler: Handler,
+    ) {
+        private var attempts = 0
+        private var lastAttemptAtMs = 0L
+        private var settledLogged = false
+
+        /** 카메라 스레드에서 매 프레임 불린다. 이 클래스의 상태는 그 스레드만 만진다. */
+        fun observe(
+            active: CameraCaptureSession,
+            observed: CaptureRequest,
+            result: TotalCaptureResult,
+        ) {
+            if (observed.carriesManualCamera()) {
+                val applied = result.readAppliedCameraSettings()
+                appliedSettings = applied
+                if (!settledLogged) {
+                    settledLogged = true
+                    logCameraSettingMismatch(config, applied)
+                }
+                return
+            }
+            val now = SystemClock.elapsedRealtime()
+            if (attempts >= MAX_REAPPLY_ATTEMPTS || now - lastAttemptAtMs < REAPPLY_INTERVAL_MS) return
+            attempts++
+            lastAttemptAtMs = now
+            Log.i(CAPTURE_LOG_TAG, "ARCore replaced the repeating request; restoring manual settings (attempt $attempts)")
+            runCatching { active.setRepeatingRequest(repeating, frameCallback, handler) }
+                .onFailure { Log.w(CAPTURE_LOG_TAG, "Could not restore the manual repeating request", it) }
+            if (attempts == MAX_REAPPLY_ATTEMPTS) {
+                Log.w(CAPTURE_LOG_TAG, "Manual settings did not stick after $attempts attempts; leaving ARCore's request in place")
+            }
+        }
+    }
 
     private companion object {
         /** 카메라가 열려 스트림이 돌기 시작할 때까지 기다리는 한계. */
@@ -243,6 +325,12 @@ class ArSharedCameraSession(
 
         /** capture session 닫힘을 기다리는 한계. 넘기면 기다림을 포기하고 나머지 정리를 이어간다. */
         const val CLOSE_TIMEOUT_SECONDS = 2L
+
+        /** 수동 요청을 되받는 최대 횟수. 기기에서는 한 번으로 끝났다. */
+        const val MAX_REAPPLY_ATTEMPTS = 10
+
+        /** 되받기 사이의 최소 간격. 요청이 반영되기까지 몇 프레임 걸리므로 그동안 다시 걸지 않는다. */
+        const val REAPPLY_INTERVAL_MS = 300L
     }
 }
 
@@ -255,6 +343,8 @@ class ArSharedCameraSession(
 private class CameraOpenRequest(
     val arSession: Session,
     val recorder: MediaRecorder,
+    /** Session 내내 고정할 촬영 조건. null이면 기기 자동에 맡긴다. */
+    val manual: ManualCameraConfig?,
     val onStreaming: () -> Unit,
 ) {
     val sharedCamera: SharedCamera = arSession.sharedCamera
