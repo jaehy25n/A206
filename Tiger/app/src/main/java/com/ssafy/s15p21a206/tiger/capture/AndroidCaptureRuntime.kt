@@ -67,6 +67,38 @@ class AndroidCaptureRuntime(
         return next
     }
 
+    fun appendEpisode(marker: EpisodeMarker) {
+        if (bundle == null) return
+        episodeLog?.append(marker)
+    }
+
+    fun stop(): FinalizeResult {
+        val active = requireNotNull(bundle) { "No active capture" }
+        sensorLog.stopListening()
+        closeFrameWindow()
+        val stopError = runCatching { mediaRecorder?.stop() }.exceptionOrNull()
+        val camera = poseCollector.cameraMetadata
+        releaseResources()
+        bundle = null
+        if (stopError != null) return FinalizeResult.Failed(stopError.message ?: "Video recording could not be finalized")
+        return SessionFinalizer(store).finalize(active, camera = camera)
+    }
+
+    fun interrupt() {
+        sensorLog.stopListening()
+        closeFrameWindow()
+        runCatching { mediaRecorder?.stop() }
+        releaseResources()
+        bundle = null
+    }
+
+    private fun writeHeaders(bundle: SessionBundle) {
+        frameTimestamps = FrameTimestampWriter(bundle.mainFrameTimestamps).also(FrameTimestampWriter::start)
+        sensorLog.open(bundle)
+        poseCollector.open(bundle.arcorePoses)
+        episodeLog = EpisodeLogWriter(bundle.episodes).also(EpisodeLogWriter::start)
+    }
+
     /**
      * 수집에 필요한 것을 순서대로 연다.
      *
@@ -110,92 +142,6 @@ class AndroidCaptureRuntime(
         throw error
     }
 
-    /** 녹화 크기를 ARCore Camera 텍스처에 맞춰 recorder를 준비한다. */
-    private fun prepareRecorder(
-        session: Session,
-        bundle: SessionBundle,
-    ): MediaRecorder =
-        newMediaRecorder().apply {
-            setVideoSource(MediaRecorder.VideoSource.SURFACE)
-            setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-            setVideoEncoder(MediaRecorder.VideoEncoder.H264)
-            setVideoFrameRate(30)
-            setVideoSize(session.cameraConfig.textureSize.width, session.cameraConfig.textureSize.height)
-            setOutputFile(bundle.mainVideo.absolutePath)
-            // 회전 정보를 남기지 않는다. 폰을 가로로 눕혀 촬영하므로 센서가 내보내는
-            // 가로 프레임이 곧 똑바로 선 장면이다. Intrinsic도 같은 기준으로 기록한다.
-            prepare()
-        }
-
-    /**
-     * 프리뷰를 그릴 Surface를 받아 온다. 녹화와 같은 가로 기준으로 크기를 넘긴다.
-     *
-     * 프리뷰를 붙이지 못해도 수집은 이어간다. 화면에 보이지 않을 뿐 기록은 온전하다.
-     */
-    private fun previewSurfaceFor(
-        session: Session,
-        previewSurfaces: PreviewSurfaceProvider,
-    ): Surface? {
-        val textureSize = session.cameraConfig.textureSize
-        return runCatching { previewSurfaces.surfaceFor(textureSize.width, textureSize.height) }
-            .onFailure { Log.w(CAPTURE_LOG_TAG, "Could not obtain a preview surface", it) }
-            .getOrNull()
-    }
-
-    /**
-     * 인자 없는 `MediaRecorder()`는 API 31에서 deprecated됐고, Context를 받는 생성자가 그 자리를
-     * 대신한다. 31 이상에서는 Context를 넘겨 녹화가 어느 앱의 것인지 프레임워크에 알린다.
-     * 31 미만에서는 그 생성자가 없으므로 옛 경로를 그대로 쓴다. 31 이상의 옛 생성자도 안에서
-     * 프로세스의 Application context를 집어 쓰므로 두 경로의 동작은 같다.
-     */
-    private fun newMediaRecorder(): MediaRecorder =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            MediaRecorder(appContext)
-        } else {
-            @Suppress("DEPRECATION")
-            MediaRecorder()
-        }
-
-    fun stop(): FinalizeResult {
-        val active = requireNotNull(bundle) { "No active capture" }
-        sensorLog.stopListening()
-        closeFrameWindow()
-        val stopError = runCatching { mediaRecorder?.stop() }.exceptionOrNull()
-        val camera = poseCollector.cameraMetadata
-        releaseResources()
-        bundle = null
-        if (stopError != null) return FinalizeResult.Failed(stopError.message ?: "Video recording could not be finalized")
-        return SessionFinalizer(store).finalize(active, camera = camera)
-    }
-
-    /**
-     * Camera 프레임 공급을 먼저 끊고 타임스탬프 기록 창을 닫는다.
-     *
-     * 공급이 계속되는 상태에서 창만 닫으면, `MediaRecorder.stop()`이 끝나기까지 인코딩된 프레임이
-     * `main_frame_timestamps.csv`에 남지 않아 MP4 frame 수와 벌어진다. 공급을 먼저 끊으면 인코더와
-     * CSV가 같은 마지막 프레임에서 끝난다.
-     */
-    private fun closeFrameWindow() {
-        cameraSession.stopRepeating()
-        // stopRepeating 시점에 이미 진행 중인 프레임은 계속 인코딩된다. 그 프레임의
-        // onCaptureCompleted까지 받고 창을 닫아야 CSV가 MP4와 같은 프레임에서 끝난다.
-        runCatching { Thread.sleep(FRAME_DRAIN_DELAY_MS) }
-        frameTimestamps?.recording = false
-    }
-
-    fun interrupt() {
-        sensorLog.stopListening()
-        closeFrameWindow()
-        runCatching { mediaRecorder?.stop() }
-        releaseResources()
-        bundle = null
-    }
-
-    fun appendEpisode(marker: EpisodeMarker) {
-        if (bundle == null) return
-        episodeLog?.append(marker)
-    }
-
     /**
      * 고른 녹화 해상도를 가진 Camera config를 세션에 지정한다.
      *
@@ -230,6 +176,67 @@ class AndroidCaptureRuntime(
         target = resolution,
     )
 
+    /** 녹화 크기를 ARCore Camera 텍스처에 맞춰 recorder를 준비한다. */
+    private fun prepareRecorder(
+        session: Session,
+        bundle: SessionBundle,
+    ): MediaRecorder =
+        newMediaRecorder().apply {
+            setVideoSource(MediaRecorder.VideoSource.SURFACE)
+            setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+            setVideoEncoder(MediaRecorder.VideoEncoder.H264)
+            setVideoFrameRate(30)
+            setVideoSize(session.cameraConfig.textureSize.width, session.cameraConfig.textureSize.height)
+            setOutputFile(bundle.mainVideo.absolutePath)
+            // 회전 정보를 남기지 않는다. 폰을 가로로 눕혀 촬영하므로 센서가 내보내는
+            // 가로 프레임이 곧 똑바로 선 장면이다. Intrinsic도 같은 기준으로 기록한다.
+            prepare()
+        }
+
+    /**
+     * 인자 없는 `MediaRecorder()`는 API 31에서 deprecated됐고, Context를 받는 생성자가 그 자리를
+     * 대신한다. 31 이상에서는 Context를 넘겨 녹화가 어느 앱의 것인지 프레임워크에 알린다.
+     * 31 미만에서는 그 생성자가 없으므로 옛 경로를 그대로 쓴다. 31 이상의 옛 생성자도 안에서
+     * 프로세스의 Application context를 집어 쓰므로 두 경로의 동작은 같다.
+     */
+    private fun newMediaRecorder(): MediaRecorder =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            MediaRecorder(appContext)
+        } else {
+            @Suppress("DEPRECATION")
+            MediaRecorder()
+        }
+
+    /**
+     * 프리뷰를 그릴 Surface를 받아 온다. 녹화와 같은 가로 기준으로 크기를 넘긴다.
+     *
+     * 프리뷰를 붙이지 못해도 수집은 이어간다. 화면에 보이지 않을 뿐 기록은 온전하다.
+     */
+    private fun previewSurfaceFor(
+        session: Session,
+        previewSurfaces: PreviewSurfaceProvider,
+    ): Surface? {
+        val textureSize = session.cameraConfig.textureSize
+        return runCatching { previewSurfaces.surfaceFor(textureSize.width, textureSize.height) }
+            .onFailure { Log.w(CAPTURE_LOG_TAG, "Could not obtain a preview surface", it) }
+            .getOrNull()
+    }
+
+    /**
+     * Camera 프레임 공급을 먼저 끊고 타임스탬프 기록 창을 닫는다.
+     *
+     * 공급이 계속되는 상태에서 창만 닫으면, `MediaRecorder.stop()`이 끝나기까지 인코딩된 프레임이
+     * `main_frame_timestamps.csv`에 남지 않아 MP4 frame 수와 벌어진다. 공급을 먼저 끊으면 인코더와
+     * CSV가 같은 마지막 프레임에서 끝난다.
+     */
+    private fun closeFrameWindow() {
+        cameraSession.stopRepeating()
+        // stopRepeating 시점에 이미 진행 중인 프레임은 계속 인코딩된다. 그 프레임의
+        // onCaptureCompleted까지 받고 창을 닫아야 CSV가 MP4와 같은 프레임에서 끝난다.
+        runCatching { Thread.sleep(FRAME_DRAIN_DELAY_MS) }
+        frameTimestamps?.recording = false
+    }
+
     private fun releaseResources() {
         poseCollector.stop()
         // ARCore Session은 반드시 마지막에 닫는다. capture session이 닫힐 때 ARCore가
@@ -246,13 +253,6 @@ class AndroidCaptureRuntime(
         frameTimestamps = null
         episodeLog = null
         sensorLog.close()
-    }
-
-    private fun writeHeaders(bundle: SessionBundle) {
-        frameTimestamps = FrameTimestampWriter(bundle.mainFrameTimestamps).also(FrameTimestampWriter::start)
-        sensorLog.open(bundle)
-        poseCollector.open(bundle.arcorePoses)
-        episodeLog = EpisodeLogWriter(bundle.episodes).also(EpisodeLogWriter::start)
     }
 
     private companion object {
