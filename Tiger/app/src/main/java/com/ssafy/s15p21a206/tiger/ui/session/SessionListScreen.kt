@@ -404,17 +404,26 @@ private fun SessionSummaryItem(
                         modifier = Modifier.alignByBaseline(),
                     )
                 }
-                // 메타 둘은 나란히 붙여 둔다. 같은 종류이므로 가운뎃점으로 이을 수 있다. 한국어에서
-                // 가운뎃점은 같은 종류의 낱말을 묶는 부호이고, 이 자리가 바로 그 자리다.
+                // 메타 둘은 왼쪽에 세로로 쌓는다. 값을 부호로 이어 붙이지 않는다. 값마다 제 줄을
+                // 주고, 묶이는 것은 서로 붙어 있다는 사실이 말한다.
                 //
                 // 열로 갈라 Object를 왼쪽, 식별자를 오른쪽 끝에 두었더니 근접성이 종류를 이겼다.
                 // 식별자와 전송 상태가 같은 오른쪽 기둥에 세로로 붙어 한 묶음으로 보였는데 앞은
                 // 메타이고 뒤는 상태다. 붙여 놓은 것이 곧 묶인 것으로 읽히므로, 묶고 싶은 것을
-                // 붙여 놓아야 한다.
+                // 붙여 놓아야 한다. 지금은 두 메타가 서로의 바로 아래위에 있고 상태는 첫 행의 반대쪽
+                // 끝에 있다.
+                //
+                // 두 이름을 Session 행에 저장하기 전에 마감된 세션은 Object가 비어 있다. 그때는 빈
+                // 이름표를 세우지 않고 줄째로 뺀다. 아래 식별자가 올라와 붙으므로 구멍이 남지 않는다.
+                if (summary.objectName.isNotBlank()) {
+                    Text(
+                        text = stringResource(R.string.session_object, summary.objectName),
+                        style = TigerText.supporting,
+                    )
+                }
                 Text(
-                    text = sessionMeta(summary),
+                    text = stringResource(R.string.session_list_short_id, summary.sessionId.take(8)),
                     style = TigerText.supporting,
-                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }
@@ -457,24 +466,4 @@ private fun SessionSummaryItem(
             onDismiss = { pendingDelete = null },
         )
     }
-}
-
-/**
- * 카드 둘째 행의 메타 문자열.
- *
- * Object와 짧은 ID는 같은 종류라 가운뎃점으로 잇는다. 한국어에서 가운뎃점은 같은 종류의 낱말을 묶는
- * 부호이므로, 종류가 다른 값을 이으면 거짓말이 되지만 여기서는 사실이다.
- *
- * 두 이름을 Session 행에 저장하기 전에 마감된 세션은 Object가 비어 있다. 그때는 빈 자리를 세우지 않고
- * 식별자만 남긴다.
- */
-@Composable
-private fun sessionMeta(summary: SessionSummary): String {
-    val shortId = stringResource(R.string.session_list_short_id, summary.sessionId.take(8))
-    if (summary.objectName.isBlank()) return shortId
-    return stringResource(
-        R.string.session_meta_separator,
-        stringResource(R.string.session_object, summary.objectName),
-        shortId,
-    )
 }

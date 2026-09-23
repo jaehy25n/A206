@@ -69,16 +69,11 @@ class SessionListScreenTest {
             )
         }
 
-        // 메타 둘은 한 줄에 나란히 선다. 같은 종류이므로 붙여 놓아야 한 묶음으로 읽힌다. 열로 갈라
-        // 놓았을 때는 식별자가 전송 상태와 같은 기둥에 붙어, 근접성이 종류를 이겼다.
-        composeRule
-            .onNodeWithText(
-                string(
-                    R.string.session_meta_separator,
-                    string(R.string.session_object, "cup"),
-                    string(R.string.session_list_short_id, "session-"),
-                ),
-            ).assertIsDisplayed()
+        // 메타 둘은 왼쪽에 세로로 쌓여 서로 붙는다. 값을 부호로 이어 붙이지 않고, 묶이는 것은 서로의
+        // 바로 아래위에 있다는 사실이 말한다. 열로 갈라 놓았을 때는 식별자가 전송 상태와 같은 기둥에
+        // 붙어 근접성이 종류를 이겼다.
+        composeRule.onNodeWithText(string(R.string.session_object, "cup")).assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.session_list_short_id, "session-")).assertIsDisplayed()
         composeRule.onNodeWithText(string(R.string.upload_failed)).assertIsDisplayed()
         composeRule.onNodeWithContentDescription(sessionLabel).performClick()
         assertEquals(summary.sessionId, selectedSessionId)

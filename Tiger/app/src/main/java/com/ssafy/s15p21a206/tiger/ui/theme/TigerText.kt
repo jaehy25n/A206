@@ -152,7 +152,7 @@ object TigerText {
     val groupLabel: TextStyle
         @Composable get() =
             MaterialTheme.typography.labelMedium
-                .copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                .copy(color = MaterialTheme.colorScheme.onSurface)
                 .hugged
 
     /**

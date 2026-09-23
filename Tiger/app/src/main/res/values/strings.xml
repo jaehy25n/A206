@@ -42,7 +42,6 @@
     <string name="session_label_task">Task</string>
     <string name="session_label_object">Object</string>
     <string name="session_label_id">ID</string>
-    <string name="session_meta_separator">%1$s · %2$s</string>
     <string name="session_task">Task %1$s</string>
     <string name="session_object">Object %1$s</string>
     <string name="session_list_short_id">ID %1$s</string>
