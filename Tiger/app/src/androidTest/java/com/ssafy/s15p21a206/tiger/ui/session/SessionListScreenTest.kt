@@ -1,8 +1,12 @@
 package com.ssafy.s15p21a206.tiger.ui.session
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -65,12 +69,11 @@ class SessionListScreenTest {
             )
         }
 
-        // 값마다 제 자리가 있다. 종류가 다른 값을 한 줄에 부호로 이어 붙이지 않는다.
-        composeRule.onNodeWithText(string(R.string.session_list_episode_count, 2)).assertIsDisplayed()
-        // 서버에 올라간 영상을 찾을 때 쓰는 값이라 첫 행의 오른쪽 끝에 둔다.
-        composeRule.onNodeWithText(string(R.string.session_list_short_id, "session-")).assertIsDisplayed()
-        // 한 Task 안의 세션을 갈라 주는 유일한 이름이다. 시각만으로는 어느 물체를 찍은 것인지 모른다.
-        composeRule.onNodeWithText(string(R.string.session_object, "cup")).assertIsDisplayed()
+        // 메타 둘은 왼쪽에 세로로 쌓여 서로 붙는다. 값을 부호로 이어 붙이지 않고, 묶이는 것은 서로의
+        // 바로 아래위에 있다는 사실이 말한다. 이름표 낱말은 적지 않고, 무엇이 값이고
+        // 무엇이 기계 이름인지는 잉크의 단계와 `#`가 가른다.
+        composeRule.onNodeWithText("cup").assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.session_short_id_tag, "session-")).assertIsDisplayed()
         composeRule.onNodeWithText(string(R.string.upload_failed)).assertIsDisplayed()
         composeRule.onNodeWithContentDescription(sessionLabel).performClick()
         assertEquals(summary.sessionId, selectedSessionId)
@@ -97,7 +100,9 @@ class SessionListScreenTest {
         }
 
         composeRule.onNodeWithContentDescription(string(R.string.session_list_item_content_description, captureTime)).assertIsDisplayed()
-        composeRule.onNodeWithText(string(R.string.session_object, "")).assertDoesNotExist()
+        // 값이 없으면 줄째로 뺀다. 이름표 낱말을 적지 않으므로 빈 줄이 남을 자리도 없다.
+        composeRule.onNodeWithText("cup").assertDoesNotExist()
+        composeRule.onNodeWithText(string(R.string.session_short_id_tag, "session-")).assertIsDisplayed()
     }
 
     /** 삭제는 카드에 표를 두지 않고 길게 누르기에 숨긴다. 확인을 거치지 않으면 지워지지 않는다. */
@@ -174,6 +179,41 @@ class SessionListScreenTest {
         composeRule.onNodeWithText(string(R.string.task_session_list_empty)).assertIsDisplayed()
         // 비어 있을 때는 바로 아래 안내가 같은 말을 하므로 개수를 세지 않는다.
         composeRule.onNodeWithText(string(R.string.session_list_count, 0)).assertDoesNotExist()
+    }
+
+    /**
+     * 홈은 헤더가 없고 Task의 Session 목록은 헤더를 얹는다. 두 이름표가 같은 높이에서 시작해야
+     * 화면을 오갈 때 글자가 제자리에 머무르는 것으로 보인다.
+     *
+     * 전에는 홈이 제목의 중심을 헤더 제목의 중심에 맞췄다. 헤더에 제목을 두는 화면이 없어 맞출
+     * 상대가 없는 정렬이었고, 그동안 홈의 이름표만 50dp 위에 붙어 있었다.
+     */
+    @Test
+    fun bothListScreensStartTheirSectionNameAtTheSameHeight() {
+        var showHome by mutableStateOf(true)
+        val summary = summary()
+
+        composeRule.setContent {
+            if (showHome) {
+                SessionListScreen(listOf(summary), onStartCapture = {}, onOpenTask = {})
+            } else {
+                TaskSessionListScreen(
+                    taskName = summary.taskName,
+                    sessions = listOf(summary),
+                    onBack = {},
+                    onOpenSession = {},
+                    onDeleteSession = {},
+                    onStartCapture = {},
+                )
+            }
+        }
+
+        val homeTop = composeRule.onNodeWithText(string(R.string.session_list_title)).getBoundsInRoot().top
+        showHome = false
+        composeRule.waitForIdle()
+        val taskTop = composeRule.onNodeWithText(summary.taskName).getBoundsInRoot().top
+
+        assertEquals(homeTop.value.toDouble(), taskTop.value.toDouble(), 0.5)
     }
 
     private fun summary() =

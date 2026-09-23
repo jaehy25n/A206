@@ -1,8 +1,5 @@
 package com.ssafy.s15p21a206.tiger
 
-import android.content.Intent
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.Box
@@ -18,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
@@ -29,8 +27,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.ssafy.s15p21a206.tiger.capture.RecordingResolutionStore
-import com.ssafy.s15p21a206.tiger.episode.SafDocumentTreeGateway
-import com.ssafy.s15p21a206.tiger.episode.SessionBundleExporter
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureIntent
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureUiState
 import com.ssafy.s15p21a206.tiger.ui.capture.CaptureWorkspace
@@ -40,10 +36,10 @@ import com.ssafy.s15p21a206.tiger.ui.session.SessionDetailScreen
 import com.ssafy.s15p21a206.tiger.ui.session.SessionListScreen
 import com.ssafy.s15p21a206.tiger.ui.session.SessionOperations
 import com.ssafy.s15p21a206.tiger.ui.session.TaskSessionListScreen
+import com.ssafy.s15p21a206.tiger.ui.theme.TigerSurface
 import com.ssafy.s15p21a206.tiger.ui.upload.cancelUploadOnStop
 import com.ssafy.s15p21a206.tiger.ui.video.FullScreenVideoScreen
 import com.ssafy.s15p21a206.tiger.ui.video.rememberSharedVideoPlayer
-import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 // 조회 흐름의 목적지다. 인자는 Navigation Compose의 type-safe route로 전달한다. Task 이름은
@@ -88,21 +84,16 @@ fun TigerApp() {
     val uploadService = application.uploadService
     val completedSummaries by repository.observeCompletedSummaries().collectAsState(emptyList())
     val scope = rememberCoroutineScope()
-    val gateway = remember { SafDocumentTreeGateway(context.applicationContext) }
     val resolutionStore = remember { RecordingResolutionStore(context.applicationContext) }
-    val exportFailedUnexpected = stringResource(R.string.export_failed_unexpected)
     // 세션 하나에 할 수 있는 일들. 목적지는 모르고 결과 상태만 든다.
     val operations =
         remember(repository, uploadService) {
             SessionOperations(
                 repository = repository,
                 uploadService = uploadService,
-                exporter = SessionBundleExporter(gateway),
                 scope = scope,
-                exportFailedUnexpected = exportFailedUnexpected,
             )
         }
-    var pendingSessionId by remember { mutableStateOf<String?>(null) }
     val navController = rememberNavController()
     val currentEntry by navController.currentBackStackEntryAsState()
 
@@ -121,8 +112,6 @@ fun TigerApp() {
     fun onCapture(intent: CaptureIntent) {
         capture = capture.reduce(intent)
     }
-    val pickerCancelled = stringResource(R.string.export_picker_cancelled)
-    val exportGrantFailed = stringResource(R.string.export_grant_failed)
     val uploadEndpointMissing = stringResource(R.string.upload_endpoint_missing)
     val deleteUploadInProgressMessage = stringResource(R.string.session_delete_upload_in_progress)
     val deleteFailedMessage = stringResource(R.string.session_delete_failed)
@@ -134,26 +123,6 @@ fun TigerApp() {
         // 고아가 아니지만, 순서를 뒤집으면 옮겨지기 전 상태를 보고 판단하게 된다.
         repository.purgeOrphanBundles()
     }
-    val treePicker =
-        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-            if (uri == null) {
-                operations.exportUnavailable(pickerCancelled)
-            } else {
-                val sessionId = pendingSessionId ?: return@rememberLauncherForActivityResult
-                val grantFailure =
-                    runCatching {
-                        gateway.persistGrant(
-                            uri,
-                            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
-                        )
-                    }.exceptionOrNull()
-                if (grantFailure != null) {
-                    operations.exportUnavailable(grantFailure.message ?: exportGrantFailed)
-                    return@rememberLauncherForActivityResult
-                }
-                operations.export(sessionId, uri.toString())
-            }
-        }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
         // 백그라운드 업로드는 하지 않는다. 판정 기준이 "업로드 화면에 있는가"였으나 그 화면을 없애
         // 전송이 진행 중인지로 바꾼다. 어느 화면에 있든 전송 중이면 끊고 FAILED로 남긴다.
@@ -237,7 +206,7 @@ fun TigerApp() {
             popExitTransition = { ExitTransition.None },
         ) {
             composable<SessionListRoute> {
-                DestinationSurface {
+                DestinationSurface(TigerSurface.listBackground) {
                     SessionListScreen(
                         sessions = completedSummaries,
                         onStartCapture = { startCapture("") },
@@ -247,7 +216,7 @@ fun TigerApp() {
             }
             composable<TaskSessionsRoute> { entry ->
                 val route = entry.toRoute<TaskSessionsRoute>()
-                DestinationSurface {
+                DestinationSurface(TigerSurface.listBackground) {
                     TaskSessionListScreen(
                         taskName = route.taskName,
                         sessions = completedSummaries.filter { it.taskName.trim() == route.taskName },
@@ -261,17 +230,11 @@ fun TigerApp() {
             }
             composable<SessionDetailRoute> { entry ->
                 val route = entry.toRoute<SessionDetailRoute>()
-                DestinationSurface {
+                DestinationSurface(TigerSurface.listBackground) {
                     SessionDetailScreen(
                         summary = completedSummaries.firstOrNull { it.sessionId == route.sessionId },
                         onBack = navController::popBackStack,
                         onUpload = { startUpload(route.sessionId) },
-                        exportState = operations.exportState,
-                        exportMessage = operations.exportMessage,
-                        onExport = {
-                            pendingSessionId = route.sessionId
-                            treePicker.launch(null)
-                        },
                         onDelete = { deleteSession(route.sessionId) },
                         // 무엇이 막았는지만 운용이 말하고, 문구는 화면이 붙인다.
                         deleteFailureReason =
@@ -324,8 +287,17 @@ fun TigerApp() {
  */
 @Suppress("FunctionName")
 @Composable
-private fun DestinationSurface(content: @Composable () -> Unit) {
+private fun DestinationSurface(
+    color: Color,
+    content: @Composable () -> Unit,
+) {
     // targetSdk 35부터 창이 시스템 바 아래까지 늘어난다. 목적지마다 막지 않으면 헤더가 상태 표시줄에,
     // 목록 끝이 제스처 바에 물린다. 판이 한 번 막으면 안에 놓이는 화면은 인셋을 몰라도 된다.
-    Surface(modifier = Modifier.fillMaxSize().safeDrawingPadding(), content = content)
+    //
+    // 인셋은 판 자신이 아니라 판 안쪽에서 막는다. 판에 걸면 판이 인셋만큼 줄어들어 시스템 바 자리에는
+    // 판 색이 칠해지지 않고 창 배경이 드러난다. 두 색이 같던 동안은 보이지 않았지만, 목록이 바닥을
+    // 어둡게 깔고부터는 위아래에 다른 색 띠로 남는다.
+    Surface(modifier = Modifier.fillMaxSize(), color = color) {
+        Box(modifier = Modifier.safeDrawingPadding()) { content() }
+    }
 }

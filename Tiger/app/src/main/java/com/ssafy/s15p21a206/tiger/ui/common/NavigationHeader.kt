@@ -63,9 +63,14 @@ private val HEADER_VERTICAL_PADDING = 4.dp
 private val HEADER_ACTION_SIZE = 48.dp
 
 /**
- * 헤더 제목의 중심이 헤더 위쪽 끝에서 떨어진 거리.
+ * 헤더가 차지하는 높이.
  *
- * 헤더가 없는 화면이 제목을 같은 높이에 놓으려 할 때 쓴다. 화면을 오갈 때 제목이 제자리에
- * 머무르는 것으로 보이려면 두 화면이 같은 값을 봐야 한다.
+ * 헤더가 없는 화면이 그만큼 비워 둘 때 쓴다. 헤더를 둔 화면은 본문을 헤더 아래에서 시작하므로,
+ * 헤더가 없는 화면도 같은 높이를 비워야 화면을 오갈 때 이름표가 제자리에 머무르는 것으로 보인다.
+ *
+ * 전에는 이 값이 제목의 중심 높이였고, 헤더가 없는 화면이 제목을 헤더 제목과 같은 높이에 세우는
+ * 데 썼다. 그 정렬은 맞출 상대를 잃었다. 헤더에 제목을 두는 화면이 없다. 어느 화면이든 이름은
+ * 본문의 이름표가 말하고 헤더에는 뒤로 가기와 부수 동작만 남으므로, 맞춰야 할 상대는 헤더 제목이
+ * 아니라 다른 화면의 이름표다.
  */
-val NavigationHeaderTitleCenter = HEADER_VERTICAL_PADDING + HEADER_ACTION_SIZE / 2
+val NavigationHeaderHeight = HEADER_VERTICAL_PADDING * 2 + HEADER_ACTION_SIZE

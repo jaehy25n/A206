@@ -9,6 +9,21 @@
 - 사용자에게 보이는 문자열은 `res/values/strings.xml`에 두며, Composable에 하드코딩하지 않는다.
 - 부모가 소유하는 Compose 상태는 hoisting하고, Composable은 렌더링과 사용자 이벤트 처리로 한정한다.
 
+## 디자인 시스템
+
+화면에서 크기·굵기·색·표면 색을 직접 고르지 않는다. 정해진 이름 중에서 고른다. 조합을 자리마다 손으로 만들면 축이 하나씩 늘어나고, 그러면 어느 요소도 다른 요소와 스타일을 공유하지 않아 위계가 아니라 잡음으로 읽힌다.
+
+- **글자**: `ui/theme/TigerText.kt`의 역할에서 고른다. 크기 다섯 층(28·22·16·14·12)과 잉크 세 단계가 거기서 정해진다. 새 조합이 필요하면 호출부가 아니라 이 파일에 역할을 더한다.
+- **판**: `ui/theme/TigerSurface.kt`. 카드가 얹히는 바닥과 글자가 놓이는 판 둘뿐이다.
+- **타입 스케일과 글꼴**: `ui/theme/Type.kt`. Material 3 컴포넌트가 제 안에서 집어 쓰는 눈금이라 여기를 비우면 그 컴포넌트만 앱 밖의 값을 쓴다.
+- **공용 컴포넌트**: `ui/common`의 `TigerCard`, `LabelledGroup`, `LabelledValue`, `TigerMenuItem`. 카드와 묶음과 메뉴 항목은 여기를 거친다.
+
+역할은 색을 비워 두지 않는다. 비우면 놓인 자리의 콘텐츠 색을 따라 같은 역할이 자리마다 다르게 렌더된다. 예외는 `menuItem` 하나이고, 그 자리의 색은 스타일이 아니라 상태(되돌릴 수 없음·비활성)가 정하므로 컴포넌트에 맡긴다.
+
+간격은 줄상자를 깎은 뒤에 정한다. Material 3의 타입 스케일은 줄 높이를 글자보다 크게 잡아 그 차이가 상자 여백으로 남고, `spacedBy`는 그 바깥에 더해진다. 역할마다 상자를 깎아 두었으므로 쓴 값이 곧 보이는 값이다.
+
+왜 그렇게 정했는지는 각 파일의 KDoc과 `specs/002-capture-control-ux/contracts/capture-control-ui.md`에 있다. 값을 바꾸기 전에 읽는다.
+
 ## Presentation 계층
 
 수집과 조회는 상태의 성격이 달라 같은 패턴을 쓰지 않는다. 하나로 통일하지 않는다.
@@ -32,7 +47,7 @@
 
 ### 조회 — 상태 보유자만
 
-Room Flow에서 목록이 나오고 화면은 값과 콜백만 받는다. 상태 기계가 없으므로 intent와 reducer를 두지 않는다. 내보내기·전송·삭제 세 동작과 그 결과 문구를 드는 얇은 보유자면 된다.
+Room Flow에서 목록이 나오고 화면은 값과 콜백만 받는다. 상태 기계가 없으므로 intent와 reducer를 두지 않는다. 전송·삭제 두 동작과 그 결과 문구를 드는 얇은 보유자면 된다.
 
 ### `ViewModel`을 쓰지 않는다
 
@@ -100,7 +115,7 @@ Room 데이터베이스와 `SessionRepository`, `SessionUploadService`는 `Tiger
 
 ### 화면은 갈랐다 (해결)
 
-`TigerApp`이 앱 루트다. `NavHost`와 조회 흐름의 운용(내보내기·전송·삭제), 그리고 수집 상태를 소유한다. `CaptureWorkspace`는 수집 파이프라인만 가져간다.
+`TigerApp`이 앱 루트다. `NavHost`와 조회 흐름의 운용(전송·삭제), 그리고 수집 상태를 소유한다. `CaptureWorkspace`는 수집 파이프라인만 가져간다.
 
 이전에는 한 함수가 둘을 다 들고 있었고, 수집 마감이 `navController`를 직접 밀었다. 지금은 `onCompleted(sessionId, uploadable)` 하나가 경계다. **수집 쪽에서 `NavController`나 route 타입을 참조하지 않는다.**
 

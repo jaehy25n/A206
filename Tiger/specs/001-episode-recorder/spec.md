@@ -6,7 +6,27 @@
 
 ## 목표
 
-수집자는 Galaxy S10을 로봇 End-Effector에 강체 고정한 뒤, 하나의 긴 Capture Session 동안 main RGB, raw accelerometer·gyroscope·rotation vector, ARCore pose를 끊지 않고 수집한다. 수집자는 그 Session 안에서 여러 demonstration 구간을 Episode marker로 표시하고, 검증을 통과한 Session bundle 전체를 서버로 전송하거나 사용자가 선택한 Documents 위치로 내보낼 수 있다. 서버는 동일한 Session에서 ARCore direct pose와 RGB+IMU 기반 후처리 경로를 모두 시험할 수 있어야 한다.
+수집자는 Galaxy S10을 로봇 End-Effector에 강체 고정한 뒤, 하나의 긴 Capture Session 동안 main RGB, raw accelerometer·gyroscope·rotation vector, ARCore pose를 끊지 않고 수집한다. 수집자는 그 Session 안에서 여러 demonstration 구간을 Episode marker로 표시하고, 검증을 통과한 Session bundle 전체를 서버로 전송할 수 있다. 서버는 동일한 Session에서 ARCore direct pose와 RGB+IMU 기반 후처리 경로를 모두 시험할 수 있어야 한다.
+
+## 철회된 범위: SAF 내보내기 (2026-09-22)
+
+이 명세의 SAF 내보내기 요구는 철회됐다. 번들을 기기 밖으로 내보내는 길은 업로드 하나다.
+
+아래 항목은 더 이상 요구가 아니다. 지우지 않고 남겨 두는 것은 무엇을 지으려 했고 무엇을 거뒀는지가
+함께 읽혀야 하기 때문이며, 구현 판정의 근거로 삼지 않는다.
+
+- 사용자 스토리 3의 내보내기 부분과 그 인수 시나리오 2·3, Galaxy S10 검증 시나리오의 내보내기 절
+- Clarifications 2026-09-03의 내보내기 관련 다섯 문답
+- FR-019 ~ FR-027
+- SC-009 ~ SC-011
+- 핵심 개념의 **Session Export**
+
+Session 완료·검증·`LOCAL_ONLY` 표시는 그대로 요구다. 철회된 것은 완료된 번들을 사용자가 고른 tree로
+복사하는 동작뿐이다.
+
+구현에서도 함께 걷어 냈다. `SessionBundleExporter`, `DocumentTreeGateway`, 내보내기 화면과 문구,
+`SessionExport` 모델, 그리고 `sessions`의 `exportState`·`exportTreeUri`·`exportFailureReason`
+컬럼이 이관 5→6에서 사라졌다.
 
 ## Clarifications
 

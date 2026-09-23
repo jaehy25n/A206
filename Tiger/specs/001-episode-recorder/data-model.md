@@ -1,4 +1,4 @@
-# Capture Session Export 데이터 모델
+# Capture Session 데이터 모델
 
 ## CaptureSession
 
@@ -6,35 +6,18 @@
 
 | Field | Rule |
 | --- | --- |
-| `sessionId` | immutable UUID; staging/completed/export directory identity |
-| `recordingState` | `COMPLETED`인 경우에만 export 허용 |
-| `uploadState` | export와 독립 |
-| `bundlePath` | completed source directory; export가 변경하지 않음 |
-
-## SessionExport
-
-| Field | Rule |
-| --- | --- |
-| `sessionId` | CaptureSession과 1:1 |
-| `state` | `NOT_EXPORTED`, `EXPORTING`, `EXPORTED`, `EXPORT_FAILED` |
-| `treeUri` | 마지막 선택 tree URI; persisted grant가 유효할 때만 재사용 |
-| `failureReason` | 실패 상태에서 사용자에게 표시할 안전한 원인; 성공 시 비움 |
-
-### 전이
-
-- `NOT_EXPORTED → EXPORTING` : completed source validation과 tree access 확인 뒤.
-- `EXPORTING → EXPORTED` : 대상 파일·CSV headers·manifest·metadata validation 성공 뒤.
-- `EXPORTING → EXPORT_FAILED` : 취소, grant loss, overwrite/copy I/O, space 부족, destination validation failure.
-- `EXPORT_FAILED → EXPORTING` : 같은 immutable completed source로 retry.
+| `sessionId` | immutable UUID; staging/completed directory identity |
+| `recordingState` | `COMPLETED`인 경우에만 업로드 대상 |
+| `uploadState` | 번들 전송의 진행과 결과 |
+| `bundlePath` | completed source directory |
 
 ## SessionBundle Manifest
 
-metadata의 raw-file manifest는 `path`, `sizeBytes`, lowercase `sha256`로 구성된다. `metadata.json` 자신은 manifest 대상에서 제외하고 마지막 commit marker로 쓴다. destination validation은 manifest가 선언하는 각 raw file의 이름·크기·digest를 비교한다.
+metadata의 raw-file manifest는 `path`, `sizeBytes`, lowercase `sha256`로 구성된다. `metadata.json` 자신은 manifest 대상에서 제외하고 마지막 commit marker로 쓴다. 번들 검증은 manifest가 선언하는 각 raw file의 이름·크기·digest를 비교한다.
 
 ## 관계와 불변식
 
-- CaptureSession 1개는 0개 또는 1개의 SessionExport 상태를 가진다.
-- SessionExport는 Episode marker나 raw stream을 소유하지 않는다.
-- source staging/completed data는 어떤 export 전이에도 삭제·수정되지 않는다.
-- 각 SessionExport attempt는 unique `attemptId`를 가지며 selected tree URI 안의 임시 directory에 대응한다. 성공한 attempt만 `TigerCapture/<session_id>/`로 publish한다.
-- 같은 tree URI에서 최종 directory가 이미 있으면 검증 성공한 attempt만 이를 덮어쓴다. 실패한 attempt directory는 남기고 retry는 새 `attemptId`를 사용한다.
+- CaptureSession 1개는 0개 이상의 Episode marker를 갖고, marker는 raw stream을 소유하지 않는다.
+- completed bundle은 공개된 뒤 수정하지 않는다. 업로드는 읽기만 한다.
+- SAF 내보내기는 제거됐다. 번들을 기기 밖으로 내보내는 길은 업로드 하나다. `SessionExport`와
+  `exportState`·`exportTreeUri`·`exportFailureReason` 컬럼은 이관 5→6에서 함께 사라졌다.

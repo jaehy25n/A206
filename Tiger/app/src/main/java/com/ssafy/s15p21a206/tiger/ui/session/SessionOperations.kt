@@ -3,8 +3,6 @@ package com.ssafy.s15p21a206.tiger.ui.session
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.ssafy.s15p21a206.tiger.episode.ExportState
-import com.ssafy.s15p21a206.tiger.episode.SessionBundleExporter
 import com.ssafy.s15p21a206.tiger.episode.SessionDeleteResult
 import com.ssafy.s15p21a206.tiger.episode.SessionRepository
 import com.ssafy.s15p21a206.tiger.upload.SessionUploadService
@@ -40,22 +38,14 @@ internal enum class SessionDeleteFailure {
 internal class SessionOperations(
     private val repository: SessionRepository,
     private val uploadService: SessionUploadService?,
-    private val exporter: SessionBundleExporter,
     private val scope: CoroutineScope,
-    /** 내보내기가 예외로 끝나 이유를 못 얻었을 때 쓰는 문구. */
-    private val exportFailedUnexpected: String,
     /** 단위 테스트가 같은 스레드에서 돌리기 위한 자리다. production은 기본값을 쓴다. */
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
-    var exportState by mutableStateOf(ExportState.NOT_EXPORTED)
-        private set
-    var exportMessage by mutableStateOf<String?>(null)
-        private set
-
     /**
      * 전송이 막힌 이유.
      *
-     * 화면에만 쓰고 저장하지 않는다. 업로드에는 내보내기의 `exportFailureReason`에 해당하는
+     * 화면에만 쓰고 저장하지 않는다. 업로드에는 실패 사유를 담는
      * 컬럼이 없고, 무엇이 막았는지는 실패한 자리에서 보면 되는 값이다.
      */
     var uploadFailureReason by mutableStateOf<String?>(null)
@@ -83,36 +73,6 @@ internal class SessionOperations(
                 val result = runCatching { service.upload(sessionId) }.getOrNull()
                 uploadFailureReason = (result as? UploadResult.Failed)?.reason
             }
-    }
-
-    /** 사용자가 고른 tree로 번들을 내보낸다. 권한 확보는 호출한 쪽이 이미 끝냈다. */
-    fun export(
-        sessionId: String,
-        treeUri: String,
-    ) {
-        scope.launch {
-            exportState = ExportState.EXPORTING
-            when (
-                val result =
-                    runCatching { exporter.exportCompleted(repository, sessionId, treeUri) }
-                        .getOrElse { SessionBundleExporter.ExportAttemptResult.Failed(it.message ?: exportFailedUnexpected, "") }
-            ) {
-                is SessionBundleExporter.ExportAttemptResult.Exported -> {
-                    exportState = ExportState.EXPORTED
-                    exportMessage = null
-                }
-                is SessionBundleExporter.ExportAttemptResult.Failed -> {
-                    exportState = ExportState.EXPORT_FAILED
-                    exportMessage = result.reason
-                }
-            }
-        }
-    }
-
-    /** 사용자가 고르기도 전에 picker가 닫혔거나 권한을 얻지 못했다. */
-    fun exportUnavailable(reason: String) {
-        exportState = ExportState.EXPORT_FAILED
-        exportMessage = reason
     }
 
     /**

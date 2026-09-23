@@ -46,50 +46,6 @@ enum class EpisodeState {
 @Serializable enum class UploadState { LOCAL_ONLY, UPLOADING, UPLOADED, FAILED }
 
 @Serializable
-enum class ExportState {
-    NOT_EXPORTED,
-    EXPORTING,
-    EXPORTED,
-    EXPORT_FAILED,
-    ;
-
-    fun canTransitionTo(next: ExportState): Boolean =
-        when (this) {
-            NOT_EXPORTED -> next == EXPORTING
-            EXPORTING -> next == EXPORTED || next == EXPORT_FAILED
-            EXPORT_FAILED -> next == EXPORTING
-            EXPORTED -> false
-        }
-}
-
-@Serializable
-data class SessionExport(
-    @SerialName("session_id") val sessionId: String,
-    val state: ExportState = ExportState.NOT_EXPORTED,
-    @SerialName("tree_uri") val treeUri: String? = null,
-    @SerialName("failure_reason") val failureReason: String? = null,
-    @SerialName("attempt_id") val attemptId: String? = null,
-) {
-    fun start(
-        treeUri: String,
-        attemptId: String,
-    ): SessionExport {
-        check(state.canTransitionTo(ExportState.EXPORTING)) { "Invalid export transition: $state -> EXPORTING" }
-        return copy(state = ExportState.EXPORTING, treeUri = treeUri, failureReason = null, attemptId = attemptId)
-    }
-
-    fun complete(): SessionExport {
-        check(state.canTransitionTo(ExportState.EXPORTED)) { "Invalid export transition: $state -> EXPORTED" }
-        return copy(state = ExportState.EXPORTED, failureReason = null)
-    }
-
-    fun fail(reason: String): SessionExport {
-        check(state.canTransitionTo(ExportState.EXPORT_FAILED)) { "Invalid export transition: $state -> EXPORT_FAILED" }
-        return copy(state = ExportState.EXPORT_FAILED, failureReason = reason)
-    }
-}
-
-@Serializable
 data class CaptureSession(
     @SerialName("session_id") val sessionId: String,
     @SerialName("display_number") val displayNumber: Int,

@@ -5,11 +5,7 @@ import com.ssafy.s15p21a206.tiger.data.local.CaptureSessionEntity
 import com.ssafy.s15p21a206.tiger.data.local.EpisodeMarkerDao
 import com.ssafy.s15p21a206.tiger.data.local.EpisodeMarkerEntity
 import com.ssafy.s15p21a206.tiger.data.local.SessionSummaryEntity
-import com.ssafy.s15p21a206.tiger.episode.DocumentNode
-import com.ssafy.s15p21a206.tiger.episode.DocumentTreeGateway
-import com.ssafy.s15p21a206.tiger.episode.ExportState
 import com.ssafy.s15p21a206.tiger.episode.RecordingState
-import com.ssafy.s15p21a206.tiger.episode.SessionBundleExporter
 import com.ssafy.s15p21a206.tiger.episode.SessionBundleStore
 import com.ssafy.s15p21a206.tiger.episode.SessionRepository
 import com.ssafy.s15p21a206.tiger.episode.UploadState
@@ -44,9 +40,7 @@ class SessionOperationsTest {
         return SessionOperations(
             repository = repository,
             uploadService = uploadService,
-            exporter = SessionBundleExporter(UnreachableGateway),
             scope = CoroutineScope(immediate),
-            exportFailedUnexpected = "알 수 없는 이유",
             ioDispatcher = immediate,
         ) to repository
     }
@@ -108,26 +102,6 @@ class SessionOperationsTest {
         assertNull(operations.uploadFailureReason)
     }
 
-    @Test
-    fun `a cancelled picker leaves the export failed with a reason`() {
-        val (operations, _) = operations(FakeSessionDao(entity(uploadState = UploadState.LOCAL_ONLY)))
-
-        operations.exportUnavailable("폴더 선택이 취소됐습니다")
-
-        assertEquals(ExportState.EXPORT_FAILED, operations.exportState)
-        assertEquals("폴더 선택이 취소됐습니다", operations.exportMessage)
-    }
-
-    @Test
-    fun `exporting a session that is not there fails instead of throwing`() {
-        val (operations, _) = operations(FakeSessionDao(null))
-
-        operations.export("missing", "content://tree")
-
-        assertEquals(ExportState.EXPORT_FAILED, operations.exportState)
-        assertNotNull(operations.exportMessage)
-    }
-
     private fun entity(uploadState: UploadState) =
         CaptureSessionEntity(
             sessionId = "session",
@@ -154,13 +128,6 @@ class SessionOperationsTest {
         ) = Unit
 
         override suspend fun failInterruptedUploads() = Unit
-
-        override suspend fun updateExport(
-            sessionId: String,
-            state: String,
-            treeUri: String?,
-            failureReason: String?,
-        ) = Unit
 
         override suspend fun completedSession(sessionId: String): CaptureSessionEntity? = stored
 
@@ -194,34 +161,5 @@ class SessionOperationsTest {
         override suspend fun upsert(marker: EpisodeMarkerEntity) = Unit
 
         override suspend fun deleteForSession(sessionId: String) = Unit
-    }
-
-    /** 내보내기가 세션을 찾지 못해 tree에 닿기 전에 끝나는지 본다. 닿으면 실패한다. */
-    private object UnreachableGateway : DocumentTreeGateway {
-        override fun hasPersistedWriteGrant(treeUri: String) = true
-
-        override fun list(directoryUri: String): List<DocumentNode> = error("내보낼 세션이 없는데 tree를 읽었다")
-
-        override fun createDirectory(
-            parentUri: String,
-            name: String,
-        ): DocumentNode = error("내보낼 세션이 없는데 tree에 썼다")
-
-        override fun createFile(
-            parentUri: String,
-            name: String,
-            mimeType: String,
-        ): DocumentNode = error("내보낼 세션이 없는데 tree에 썼다")
-
-        override fun openInput(uri: String) = error("내보낼 세션이 없는데 tree를 읽었다")
-
-        override fun openOutput(uri: String) = error("내보낼 세션이 없는데 tree에 썼다")
-
-        override fun rename(
-            uri: String,
-            name: String,
-        ): DocumentNode = error("내보낼 세션이 없는데 tree를 고쳤다")
-
-        override fun delete(uri: String) = error("내보낼 세션이 없는데 tree를 지웠다")
     }
 }
