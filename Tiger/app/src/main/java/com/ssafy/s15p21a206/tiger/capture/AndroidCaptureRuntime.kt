@@ -48,7 +48,7 @@ class AndroidCaptureRuntime(
      */
     val tracking: StateFlow<TrackingSample> get() = poseCollector.tracking
 
-    fun start(
+    suspend fun start(
         displayNumber: Int,
         resolution: RecordingResolution = RecordingInputValidator.DEFAULT_RESOLUTION,
         previewSurfaces: PreviewSurfaceProvider = PreviewSurfaceProvider { _, _ -> null },
@@ -102,7 +102,7 @@ class AndroidCaptureRuntime(
      * 센서 수신을 맨 뒤에 여는 것은 카메라가 실패하면 IMU만 쌓이는 상태가 되기 때문이다.
      * 하나라도 실패하면 예외가 그대로 올라가고, 뒷정리는 [abandon]이 한다.
      */
-    private fun openCapture(
+    private suspend fun openCapture(
         next: SessionBundle,
         resolution: RecordingResolution,
         previewSurfaces: PreviewSurfaceProvider,
