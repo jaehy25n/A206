@@ -43,4 +43,15 @@ class TigerDatabaseMigrationTest {
         assertTrue(backfill.contains("MIN(NULLIF(episode_markers.objectName, ''))"))
         assertEquals(3, SESSION_METADATA_MIGRATION_SQL.size)
     }
+
+    /**
+     * 옮길 데이터가 없어 테이블을 그대로 떨어뜨린다. `capture_logs`에 쓰는 코드가 한 번도
+     * 배선된 적이 없어 어느 기기에도 행이 쌓여 있지 않다.
+     */
+    @Test
+    fun `version seven migration drops the unused capture log table`() {
+        assertEquals(6, MIGRATION_6_7.startVersion)
+        assertEquals(7, MIGRATION_6_7.endVersion)
+        assertEquals(listOf("DROP TABLE IF EXISTS capture_logs"), CAPTURE_LOG_REMOVAL_MIGRATION_SQL)
+    }
 }

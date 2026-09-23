@@ -198,19 +198,6 @@ data class CameraConfig(
     val cameraImuComparability: String = "VERIFIED",
 )
 
-@Serializable
-data class CaptureLog(
-    val id: Long = 0,
-    val sessionId: String?,
-    val reason: String,
-    val summary: String,
-    val timestampNs: Long,
-    val frameCount: Long,
-    val accelerometerCount: Long,
-    val gyroscopeCount: Long,
-    val rotationVectorCount: Long,
-)
-
 @Serializable data class FileManifest(
     val path: String,
     @SerialName("size_bytes") val sizeBytes: Long,

@@ -57,19 +57,6 @@ data class EpisodeMarkerEntity(
     val outcome: String,
 )
 
-@Entity(tableName = "capture_logs")
-data class CaptureLogEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val sessionId: String?,
-    val reason: String,
-    val summary: String,
-    val timestampNs: Long,
-    val frameCount: Long,
-    val accelerometerCount: Long,
-    val gyroscopeCount: Long,
-    val rotationVectorCount: Long,
-)
-
 @Dao
 interface CaptureSessionDao {
     /**
@@ -168,21 +155,11 @@ interface EpisodeMarkerDao {
     suspend fun deleteForSession(sessionId: String)
 }
 
-@Dao
-interface CaptureLogDao {
-    @Insert suspend fun insert(log: CaptureLogEntity)
-
-    @Query("DELETE FROM capture_logs")
-    suspend fun clearAll()
-}
-
-@Database(entities = [CaptureSessionEntity::class, EpisodeMarkerEntity::class, CaptureLogEntity::class], version = 6, exportSchema = false)
+@Database(entities = [CaptureSessionEntity::class, EpisodeMarkerEntity::class], version = 7, exportSchema = false)
 abstract class TigerDatabase : RoomDatabase() {
     abstract fun captureSessionDao(): CaptureSessionDao
 
     abstract fun episodeMarkerDao(): EpisodeMarkerDao
-
-    abstract fun captureLogDao(): CaptureLogDao
 }
 
 val MIGRATION_2_3 =
@@ -288,3 +265,21 @@ val EXPORT_REMOVAL_MIGRATION_SQL =
         "DROP TABLE sessions",
         "ALTER TABLE sessions_without_export RENAME TO sessions",
     )
+
+val MIGRATION_6_7 =
+    object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            CAPTURE_LOG_REMOVAL_MIGRATION_SQL.forEach(db::execSQL)
+        }
+    }
+
+/**
+ * 수집 로그 테이블을 지운다.
+ *
+ * `capture_logs`에 쓰는 코드는 만들어진 뒤 한 번도 배선되지 않았다. 읽는 곳도 없어 어느 기기에도
+ * 행이 쌓여 있지 않다. 그래서 옮길 데이터가 없고 테이블을 그대로 떨어뜨린다.
+ *
+ * 엔티티에서만 빼고 테이블을 남기는 선택지는 없다. Room이 엔티티에서 만든 스키마와 실제 스키마를
+ * 견주므로 불일치로 잡힌다. 5→6에서 내보내기 컬럼을 걷어낼 때와 같은 이유다.
+ */
+val CAPTURE_LOG_REMOVAL_MIGRATION_SQL = listOf("DROP TABLE IF EXISTS capture_logs")
