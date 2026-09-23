@@ -265,14 +265,3 @@ class FrameTimestampWriter(
         return true
     }
 }
-
-class ArCorePoseWriter(
-    file: File,
-) : CsvWriter(file, "android_camera_timestamp_ns,tx,ty,tz,qx,qy,qz,qw,tracking_state,tracking_failure_reason") {
-    fun append(
-        timestampNs: Long,
-        values: List<Float>,
-        tracking: String,
-        failureReason: String?,
-    ) = append("$timestampNs,${values.joinToString(",")},$tracking,${failureReason.orEmpty()}")
-}
