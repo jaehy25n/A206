@@ -28,7 +28,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.ssafy.s15p21a206.tiger"
+        applicationId = "com.ssafy.s15p21a206.tigermask"
         minSdk = 28
         targetSdk = 37
         versionCode = 1
