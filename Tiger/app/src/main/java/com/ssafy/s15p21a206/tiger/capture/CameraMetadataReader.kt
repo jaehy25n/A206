@@ -16,18 +16,14 @@ class CameraMetadataReader(
     fun read(cameraId: String): CameraOptics =
         runCatching {
             val characteristics = cameraManager.getCameraCharacteristics(cameraId)
+            val focalLengths = characteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)
+            val sensorSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE)
+            val distortion = characteristics.get(CameraCharacteristics.LENS_DISTORTION)
             CameraOptics(
-                focalLengthMm =
-                    characteristics
-                        .get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)
-                        ?.firstOrNull(),
-                sensorWidthMm = characteristics.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE)?.width,
-                sensorHeightMm = characteristics.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE)?.height,
-                distortionCoefficients =
-                    characteristics
-                        .get(CameraCharacteristics.LENS_DISTORTION)
-                        ?.toList()
-                        ?.takeIf(List<Float>::isNotEmpty),
+                focalLengthMm = focalLengths?.firstOrNull(),
+                sensorWidthMm = sensorSize?.width,
+                sensorHeightMm = sensorSize?.height,
+                distortionCoefficients = distortion?.toList()?.takeIf(List<Float>::isNotEmpty),
             )
         }.getOrElse { CameraOptics() }
 }
