@@ -19,26 +19,6 @@ fun interface MonotonicClock {
     fun nowNs(): Long
 }
 
-class SessionStartPreflight(
-    private val availableBytes: () -> Long,
-    private val requiredBytes: Long,
-) {
-    fun check(cameraTimestampRealtime: Boolean): SessionPreflightResult =
-        when {
-            !cameraTimestampRealtime -> SessionPreflightResult.Failed("Camera timestamp source is not REALTIME")
-            availableBytes() < requiredBytes -> SessionPreflightResult.Failed("Insufficient storage")
-            else -> SessionPreflightResult.Ready
-        }
-}
-
-sealed interface SessionPreflightResult {
-    data object Ready : SessionPreflightResult
-
-    data class Failed(
-        val reason: String,
-    ) : SessionPreflightResult
-}
-
 class CaptureSessionCoordinator(
     private val clock: MonotonicClock,
     private val writers: List<SessionWriter>,
@@ -264,15 +244,4 @@ class FrameTimestampWriter(
         append("${nextFrameNumber++},$timestampNs,SENSOR_TIMESTAMP")
         return true
     }
-}
-
-class ArCorePoseWriter(
-    file: File,
-) : CsvWriter(file, "android_camera_timestamp_ns,tx,ty,tz,qx,qy,qz,qw,tracking_state,tracking_failure_reason") {
-    fun append(
-        timestampNs: Long,
-        values: List<Float>,
-        tracking: String,
-        failureReason: String?,
-    ) = append("$timestampNs,${values.joinToString(",")},$tracking,${failureReason.orEmpty()}")
 }
