@@ -183,14 +183,9 @@ class AndroidCaptureRuntime(
         resolution: RecordingResolution,
     ) {
         val selected =
-            runCatching {
-                RecordingCameraConfigSelector.select(
-                    candidates = session.getSupportedCameraConfigs(CameraConfigFilter(session)),
-                    imageSizeOf = { RecordingResolution(it.imageSize.width, it.imageSize.height) },
-                    textureSizeOf = { RecordingResolution(it.textureSize.width, it.textureSize.height) },
-                    target = resolution,
-                )
-            }.onFailure { Log.w(CAPTURE_LOG_TAG, "Could not read the supported camera configs", it) }.getOrNull()
+            runCatching { selectCameraConfig(session, resolution) }
+                .onFailure { Log.w(CAPTURE_LOG_TAG, "Could not read the supported camera configs", it) }
+                .getOrNull()
         if (selected == null) {
             Log.w(CAPTURE_LOG_TAG, "No camera config matches ${resolution.width}x${resolution.height}; keeping the default config")
             return
@@ -198,6 +193,17 @@ class AndroidCaptureRuntime(
         runCatching { session.cameraConfig = selected }
             .onFailure { Log.w(CAPTURE_LOG_TAG, "Could not apply the selected camera config", it) }
     }
+
+    /** 요청 해상도에 가장 가까운 Camera config를 고른다. 맞는 후보가 없으면 null이다. */
+    private fun selectCameraConfig(
+        session: Session,
+        resolution: RecordingResolution,
+    ) = RecordingCameraConfigSelector.select(
+        candidates = session.getSupportedCameraConfigs(CameraConfigFilter(session)),
+        imageSizeOf = { RecordingResolution(it.imageSize.width, it.imageSize.height) },
+        textureSizeOf = { RecordingResolution(it.textureSize.width, it.textureSize.height) },
+        target = resolution,
+    )
 
     private fun releaseResources() {
         poseCollector.stop()
