@@ -61,9 +61,9 @@ class ArPoseCollector(
         lossStartedAtNs = null
         lastPoseTimestampNs = Long.MIN_VALUE
         thread =
-            Thread { collect(session, previewSurface) }.apply {
-                name = "TigerArPose"
-                start()
+            Thread { collect(session, previewSurface) }.also { worker ->
+                worker.name = "TigerArPose"
+                worker.start()
             }
     }
 
