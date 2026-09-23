@@ -84,7 +84,8 @@ Room Flow에서 목록이 나오고 화면은 값과 콜백만 받는다. 상태
 | `CaptureDriver` | 카메라 세션·ARCore·권한·tracking 폴링·마감 |
 | `CaptureState` | `CaptureUiState`·`CaptureIntent`·`reduce` |
 | `CapturePreviewSurface` | `TextureView`와 `SurfaceTexture`의 수명 |
-| `CaptureMetadataDialog` | Task·Object·해상도 입력 |
+| `CaptureMetadataDialog` | Task·Object 입력 |
+| `CaptureCameraPanel` | 카메라 설정 사이드 시트. 해상도·초점·ISO·셔터·화이트 밸런스 |
 | `CaptureWorkspaceScreen` | 배지·제어 버튼·오버레이 |
 | `CaptureControlPolicy` | 상태에서 파생되는 허용 동작 |
 
