@@ -36,7 +36,6 @@ import com.ssafy.s15p21a206.tiger.episode.SessionSummary
 import com.ssafy.s15p21a206.tiger.episode.UploadState
 import com.ssafy.s15p21a206.tiger.ui.common.LabelledGroup
 import com.ssafy.s15p21a206.tiger.ui.common.LabelledValue
-import com.ssafy.s15p21a206.tiger.ui.common.ListSectionHeader
 import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeader
 import com.ssafy.s15p21a206.tiger.ui.common.TigerMenuItem
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerSurface
@@ -117,12 +116,12 @@ internal fun SessionDetailScreen(
                 //
                 // 이름과 정보는 띄어서 두 묶음으로 가른다. 같은 간격으로 쌓으면 네 줄이 한 덩어리가
                 // 되어 무엇이 이 화면의 이름인지 드러나지 않는다.
-                ListSectionHeader(
-                    title =
+                Text(
+                    text =
                         java.text.DateFormat
                             .getDateTimeInstance()
                             .format(java.util.Date(summary.recordingStartEpochMs)),
-                    supporting = null,
+                    style = TigerText.itemTitle,
                 )
                 // 묶음마다 이름표를 붙인다. 이 화면에는 성격이 다른 것이 둘 있다. 이 수집이 무엇인지
                 // 말하는 값들과, 그 기록이 지금 어떤 상태인지 말하는 줄이다. 이름표가 없으면 네 줄이
@@ -147,19 +146,19 @@ internal fun SessionDetailScreen(
                     LabelledGroup(stringResource(R.string.session_group_upload)) {
                         Text(
                             text = stringResource(summary.uploadState.labelRes),
-                            style = TigerText.body,
+                            style = TigerText.value,
                         )
                         // 무엇이 막았는지 알아야 다시 걸어 볼지 판단할 수 있다. 상태와 같은 카드에
                         // 둔다. 그 상태를 설명하는 줄이지 따로 선 값이 아니다. 앱을 다시 켜면 남지
                         // 않는다. 전송 실패는 기록하는 컬럼이 없다.
                         if (summary.uploadState == UploadState.FAILED && uploadFailureReason != null) {
-                            Text(text = uploadFailureReason, style = TigerText.bodyMuted)
+                            Text(text = uploadFailureReason, style = TigerText.supporting)
                         }
                     }
                 }
                 // 지우지 못했으면 화면이 그대로 남는다. 아무 말이 없으면 눌리지 않은 것처럼 보인다.
                 if (deleteFailureReason != null) {
-                    Text(text = deleteFailureReason, style = TigerText.bodyMuted)
+                    Text(text = deleteFailureReason, style = TigerText.supporting)
                 }
                 if (presentation.uploadAction != null) {
                     Button(onClick = onUpload) {

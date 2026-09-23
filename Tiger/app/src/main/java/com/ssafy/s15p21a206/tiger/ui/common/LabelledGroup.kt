@@ -83,10 +83,10 @@ fun LabelledValue(
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(LABEL_VALUE_GAP)) {
         Text(
             text = label,
-            style = TigerText.bodyMuted,
+            style = TigerText.supporting,
             modifier = Modifier.width(LABEL_COLUMN_WIDTH),
         )
-        Text(text = value, style = TigerText.body)
+        Text(text = value, style = TigerText.value)
     }
 }
 
@@ -102,10 +102,13 @@ private val CARD_PADDING = 16.dp
 /**
  * 이름표 기둥의 폭.
  *
- * 지금 쓰는 이름표 중 가장 긴 `Object`가 들어가고 값과 붙지 않을 만큼이다. 값이 아니라 이름표가
- * 폭을 정하므로, 이름표가 길어지면 이 값을 늘린다. 값의 길이는 여기에 영향을 주지 않는다.
+ * 지금 쓰는 이름표 중 가장 긴 `Object`가 들어갈 만큼만이다. 값이 아니라 이름표가 폭을 정하므로,
+ * 이름표가 길어지면 이 값을 늘린다. 값의 길이는 여기에 영향을 주지 않는다.
+ *
+ * 넉넉하게 잡을수록 짧은 이름표(`ID`)와 그 값 사이가 벌어진다. 기둥은 값을 정렬하려고 두는 것이지
+ * 이름표에 여유를 주려고 두는 것이 아니므로, 가장 긴 이름표에 맞춰 조인다.
  */
-private val LABEL_COLUMN_WIDTH = 72.dp
+private val LABEL_COLUMN_WIDTH = 56.dp
 
 /** 이름표 기둥과 값 사이. */
 private val LABEL_VALUE_GAP = 8.dp

@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.sp
  *
  * ## 잉크 셋
  *
- * 진한 `onSurface`는 값과 이름([sectionName], [itemName], [body], [value], [formLabel]), 옅은
+ * 진한 `onSurface`는 값과 이름([sectionName], [itemTitle], [itemName], [body], [value], [formLabel]), 옅은
  * `onSurfaceVariant`는 값에 딸린 값과 행 이름표([bodyMuted], [supporting]), 가장 옅은 [InkFaint]는
  * 값이 아니라 값을 가리키는 것([groupLabel], [sectionCount], [identifier])이다.
  *
@@ -42,7 +42,7 @@ import androidx.compose.ui.unit.sp
  * | 층 | 크기 | 이 파일의 역할 |
  * | --- | --- | --- |
  * | largeTitle (title1 28) | 28 | [sectionName] |
- * | title (title2 22) | 22 | 없음. `AlertDialog`가 제 제목에 쓴다 |
+ * | title (title2 22) | 22 | [itemTitle]. `AlertDialog`도 제 제목에 쓴다 |
  * | body (body 17, headline 17) | 16 | [itemName] [body] [bodyMuted] |
  * | callout (subhead 15) | 14 | [value] [supporting] [sectionCount] [identifier] [menuItem] [formLabel] |
  * | caption (caption1 12) | 12 | [groupLabel] |
@@ -50,9 +50,13 @@ import androidx.compose.ui.unit.sp
  * caption 층에는 값을 두지 않는다. 묶음 이름표만 든다. 값을 한 단계 더 내리면 층이 늘어나는 것이
  * 아니라 위가 홀로 커지지만, 표지는 값과 같은 층에 있으면 값으로 읽히므로 내려야 한다.
  *
- * 화면의 이름만 제 층에 혼자 서고 나머지는 이웃한 두 칸 안에서 짝을 짓는다. 목록은
- * 이름([itemName], 16)과 값([supporting], 14), 상세는 본문([body], [bodyMuted], 16)과 묶음
- * 이름표([groupLabel], 12)다.
+ * 위 두 층은 이름의 층이고 서로 갈린다. [sectionName]은 묶음의 이름, [itemTitle]은 한 항목의
+ * 이름이다. 둘을 같은 층에 두었더니 한 세션의 수집 일시가 `Tasks`와 같은 무게로 서서, 그 화면이
+ * 목록인지 항목인지가 크기로 구별되지 않았다.
+ *
+ * 카드 안의 값은 어느 화면에서나 같은 층이다. 목록 카드와 상세의 묶음 카드가 같은 짜임이므로 같은
+ * 밀도로 읽힌다. 한동안 상세만 한 칸 크게 두었는데, 그때는 상세에 카드가 없어 본문이 화면에 직접
+ * 놓여 있었다. 카드가 생긴 뒤로는 목록과 다르게 둘 이유가 사라졌다.
  *
  * 한 칸을 건너뛰면 위가 홀로 커 보인다. 상세가 본문 층 없이 제목 22sp에서 값 14sp로 곧장 떨어지던
  * 동안 그랬다. 목록 카드가 16·14·12로 세 칸을 쓰던 동안에도 같은 일이 났는데, 이름과 가장 작은
@@ -72,7 +76,7 @@ import androidx.compose.ui.unit.sp
  */
 object TigerText {
     /**
-     * 화면의 이름. 홈의 `Tasks`, Task Session 목록의 Task 이름, 상세의 수집 일시.
+     * 묶음의 이름. 홈의 `Tasks`, Task Session 목록의 Task 이름.
      *
      * 한 화면에 하나뿐이고 크다. iOS 메모의 large title이 같은 자리이며, 그 크기가 "여기가 어디인가"를
      * 묻지 않아도 답해 준다. 22sp였을 때는 아래 값들과 한 계단 반밖에 차이가 나지 않아 화면의 이름이
@@ -81,6 +85,24 @@ object TigerText {
     val sectionName: TextStyle
         @Composable get() =
             MaterialTheme.typography.headlineMedium
+                .copy(
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                ).hugged
+
+    /**
+     * 한 항목을 펼쳐 놓은 화면의 이름. Session 상세의 수집 일시.
+     *
+     * [sectionName]과 같은 층에 두지 않는다. 그쪽은 묶음의 이름이고 이쪽은 한 항목의 이름이라 종류가
+     * 다르다. 묶음 이름을 키우면서 같이 키웠더니 한 세션의 수집 일시가 `Tasks`와 같은 무게로 서서,
+     * 이 화면이 목록인지 항목인지가 크기로 구별되지 않았다.
+     *
+     * 목록 카드에서 같은 값이 [itemName]으로 한 단계 더 작다. 카드에서는 여럿 중 하나이고 여기서는
+     * 화면 전체가 그것에 대한 것이므로, 같은 값이라도 자리에 따라 무게가 다르다.
+     */
+    val itemTitle: TextStyle
+        @Composable get() =
+            MaterialTheme.typography.titleLarge
                 .copy(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -98,15 +120,11 @@ object TigerText {
                 .hugged
 
     /**
-     * 화면이 제 내용으로 읽히는 자리의 글. 상세의 전송 상태가 여기 해당한다.
+     * 카드에 담기지 않고 화면에 직접 놓이는 문장. 세션을 찾을 수 없다는 안내, 재생할 영상이 없다는
+     * 안내가 여기 해당한다.
      *
-     * 목록 카드의 값보다 한 단계 크다. 상세는 훑는 화면이 아니라 확인하는 화면이라 줄을 아낄 이유가
-     * 없고, 줄을 아끼지 않기로 했으면 크기도 목록의 밀도를 따를 이유가 없다.
-     *
-     * 이 층이 없던 동안 상세는 제목 22sp에서 값 14sp로 곧장 떨어져, 타입 스케일의 한 칸을 건너뛰었다.
-     * 제목과 본문 사이가 두 계단이면 제목만 홀로 커 보인다. 한 화면에서 쓰는 크기는 여전히 둘이고,
-     * 무엇과 무엇이 짝인지가 화면마다 다를 뿐이다. 목록은 [itemName]과 [supporting], 상세는
-     * [sectionName]과 이 층이다.
+     * 카드 안의 값보다 한 단계 크다. 카드는 값을 여럿 담아 훑게 하는 그릇이고, 이 자리의 글은 화면에
+     * 혼자 있어 그 한 줄이 곧 화면의 내용이다.
      */
     val body: TextStyle
         @Composable get() =
@@ -127,13 +145,10 @@ object TigerText {
                 .hugged
 
     /**
-     * 이름표가 가리키는 내용. 세션 정보 시트의 값이 여기 해당한다.
+     * 카드 안에서 이름표가 가리키는 내용. 상세 묶음 카드의 값, 세션 정보 시트의 값, 전송 상태.
      *
-     * 시트 제목([itemName])보다 한 단계 작다. 같은 크기이면 제목이 목록의 첫 항목처럼 읽히고 큰
-     * 글자가 사다리처럼 쌓인다. 이름표인 [supporting]과는 크기가 아니라 잉크로 갈린다.
-     *
-     * 시트는 상세와 달리 목록의 밀도를 따른다. 훑어 확인하고 닫는 판이고, 전체 식별자가 한 줄에
-     * 들어가야 행 높이가 고르다.
+     * 카드는 목록이든 상세든 같은 밀도로 읽힌다. 이름표인 [supporting]과는 크기가 아니라 잉크로
+     * 갈린다. 카드를 이끄는 이름([itemName], [itemTitle])보다는 한 단계 이상 작다.
      */
     val value: TextStyle
         @Composable get() =
@@ -154,7 +169,7 @@ object TigerText {
                 .hugged
 
     /**
-     * 묶음 아래에 그 묶음이 몇 개를 담았는지 적는 줄. 홈의 `1개의 Task`, 목록의 `2개의 Session`.
+     * 묶음 이름 아래에 그 묶음이 몇 개를 담았는지 적는 줄. 홈의 `1개의 Task`, 목록의 `2개의 Session`.
      *
      * 가장 옅은 잉크다. 이름을 읽은 사람이 곧바로 목록으로 눈을 내리는 자리라, 이 줄이 [supporting]
      * 만큼 진하면 읽고 지나가야 할 값으로 걸린다. iOS 메모도 폴더 이름 아래 개수를 본문보다 옅게 둔다.

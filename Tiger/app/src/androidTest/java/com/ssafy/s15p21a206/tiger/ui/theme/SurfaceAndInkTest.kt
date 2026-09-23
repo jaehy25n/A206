@@ -53,6 +53,7 @@ class SurfaceAndInkTest {
                         surfaceRoles =
                             mapOf(
                                 "sectionName" to TigerText.sectionName,
+                                "itemTitle" to TigerText.itemTitle,
                                 "itemName" to TigerText.itemName,
                                 "body" to TigerText.body,
                                 "bodyMuted" to TigerText.bodyMuted,
