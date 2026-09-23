@@ -30,11 +30,14 @@ class SessionDetailObjectTest {
     fun sessionDetailNamesTheTaskAndObjectThatWereCaptured() {
         showDetail(summary())
 
-        // 메뉴를 열지 않고 본문에서 바로 읽힌다. 둘은 같은 종류라 같은 층에 쌓는다. 한 줄에 몰면
-        // 무엇으로 이어도 어색해지므로 잇지 않는다.
-        composeRule.onNodeWithText(string(R.string.session_task, "mvi-check")).assertIsDisplayed()
-        composeRule.onNodeWithText(string(R.string.session_object, "cup")).assertIsDisplayed()
-        composeRule.onNodeWithText(string(R.string.session_list_short_id, "ce9c7947")).assertIsDisplayed()
+        // 메뉴를 열지 않고 본문에서 바로 읽힌다. 이름표와 값은 갈라 둔다. 한 문자열로 이어 붙이면
+        // 문장이 아닌 것이 문장으로 읽히고, 어느 낱말이 이름표인지 매번 다시 가려내야 한다.
+        composeRule.onNodeWithText(string(R.string.session_label_task)).assertIsDisplayed()
+        composeRule.onNodeWithText("mvi-check").assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.session_label_object)).assertIsDisplayed()
+        composeRule.onNodeWithText("cup").assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.session_label_id)).assertIsDisplayed()
+        composeRule.onNodeWithText("ce9c7947").assertIsDisplayed()
     }
 
     /** 이름이 하나뿐이면 그것만 적는다. 없는 쪽의 이름표를 빈 채로 세우지 않는다. */
@@ -42,8 +45,9 @@ class SessionDetailObjectTest {
     fun sessionDetailNamesOnlyWhatItHas() {
         showDetail(summary().copy(objectName = ""))
 
-        composeRule.onNodeWithText(string(R.string.session_task, "mvi-check")).assertIsDisplayed()
-        composeRule.onNodeWithText(string(R.string.session_object, "")).assertDoesNotExist()
+        composeRule.onNodeWithText(string(R.string.session_label_task)).assertIsDisplayed()
+        composeRule.onNodeWithText("mvi-check").assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.session_label_object)).assertDoesNotExist()
     }
 
     /** 두 이름이 다 없는 세션. 두 줄이 빠지고 식별자는 그대로 남는다. */
@@ -51,9 +55,10 @@ class SessionDetailObjectTest {
     fun sessionDetailDropsBothNameLinesWhenThereAreNone() {
         showDetail(summary().copy(taskName = "", objectName = ""))
 
-        composeRule.onNodeWithText(string(R.string.session_object, "")).assertDoesNotExist()
-        composeRule.onNodeWithText(string(R.string.session_task, "")).assertDoesNotExist()
-        composeRule.onNodeWithText(string(R.string.session_list_short_id, "ce9c7947")).assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.session_label_task)).assertDoesNotExist()
+        composeRule.onNodeWithText(string(R.string.session_label_object)).assertDoesNotExist()
+        composeRule.onNodeWithText(string(R.string.session_label_id)).assertIsDisplayed()
+        composeRule.onNodeWithText("ce9c7947").assertIsDisplayed()
     }
 
     /**
@@ -68,9 +73,9 @@ class SessionDetailObjectTest {
         composeRule.onNodeWithText(string(R.string.session_info_title)).performClick()
 
         composeRule.onNodeWithText(string(R.string.session_info_episodes)).assertIsDisplayed()
-        // 본문의 한 곳에만 있다.
-        composeRule.onAllNodesWithText(string(R.string.session_task, "mvi-check")).assertCountEquals(1)
-        composeRule.onAllNodesWithText(string(R.string.session_object, "cup")).assertCountEquals(1)
+        // 본문의 한 곳에만 있다. 시트가 같은 값을 한 번 더 보여 주면 같은 말을 두 곳에서 하게 된다.
+        composeRule.onAllNodesWithText("mvi-check").assertCountEquals(1)
+        composeRule.onAllNodesWithText("cup").assertCountEquals(1)
     }
 
     private fun showDetail(summary: SessionSummary) {
