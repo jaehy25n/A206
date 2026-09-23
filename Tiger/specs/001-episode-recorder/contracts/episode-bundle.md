@@ -57,6 +57,8 @@ Camera frame timestamp는 `SENSOR_TIMESTAMP`, IMU timestamp는 sensor event의 �
 
 `camera_streams.main`은 항상 `true`다. `camera_streams.ultrawide`는 실제 optional 파일 존재 여부와 반드시 같아야 한다. 기기에서 제공되는 focal length, sensor size, intrinsic calibration, distortion 정보는 metadata에 반드시 기록한다. 지원되지 않는 값은 임의로 생성하지 않는다.
 
+수집자가 촬영 조건을 직접 정한 Session은 그 조건을 `capture_settings`에 기록한다. 요청한 값과 센서가 실제로 사용한 값을 나눠 담으며, 둘은 센서의 양자화만큼 어긋날 수 있다. 조건을 기기 자동에 맡긴 Session에는 이 키가 없고, 그때는 노출·ISO·화이트 밸런스가 촬영 중 변했다고 보아야 한다. 형식은 [Session `metadata.json` 계약](../../003-session-episode-tracking-gate/contracts/session-metadata.md)에 있다.
+
 Episode는 독립 raw directory나 file manifest를 소유하지 않는다. 각 Episode row의 outcome은 `COMPLETED` 또는 `INVALID_TRACKING` 중 하나다. `CANCELLED` outcome은 사용하지 않는다.
 
 ## 번들을 기기 밖으로 내보내는 길

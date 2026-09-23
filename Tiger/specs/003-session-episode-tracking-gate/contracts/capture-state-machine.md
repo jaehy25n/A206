@@ -16,6 +16,8 @@
 
 `Idle`에서 재생은 task/object 입력이 완료되고 프리뷰가 준비된 경우에만 활성화된다(기존 동작 유지).
 
+촬영 설정(초점·ISO·셔터·화이트 밸런스)은 `Idle`에서만 바꿀 수 있다. 다른 상태에서도 패널을 열어 값을 읽을 수 있으나 조작은 받지 않으며, `Idle → Initializing` 전이에서 패널이 접힌다.
+
 ## 전이
 
 ### 사용자 조작
@@ -50,6 +52,7 @@ EpisodeActive ──유실 0.5초 이상 지속──>       Initializing   (Epi
 4. **`INVALID_TRACKING`이 Session을 종료시키지 않는다.** 자동 마감 후에도 수집은 계속되고, Tracking 회복 시 다음 Episode를 시작할 수 있다.
 5. **Episode 반복에 횟수 제한이 없다.** `Ready ↔ EpisodeActive`를 임의 횟수 왕복할 수 있다.
 6. **Episode 마감은 한 번만 일어난다.** `INVALID_TRACKING`으로 자동 마감된 Episode는 이후 사용자 조작으로 다시 마감되지 않는다.
+7. **촬영 조건은 Session 안에서 변하지 않는다.** `Idle`을 벗어나면 설정 변경 의도는 상태 전이에서 무시된다. 화면에서 막는 것과 별개로 한 번 더 막는 이유는, 도중에 조건이 바뀌면 그 Session의 데이터를 한 조건으로 찍었다고 말할 수 없기 때문이다. 그 Session에 적용된 값은 `metadata.json`의 `capture_settings`에 남는다.
 
 ## 임계값
 
