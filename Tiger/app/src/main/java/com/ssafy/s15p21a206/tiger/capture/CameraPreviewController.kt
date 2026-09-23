@@ -7,10 +7,13 @@ import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
+import android.hardware.camera2.params.OutputConfiguration
+import android.hardware.camera2.params.SessionConfiguration
 import android.os.Handler
 import android.os.HandlerThread
 import android.view.Surface
 import androidx.core.content.ContextCompat
+import java.util.concurrent.Executor
 
 class CameraPreviewController(
     context: Context,
@@ -56,8 +59,7 @@ class CameraPreviewController(
                     cameraDevice = device
                     val request = device.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply { addTarget(surface) }
                     runCatching {
-                        device.createCaptureSession(
-                            listOf(surface),
+                        val stateCallback =
                             object : CameraCaptureSession.StateCallback() {
                                 override fun onConfigured(configured: CameraCaptureSession) {
                                     if (token != generation) {
@@ -78,8 +80,14 @@ class CameraPreviewController(
                                     onFailure("Camera preview configuration failed")
                                     release()
                                 }
-                            },
-                            handler,
+                            }
+                        device.createCaptureSession(
+                            SessionConfiguration(
+                                SessionConfiguration.SESSION_REGULAR,
+                                listOf(OutputConfiguration(surface)),
+                                Executor(handler::post),
+                                stateCallback,
+                            ),
                         )
                     }.onFailure {
                         onFailure("Camera preview could not be prepared")
