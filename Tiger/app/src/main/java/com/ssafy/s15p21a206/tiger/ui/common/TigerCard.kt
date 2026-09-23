@@ -9,7 +9,7 @@ import androidx.compose.ui.Modifier
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerSurface
 
 /**
- * 목록의 한 항목을 담는 카드다.
+ * 값 묶음 하나를 담는 카드다. 목록의 한 항목과 상세의 한 묶음이 같은 것을 쓴다.
  *
  * 색을 호출부가 고르지 않게 하려고 둔다. `Card`를 그대로 쓰면 Material 3이 판 색과 콘텐츠 색을
  * 함께 정하는데, 그 콘텐츠 색이 `onSurfaceVariant`라 카드 안의 이름이 저절로 옅어졌다. 판은

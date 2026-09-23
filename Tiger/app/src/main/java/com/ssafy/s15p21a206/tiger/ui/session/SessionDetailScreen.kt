@@ -150,12 +150,13 @@ internal fun SessionDetailScreen(
                             text = stringResource(summary.uploadState.labelRes),
                             style = TigerText.body,
                         )
+                        // 무엇이 막았는지 알아야 다시 걸어 볼지 판단할 수 있다. 상태와 같은 카드에
+                        // 둔다. 그 상태를 설명하는 줄이지 따로 선 값이 아니다. 앱을 다시 켜면 남지
+                        // 않는다. 전송 실패는 기록하는 컬럼이 없다.
+                        if (summary.uploadState == UploadState.FAILED && uploadFailureReason != null) {
+                            Text(text = uploadFailureReason, style = TigerText.bodyMuted)
+                        }
                     }
-                }
-                // 무엇이 막았는지 알아야 다시 걸어 볼지 판단할 수 있다. 앱을 다시 켜면 남지 않는다.
-                // 전송 실패는 기록하는 컬럼이 없다.
-                if (summary.uploadState == UploadState.FAILED && uploadFailureReason != null) {
-                    Text(text = uploadFailureReason, style = TigerText.bodyMuted)
                 }
                 // 지우지 못했으면 화면이 그대로 남는다. 아무 말이 없으면 눌리지 않은 것처럼 보인다.
                 if (deleteFailureReason != null) {

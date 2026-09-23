@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -12,16 +14,27 @@ import androidx.compose.ui.unit.dp
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerText
 
 /**
- * 이름표를 머리에 단 한 묶음이다.
+ * 작은 이름표를 머리에 달고 내용을 카드에 담은 한 묶음이다. Apple의 grouped list가 하는 그것이다.
  *
  * 성격이 다른 값들이 한 화면에 쌓일 때, 간격만으로 가르면 무엇이 왜 갈렸는지는 말해 주지 못한다.
  * 상세 화면에서 수집 일시·Task·Object·ID·전송 상태가 한 더미로 쌓여 있던 동안, 전송 상태가 이 수집이
  * 무엇인지 말하는 값들과 같은 종류로 읽혔다. 하나는 이 기록이 무엇인가이고 하나는 지금 어떤가다.
  *
- * Apple의 grouped list와 Material 3의 목록 소제목이 같은 일을 한다. 구획마다 머리를 달고, 그 머리는
- * 구획 안의 글보다 작고 옅다.
+ * ## 왜 카드가 필요한가
  *
- * 이름표와 내용 사이는 내용의 줄 사이보다 좁다. 붙어 있어야 그 이름표가 아래 묶음의 것으로 읽히고,
+ * 처음에는 카드 없이 이름표만 달았다. 그러자 이름표의 크기가 어느 쪽으로도 맞지 않았다. 제목이라면
+ * 아래 글보다 크고 굵어야 하는데 작았고, 이름표라면 이름표답게 보여야 하는데 그냥 작은 한 줄이었다.
+ *
+ * 원인은 크기가 아니라 그릇이 없다는 것이었다. Apple의 grouped list에서 구획 머리가 작아도 되는 것은
+ * 묶는 일을 머리가 아니라 카드가 하기 때문이다. 머리는 회색 바닥 위에 떠서 아래 카드를 가리키기만
+ * 한다. 그릇 없이 머리만 달면 그 작은 글자가 묶는 일까지 혼자 해야 하고, 그래서 어느 쪽으로도
+ * 읽히지 않았다.
+ *
+ * 그릇을 주면 이름표가 작아도 된다. 이 앱은 목록에서 이미 회색 바닥과 흰 카드를 쓰므로, 상세도 같은
+ * 말을 하게 된다. 크기를 키워 제목으로 만드는 길도 있었으나, 그러면 한 화면에 제목이 둘이 되고
+ * 수집 일시가 화면의 이름이라는 것이 흐려진다.
+ *
+ * 이름표와 카드 사이는 카드 안 줄 사이보다 좁다. 붙어 있어야 그 이름표가 아래 카드의 것으로 읽히고,
  * 묶음과 묶음 사이는 호출부가 벌린다.
  */
 @Composable
@@ -32,8 +45,14 @@ fun LabelledGroup(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(LABEL_GAP)) {
-        Text(text = label, style = TigerText.groupLabel)
-        Column(verticalArrangement = Arrangement.spacedBy(CONTENT_LINE_GAP), content = content)
+        Text(text = label, style = TigerText.groupLabel, modifier = Modifier.padding(start = LABEL_INSET))
+        TigerCard(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.padding(CARD_PADDING),
+                verticalArrangement = Arrangement.spacedBy(CONTENT_LINE_GAP),
+                content = content,
+            )
+        }
     }
 }
 
@@ -67,11 +86,22 @@ fun LabelledValue(
     }
 }
 
-/** 이름표와 그 아래 묶음 사이. 묶음 안 줄 사이보다 좁아야 이름표가 묶음에 붙는다. */
+/** 이름표와 그 아래 카드 사이. 카드 안 줄 사이보다 좁아야 이름표가 카드에 붙는다. */
 private val LABEL_GAP = 4.dp
 
 /** 묶음 안 줄 사이. */
 private val CONTENT_LINE_GAP = 6.dp
+
+/**
+ * 이름표를 카드 안 글자의 왼쪽 끝에 맞추는 들여쓰기.
+ *
+ * 이름표는 카드 바깥에 있으므로 그냥 두면 카드 여백만큼 왼쪽으로 튀어나온다. Apple의 grouped list도
+ * 구획 머리를 카드 안 글자와 같은 기둥에 세운다.
+ */
+private val LABEL_INSET = 16.dp
+
+/** 카드가 안쪽에 두는 여백. 목록 카드와 같은 값이다. */
+private val CARD_PADDING = 16.dp
 
 /**
  * 이름표 기둥의 폭.

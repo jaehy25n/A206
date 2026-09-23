@@ -230,7 +230,7 @@ fun TigerApp() {
             }
             composable<SessionDetailRoute> { entry ->
                 val route = entry.toRoute<SessionDetailRoute>()
-                DestinationSurface(TigerSurface.content) {
+                DestinationSurface(TigerSurface.listBackground) {
                     SessionDetailScreen(
                         summary = completedSummaries.firstOrNull { it.sessionId == route.sessionId },
                         onBack = navController::popBackStack,
