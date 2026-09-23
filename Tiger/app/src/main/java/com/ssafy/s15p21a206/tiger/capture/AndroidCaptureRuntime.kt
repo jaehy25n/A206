@@ -9,10 +9,12 @@ import android.util.Log
 import android.view.Surface
 import com.google.ar.core.CameraConfigFilter
 import com.google.ar.core.Session
+import com.ssafy.s15p21a206.tiger.episode.CaptureSettingsMetadata
 import com.ssafy.s15p21a206.tiger.episode.EpisodeMarker
 import com.ssafy.s15p21a206.tiger.episode.FinalizeResult
 import com.ssafy.s15p21a206.tiger.episode.RecordingInputValidator
 import com.ssafy.s15p21a206.tiger.episode.RecordingResolution
+import com.ssafy.s15p21a206.tiger.episode.RequestedCaptureSettings
 import com.ssafy.s15p21a206.tiger.episode.SessionBundle
 import com.ssafy.s15p21a206.tiger.episode.SessionBundleStore
 import com.ssafy.s15p21a206.tiger.episode.SessionFinalizer
@@ -40,6 +42,9 @@ class AndroidCaptureRuntime(
     private var frameTimestamps: FrameTimestampWriter? = null
     private var episodeLog: EpisodeLogWriter? = null
 
+    /** 이번 Session에 건 촬영 조건. Session이 시작된 뒤에는 바뀌지 않는다. */
+    private var manualConfig: ManualCameraConfig? = null
+
     /**
      * 최신 ARCore Tracking 관측값. pose 수집 스레드가 갱신하고 수집 화면이 주기적으로 읽는다.
      *
@@ -52,12 +57,15 @@ class AndroidCaptureRuntime(
         displayNumber: Int,
         resolution: RecordingResolution = RecordingInputValidator.DEFAULT_RESOLUTION,
         previewSurfaces: PreviewSurfaceProvider = PreviewSurfaceProvider { _, _ -> null },
+        /** Session 내내 고정할 촬영 조건. null이면 기기 자동에 맡긴다. */
+        manual: ManualCameraConfig? = null,
     ): SessionBundle {
         check(bundle == null) { "Capture is already running" }
         val next = store.createStagingBundle(displayNumber)
+        manualConfig = manual
         writeHeaders(next)
         try {
-            openCapture(next, resolution, previewSurfaces)
+            openCapture(next, resolution, previewSurfaces, manual)
         } catch (error: Exception) {
             abandon(next, error)
         }
@@ -75,10 +83,34 @@ class AndroidCaptureRuntime(
         closeFrameWindow()
         val stopError = runCatching { mediaRecorder?.stop() }.exceptionOrNull()
         val camera = poseCollector.cameraMetadata
+        // 정리하면서 비워지므로 먼저 걷는다.
+        val settings = captureSettings()
         releaseResources()
         bundle = null
         if (stopError != null) return FinalizeResult.Failed(stopError.message ?: "Video recording could not be finalized")
-        return SessionFinalizer(store).finalize(active, camera = camera)
+        return SessionFinalizer(store).finalize(active, camera = camera, captureSettings = settings)
+    }
+
+    /**
+     * 이번 Session의 촬영 조건. 수동 설정을 쓰지 않았으면 null이다.
+     *
+     * 요청값과 실제값을 함께 담는다. 둘이 다를 수 있다는 것이 이 항목을 남기는 이유다.
+     */
+    private fun captureSettings(): CaptureSettingsMetadata? {
+        val requested = manualConfig ?: return null
+        return CaptureSettingsMetadata(
+            mode = "manual",
+            requested =
+                RequestedCaptureSettings(
+                    focusDistanceDiopter = requested.focusDistanceDiopter,
+                    iso = requested.iso,
+                    exposureTimeNs = requested.exposureTimeNs,
+                    frameDurationNs = requested.frameDurationNs,
+                    fpsTarget = ManualCameraConfig.TARGET_FPS,
+                ),
+            actual = cameraSession.appliedSettings,
+            awbFixed = requested.awbFixed,
+        )
     }
 
     fun interrupt() {
@@ -106,6 +138,7 @@ class AndroidCaptureRuntime(
         next: SessionBundle,
         resolution: RecordingResolution,
         previewSurfaces: PreviewSurfaceProvider,
+        manual: ManualCameraConfig?,
     ) {
         val session = Session(appContext, EnumSet.of(Session.Feature.SHARED_CAMERA))
         applyRecordingResolution(session, resolution)
@@ -114,7 +147,7 @@ class AndroidCaptureRuntime(
         mediaRecorder = recorder
         bundle = next
         val previewSurface = previewSurfaceFor(session, previewSurfaces)
-        cameraSession.open(session, recorder) {
+        cameraSession.open(session, recorder, manual) {
             recorder.start()
             // 인코더가 실제로 돌기 시작한 뒤부터 Camera timestamp를 남긴다.
             frameTimestamps?.recording = true
@@ -249,6 +282,7 @@ class AndroidCaptureRuntime(
         cameraSession.closeThread()
         frameTimestamps = null
         episodeLog = null
+        manualConfig = null
         sensorLog.close()
     }
 

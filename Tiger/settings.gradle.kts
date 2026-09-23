@@ -22,6 +22,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Tiger"
+rootProject.name = "TigerMask"
 include(":app")
  

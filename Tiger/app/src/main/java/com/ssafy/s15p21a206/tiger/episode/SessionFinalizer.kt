@@ -15,6 +15,8 @@ class SessionFinalizer(
         includesUltraWide: Boolean = false,
         // 확보하지 못했으면 null. 메타데이터 부재가 Session 마감을 실패시키지 않는다.
         camera: CameraMetadata? = null,
+        // 어떤 촬영 조건으로 찍었는지. 수동 설정을 쓰지 않았으면 null이다.
+        captureSettings: CaptureSettingsMetadata? = null,
     ): FinalizeResult {
         val validation = SessionBundleValidator.validate(bundle.directory, includesUltraWide, requireMetadata = false)
         if (validation is BundleValidationResult.Invalid) return FinalizeResult.Failed(validation.reason)
@@ -36,6 +38,9 @@ class SessionFinalizer(
                         },
                     )
                     camera?.let { put("camera", Json.encodeToJsonElement(CameraMetadata.serializer(), it)) }
+                    captureSettings?.let {
+                        put("capture_settings", Json.encodeToJsonElement(CaptureSettingsMetadata.serializer(), it))
+                    }
                     put(
                         "files",
                         buildJsonArray {
