@@ -1,6 +1,6 @@
 # Tiger — Target-Interaction Grounded Episode Recorder
 
-**T**arget-**I**nteraction **G**rounded **E**pisode **R**ecorder(Tiger)는 Android 기반 Capture Session 수집 앱입니다. 카메라 영상, 프레임 타임스탬프, IMU, ARCore pose와 작업 단위 Episode를 하나의 immutable Session bundle로 저장하고, 사용자가 선택한 Storage Access Framework(SAF) 폴더로 내보냅니다.
+**T**arget-**I**nteraction **G**rounded **E**pisode **R**ecorder(Tiger)는 Android 기반 Capture Session 수집 앱입니다. 카메라 영상, 프레임 타임스탬프, IMU, ARCore pose와 작업 단위 Episode를 하나의 immutable Session bundle로 저장하고, ingestion server로 전송합니다.
 
 ## 주요 기능
 
@@ -8,7 +8,7 @@
 - 가속도계·자이로스코프·회전 벡터와 ARCore camera pose 기록
 - Task/Object 단위 Episode START, END, CANCEL 기록
 - raw file, CSV header, metadata manifest, SHA-256을 검증한 completed bundle 생성
-- 사용자가 선택한 SAF tree 아래의 안전한 export publish 및 재시도
+- completed bundle의 multipart 업로드와 재전송
 
 ## 현재 범위
 
@@ -16,18 +16,20 @@
 | --- | --- |
 | 로컬 Capture Session·Episode 기록 | 구현됨 |
 | main RGB, frame timestamp, IMU, ARCore pose bundle 생성 | 구현됨 |
-| SAF export와 destination bundle 검증 | 구현됨 |
 | HTTP multipart 요청 생성 | 구현됨 |
-| 앱 UI에서 실제 서버 업로드·상태 전이·재시도 | 미구현 |
+| 앱 UI에서 서버 업로드·상태 전이·재시도 | 구현됨 |
+| SAF 내보내기 | 제거됨 |
 
-서버 `BASE_URL`과 실제 ingestion server 연동은 아직 구성하지 않았습니다. 따라서 현재 앱의 완결된 사용자 흐름은 로컬 수집과 SAF export까지입니다.
+서버 `BASE_URL`은 `local.properties`의 `tigerUploadBaseUrl`로 주입합니다. 값이 없으면 앱에 전송 기능이 없습니다.
+
+SAF 내보내기는 2026-09-22에 제거했습니다(S15P21A206-52). 번들을 기기 밖으로 내보내는 길은 업로드 하나입니다.
 
 ## 기술 구성
 
-- Kotlin, Jetpack Compose, Material 3
+- Kotlin, Jetpack Compose, Material 3, Pretendard
 - Android Camera2, ARCore Shared Camera
 - Room, Kotlin Coroutines, kotlinx.serialization
-- OkHttp, Storage Access Framework
+- OkHttp
 - 최소 SDK 28, target SDK 37
 
 ## 시작하기
@@ -66,7 +68,7 @@ app/build/outputs/apk/debug/app-debug.apk
 .\gradlew.bat connectedDebugAndroidTest
 ```
 
-카메라, IMU, ARCore, 런타임 권한, SAF provider 동작은 단위 테스트만으로 검증할 수 없습니다. 실기기 검증 절차는 [Capture Session SAF Export 검증 가이드](specs/001-episode-recorder/quickstart.md)를 따릅니다.
+카메라, IMU, ARCore, 런타임 권한은 단위 테스트만으로 검증할 수 없습니다. 실기기 검증 절차는 [Capture Session 검증 가이드](specs/001-episode-recorder/quickstart.md)를 따릅니다.
 
 ## 데이터 흐름
 
@@ -96,7 +98,7 @@ episodes.csv
 metadata.json
 ```
 
-SAF export는 선택된 tree 하위의 임시 attempt directory에 파일을 복사하고 검증한 뒤, 성공한 bundle만 `TigerCapture/<session_id>/`로 publish합니다. 원본 completed bundle은 export 실패 또는 재시도 시에도 유지됩니다.
+completed bundle은 공개된 뒤 수정하지 않습니다. 업로드는 그것을 읽기만 하며, 실패하거나 중단되어도 원본은 남습니다.
 
 ## 업로드 계약
 
