@@ -60,29 +60,54 @@ class AndroidCaptureRuntime(
         val next = store.createStagingBundle(displayNumber)
         writeHeaders(next)
         try {
-            val session = Session(appContext, EnumSet.of(Session.Feature.SHARED_CAMERA))
-            applyRecordingResolution(session, resolution)
-            val recorder = prepareRecorder(session, next)
-            arSession = session
-            mediaRecorder = recorder
-            bundle = next
-            val previewSurface = previewSurfaceFor(session, previewSurfaces)
-            cameraSession.open(session, recorder) {
-                recorder.start()
-                // 인코더가 실제로 돌기 시작한 뒤부터 Camera timestamp를 남긴다.
-                frameTimestamps?.recording = true
-                poseCollector.start(session, previewSurface)
-            }
-            sensorLog.listen()
-            return next
+            openCapture(next, resolution, previewSurfaces)
         } catch (error: Exception) {
-            Log.e(CAPTURE_LOG_TAG, "Could not start ARCore shared capture", error)
-            releaseResources()
-            // 마감되지 않은 bundle을 남기면 다음 start가 막힌다.
-            bundle = null
-            next.directory.deleteRecursively()
-            throw error
+            abandon(next, error)
         }
+        return next
+    }
+
+    /**
+     * 수집에 필요한 것을 순서대로 연다.
+     *
+     * 센서 수신을 맨 뒤에 여는 것은 카메라가 실패하면 IMU만 쌓이는 상태가 되기 때문이다.
+     * 하나라도 실패하면 예외가 그대로 올라가고, 뒷정리는 [abandon]이 한다.
+     */
+    private fun openCapture(
+        next: SessionBundle,
+        resolution: RecordingResolution,
+        previewSurfaces: PreviewSurfaceProvider,
+    ) {
+        val session = Session(appContext, EnumSet.of(Session.Feature.SHARED_CAMERA))
+        applyRecordingResolution(session, resolution)
+        val recorder = prepareRecorder(session, next)
+        arSession = session
+        mediaRecorder = recorder
+        bundle = next
+        val previewSurface = previewSurfaceFor(session, previewSurfaces)
+        cameraSession.open(session, recorder) {
+            recorder.start()
+            // 인코더가 실제로 돌기 시작한 뒤부터 Camera timestamp를 남긴다.
+            frameTimestamps?.recording = true
+            poseCollector.start(session, previewSurface)
+        }
+        sensorLog.listen()
+    }
+
+    /**
+     * 시작하지 못한 수집을 버리고 실패를 올려 보낸다.
+     *
+     * 마감되지 않은 bundle을 남기면 다음 start가 막힌다. 헤더만 적힌 디렉터리도 함께 지운다.
+     */
+    private fun abandon(
+        next: SessionBundle,
+        error: Exception,
+    ): Nothing {
+        Log.e(CAPTURE_LOG_TAG, "Could not start ARCore shared capture", error)
+        releaseResources()
+        bundle = null
+        next.directory.deleteRecursively()
+        throw error
     }
 
     /** 녹화 크기를 ARCore Camera 텍스처에 맞춰 recorder를 준비한다. */
