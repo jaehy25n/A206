@@ -41,6 +41,9 @@ val CaptureFullScreenScrim = Color(0x99000000)
  */
 val CaptureOverlaySupporting = Color(0xE6FFFFFF)
 
+/** 거치 기준선의 색. 프리뷰 위에서 보여야 하지만 1dp 선이 영상의 윤곽처럼 읽히지 않게 조금 비친다. */
+val CaptureCenterGuide = Color(0xB3FFFFFF)
+
 /** 비활성 제어의 색. 의미색을 흐리기만 하면 여전히 그 색으로 읽히므로 색상을 빼고 중성으로 떨어뜨린다. */
 val CaptureControlDisabled = Color(0x61FFFFFF)
 

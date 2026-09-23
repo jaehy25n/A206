@@ -80,6 +80,8 @@ internal fun CaptureWorkspace(
         // 더 길게 하고 있고, 닫기와 제어는 그 구간에 아무것도 받지 않는다. 덮인 채로 남겨 두면
         // 누를 수 있는 것처럼 보이기만 한다.
         if (state.chromeVisible) {
+            // 거치 기준선은 판 위의 것들보다 먼저 그려 배지나 스낵바를 가르지 않게 한다.
+            CaptureCenterGuide()
             Row(
                 modifier =
                     Modifier
@@ -111,7 +113,7 @@ internal fun CaptureWorkspace(
                 onPlay = driver.play,
                 onPause = driver.pause,
                 onStop = driver.requestExit,
-                modifier = Modifier.align(Alignment.BottomCenter),
+                modifier = Modifier.align(Alignment.CenterEnd),
             )
         }
     }
