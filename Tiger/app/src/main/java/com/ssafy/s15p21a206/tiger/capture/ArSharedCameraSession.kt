@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.hardware.camera2.CameraCaptureSession
+import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CaptureRequest
@@ -65,6 +66,7 @@ class ArSharedCameraSession(
             "Camera permission is required for ARCore capture"
         }
         val request = CameraOpenRequest(arSession, recorder, onStreaming)
+        check(usesRealtimeTimestamps(request.cameraId)) { "Camera timestamp source is not REALTIME" }
         closedLatch = CountDownLatch(1)
         val handler = startCameraThread()
         val streaming = CompletableDeferred<Unit>()
@@ -106,6 +108,17 @@ class ArSharedCameraSession(
         thread?.quitSafely()
         thread = null
     }
+
+    /**
+     * 카메라 프레임 시각이 IMU와 같은 시계에서 오는지 본다.
+     *
+     * `REALTIME`이 아니면 카메라 시각이 `SystemClock.elapsedRealtimeNanos()`와 다른 시계를 쓴다.
+     * 그러면 `main_frame_timestamps.csv`와 IMU CSV를 같은 시간축에서 비교할 수 없어 수집물 전체가
+     * 쓸모없어진다. 수집을 시작한 뒤에는 되돌릴 수 없으므로 열기 전에 막는다.
+     */
+    private fun usesRealtimeTimestamps(cameraId: String): Boolean =
+        cameraManager.getCameraCharacteristics(cameraId).get(CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE) ==
+            CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME
 
     /** 콜백을 받을 카메라 스레드를 띄우고 그 핸들러를 돌려준다. */
     private fun startCameraThread(): Handler =
