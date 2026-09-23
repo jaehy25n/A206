@@ -34,6 +34,10 @@ import com.ssafy.s15p21a206.tiger.ui.theme.TigerText
  * 말을 하게 된다. 크기를 키워 제목으로 만드는 길도 있었으나, 그러면 한 화면에 제목이 둘이 되고
  * 수집 일시가 화면의 이름이라는 것이 흐려진다.
  *
+ * 이름표는 카드의 왼쪽 끝에 맞춘다. 카드 안 글자에 맞추면 한 칸 들여쓴 꼴이 되어 화면 제목과
+ * 어긋난다. 카드의 안쪽 여백은 카드의 것이지 바깥에 선 글자가 따라갈 선이 아니다. 화면 제목과
+ * 이름표와 카드의 왼쪽 끝이 한 줄에 서야 왼쪽 가장자리가 하나로 읽힌다.
+ *
  * 이름표와 카드 사이는 카드 안 줄 사이보다 좁다. 붙어 있어야 그 이름표가 아래 카드의 것으로 읽히고,
  * 묶음과 묶음 사이는 호출부가 벌린다.
  */
@@ -45,7 +49,7 @@ fun LabelledGroup(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(LABEL_GAP)) {
-        Text(text = label, style = TigerText.groupLabel, modifier = Modifier.padding(start = LABEL_INSET))
+        Text(text = label, style = TigerText.groupLabel)
         TigerCard(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(CARD_PADDING),
@@ -91,14 +95,6 @@ private val LABEL_GAP = 4.dp
 
 /** 묶음 안 줄 사이. */
 private val CONTENT_LINE_GAP = 6.dp
-
-/**
- * 이름표를 카드 안 글자의 왼쪽 끝에 맞추는 들여쓰기.
- *
- * 이름표는 카드 바깥에 있으므로 그냥 두면 카드 여백만큼 왼쪽으로 튀어나온다. Apple의 grouped list도
- * 구획 머리를 카드 안 글자와 같은 기둥에 세운다.
- */
-private val LABEL_INSET = 16.dp
 
 /** 카드가 안쪽에 두는 여백. 목록 카드와 같은 값이다. */
 private val CARD_PADDING = 16.dp
