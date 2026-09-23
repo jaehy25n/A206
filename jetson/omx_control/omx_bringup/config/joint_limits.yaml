@@ -1,0 +1,16 @@
+# Single source of truth for joint limits / TCP / gripper mapping.
+# Loaded by dxl_driver_node, ik_node and ee_state_node (the /** wildcard applies
+# to every node; nodes that do not declare a parameter simply ignore it).
+#
+# TODO verify on hardware: move each joint by hand with torque off, compare
+# /joint_states with RViz, and record the true mechanical limits here.
+/**:
+  ros__parameters:
+    joint_names: [joint1, joint2, joint3, joint4, joint5, gripper_joint_1]
+    # joint2/joint3 follow the ROBOTIS motor limits (830..3129 / 1024..3140 ticks),
+    # joint4 +-100 deg, joint1/joint5 +-180 deg, gripper 0..100 deg.
+    lower_limits_rad: [-3.1416, -1.868, -1.571, -1.745, -3.1416, 0.0]
+    upper_limits_rad: [ 3.1416,  1.658,  1.675,  1.745,  3.1416, 1.745]
+    gripper_open_rad: 1.745      # normalised width 1.0
+    gripper_closed_rad: 0.0      # normalised width 0.0
+    tcp_offset_x: 0.0            # tcp = end_effector_link + this [m]; also in omx_f.urdf

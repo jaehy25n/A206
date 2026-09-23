@@ -1,0 +1,40 @@
+# Hardware parameters for the OMX-F follower (ROBOTIS factory configuration).
+# Joint limits are ALSO defined in omx_bringup/config/joint_limits.yaml, which
+# is loaded after this file by the bringup launches and therefore wins.
+dxl_driver_node:
+  ros__parameters:
+    port_name: /dev/ttyACM0
+    baud_rate: 1000000
+    mock: false
+    loop_rate_hz: 100.0
+    command_timeout_ms: 200.0        # no /joint_command for this long -> hold
+    max_velocity_rad_s: 1.5          # goal ramp limit applied per joint
+    torque_on_start: false
+
+    joint_names: [joint1, joint2, joint3, joint4, joint5, gripper_joint_1]
+    dxl_ids: [11, 12, 13, 14, 15, 16]
+    # 3 = position, 4 = extended position (multi-turn base), 5 = current-based position (gripper)
+    operating_modes: [4, 3, 3, 3, 3, 5]
+    zero_ticks: [2048, 2048, 2048, 2048, 2048, 2048]   # TODO verify on hardware
+    direction: [1, 1, 1, 1, 1, 1]                      # TODO verify on hardware (+1 / -1)
+    ticks_per_rev: 4096
+
+    # SAFE software limits [rad]. Intersection of the ROBOTIS motor limits
+    # (dxl12: 830..3129 ticks, dxl13: 1024..3140 ticks) and the prototype's
+    # datasheet limits. TODO verify on hardware.
+    lower_limits_rad: [-3.1416, -1.868, -1.571, -1.745, -3.1416, 0.0]
+    upper_limits_rad: [ 3.1416,  1.658,  1.675,  1.745,  3.1416, 1.745]
+
+    # Motor register defaults copied from ROBOTIS omx_f.ros2_control.xacro
+    drive_mode: 4                    # bit2: time-based profile
+    profile_velocity: 50             # ms (time-based)
+    profile_acceleration: 25         # ms (time-based)
+    position_p_gain: 1000
+    position_d_gain: 1000
+    gripper_goal_current: 600        # mA, XL330 in current-based position mode
+
+    # mock bus
+    # "ready" pose: TCP at (0.18, 0, 0.15) m, pitch 60 deg down, gripper open.
+    # (ROBOTIS folded home [0, -1.57, 1.57, 1.57, 0] sits right at the joint3 limit)
+    mock_initial_positions_rad: [0.0, -0.5708, 0.3256, 1.2925, 0.0, 1.745]
+    mock_max_velocity_rad_s: 3.0

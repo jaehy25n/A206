@@ -1,0 +1,13 @@
+# usb_cam parameters for the wrist webcam. TODO: set the real resolution the
+# policy is trained on and run camera calibration (camera_info_url).
+/wrist_camera/wrist_camera:
+  ros__parameters:
+    video_device: /dev/video0
+    framerate: 30.0
+    image_width: 640
+    image_height: 480
+    pixel_format: mjpeg2rgb
+    camera_name: wrist_camera
+    camera_frame_id: wrist_camera_optical_frame
+    io_method: mmap
+    camera_info_url: ""

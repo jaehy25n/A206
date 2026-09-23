@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>omx_perception</name>
+  <version>0.1.0</version>
+  <description>Perception side of the OMX stack: end-effector state publisher (T_base_tcp + gripper width) and camera launch.</description>
+  <maintainer email="wogus061@gmail.com">J</maintainer>
+  <license>Apache-2.0</license>
+
+  <depend>rclpy</depend>
+  <depend>omx_msgs</depend>
+  <depend>omx_task_control</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+
+  <exec_depend>usb_cam</exec_depend>
+
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
