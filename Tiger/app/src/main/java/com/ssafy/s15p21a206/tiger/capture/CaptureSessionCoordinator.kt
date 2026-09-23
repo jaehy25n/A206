@@ -19,26 +19,6 @@ fun interface MonotonicClock {
     fun nowNs(): Long
 }
 
-class SessionStartPreflight(
-    private val availableBytes: () -> Long,
-    private val requiredBytes: Long,
-) {
-    fun check(cameraTimestampRealtime: Boolean): SessionPreflightResult =
-        when {
-            !cameraTimestampRealtime -> SessionPreflightResult.Failed("Camera timestamp source is not REALTIME")
-            availableBytes() < requiredBytes -> SessionPreflightResult.Failed("Insufficient storage")
-            else -> SessionPreflightResult.Ready
-        }
-}
-
-sealed interface SessionPreflightResult {
-    data object Ready : SessionPreflightResult
-
-    data class Failed(
-        val reason: String,
-    ) : SessionPreflightResult
-}
-
 class CaptureSessionCoordinator(
     private val clock: MonotonicClock,
     private val writers: List<SessionWriter>,

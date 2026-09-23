@@ -5,7 +5,6 @@ import com.ssafy.s15p21a206.tiger.episode.EpisodeState
 import com.ssafy.s15p21a206.tiger.episode.RecordingState
 import com.ssafy.s15p21a206.tiger.episode.TrackingState
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -249,12 +248,6 @@ class CaptureSessionCoordinatorTest {
         assertEquals(1, writer.started)
         assertEquals(1, writer.finalized)
         assertEquals(RecordingState.INTERRUPTED, coordinator.session!!.recordingState)
-    }
-
-    @Test fun `storage and timebase preflight block starts`() {
-        assertTrue(SessionStartPreflight({ 100 }, 50).check(true) is SessionPreflightResult.Ready)
-        assertFalse(SessionStartPreflight({ 49 }, 50).check(true) is SessionPreflightResult.Ready)
-        assertFalse(SessionStartPreflight({ 100 }, 50).check(false) is SessionPreflightResult.Ready)
     }
 
     private class CountingWriter : SessionWriter {

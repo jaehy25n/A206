@@ -117,8 +117,9 @@ class ArSharedCameraSession(
      * 쓸모없어진다. 수집을 시작한 뒤에는 되돌릴 수 없으므로 열기 전에 막는다.
      */
     private fun usesRealtimeTimestamps(cameraId: String): Boolean =
-        cameraManager.getCameraCharacteristics(cameraId).get(CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE) ==
-            CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME
+        isRealtimeTimestampSource(
+            cameraManager.getCameraCharacteristics(cameraId).get(CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE),
+        )
 
     /** 콜백을 받을 카메라 스레드를 띄우고 그 핸들러를 돌려준다. */
     private fun startCameraThread(): Handler =
@@ -259,3 +260,14 @@ private class CameraOpenRequest(
     val sharedCamera: SharedCamera = arSession.sharedCamera
     val cameraId: String = arSession.cameraConfig.cameraId
 }
+
+/**
+ * 카메라가 알린 timestamp source가 IMU와 같은 시계를 뜻하는지 본다.
+ *
+ * 값을 읽는 일과 갈라 둔 것은 규칙만 따로 검사하기 위해서다. `CameraCharacteristics`는 만들 수 없어
+ * 읽는 쪽은 실기기로만 확인된다.
+ *
+ * 모르는 값(`null`)은 거부한다. 기기가 알려 주지 않으면 같은 시계라고 볼 근거가 없고, 확인할 수
+ * 없으면 시작하지 않는 것이 요구사항이다.
+ */
+internal fun isRealtimeTimestampSource(source: Int?): Boolean = source == CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME

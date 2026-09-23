@@ -41,8 +41,6 @@ enum class EpisodeState {
 
 @Serializable enum class TrackingState { INITIALIZING, READY, PAUSED, STOPPED }
 
-@Serializable enum class UltraWideProbeResult { UW_SUPPORTED, UW_UNSUPPORTED_FOR_MVP }
-
 @Serializable enum class UploadState { LOCAL_ONLY, UPLOADING, UPLOADED, FAILED }
 
 @Serializable
@@ -154,48 +152,9 @@ data class CameraMetadata(
         }
 }
 
-@Serializable data class ProbeResult(
-    val result: UltraWideProbeResult,
-    val detail: String? = null,
-)
-
-@Serializable
-data class CameraConfig(
-    val logicalCameraId: String,
-    val selectedPhysicalCameraId: String,
-    val lensFacing: String = "BACK",
-    val lensLabel: String = "main_1x",
-    val focalLengthMm: Float,
-    val sensorPhysicalWidthMm: Float,
-    val sensorPhysicalHeightMm: Float,
-    val activeArray: IntRect,
-    val preCorrectionActiveArray: IntRect,
-    val resolution: RecordingResolution,
-    val targetFps: Int = TARGET_FPS,
-    val zoomRatio: Float = 1f,
-    val oisEnabled: Boolean = false,
-    val eisEnabled: Boolean = false,
-    val timestampSource: String = "REALTIME",
-) {
-    companion object {
-        const val TARGET_FPS = 30
-    }
-}
-
-@Serializable data class IntRect(
-    val left: Int,
-    val top: Int,
-    val right: Int,
-    val bottom: Int,
-)
-
 @Serializable data class RecordingResolution(
     val width: Int,
     val height: Int,
-)
-
-@Serializable data class TimebaseMetadata(
-    val cameraImuComparability: String = "VERIFIED",
 )
 
 @Serializable data class FileManifest(

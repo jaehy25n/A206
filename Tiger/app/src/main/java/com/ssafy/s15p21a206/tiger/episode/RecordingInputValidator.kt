@@ -8,6 +8,14 @@ object RecordingInputValidator {
     val supportedResolutions = listOf(RecordingResolution(1920, 1080), RecordingResolution(1280, 720))
     val DEFAULT_RESOLUTION = supportedResolutions.first()
 
+    /**
+     * 유일하게 지원하는 촬영 frame rate.
+     *
+     * 대상 기기의 상한이기도 하다. 후면 Camera가 알리는 AE target FPS 범위의 최댓값이 30이고,
+     * ARCore가 내놓는 Camera config 후보도 모두 30이다.
+     */
+    const val TARGET_FPS = 30
+
     fun validate(
         task: String,
         objectName: String,
@@ -19,7 +27,7 @@ object RecordingInputValidator {
         if (task.contains(pathSeparator) || task.contains(controlCharacter)) {
             return ValidationResult.Invalid(ValidationError.INVALID_TASK)
         }
-        if (!supportedResolutions.contains(resolution) || targetFps != CameraConfig.TARGET_FPS) {
+        if (!supportedResolutions.contains(resolution) || targetFps != TARGET_FPS) {
             return ValidationResult.Invalid(ValidationError.UNSUPPORTED_CAMERA_CONFIG)
         }
         return ValidationResult.Valid
