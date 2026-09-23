@@ -17,6 +17,7 @@ import android.hardware.camera2.params.OutputConfiguration
 import android.hardware.camera2.params.SessionConfiguration
 import android.media.MediaRecorder
 import android.opengl.GLES20
+import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
@@ -91,7 +92,7 @@ class AndroidCaptureRuntime(
             val session = Session(appContext, EnumSet.of(Session.Feature.SHARED_CAMERA))
             applyRecordingResolution(session, resolution)
             val recorder =
-                MediaRecorder().apply {
+                newMediaRecorder().apply {
                     setVideoSource(MediaRecorder.VideoSource.SURFACE)
                     setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
                     setVideoEncoder(MediaRecorder.VideoEncoder.H264)
@@ -126,6 +127,20 @@ class AndroidCaptureRuntime(
             throw error
         }
     }
+
+    /**
+     * 인자 없는 `MediaRecorder()`는 API 31에서 deprecated됐고, Context를 받는 생성자가 그 자리를
+     * 대신한다. 31 이상에서는 Context를 넘겨 녹화가 어느 앱의 것인지 프레임워크에 알린다.
+     * 31 미만에서는 그 생성자가 없으므로 옛 경로를 그대로 쓴다. 31 이상의 옛 생성자도 안에서
+     * 프로세스의 Application context를 집어 쓰므로 두 경로의 동작은 같다.
+     */
+    private fun newMediaRecorder(): MediaRecorder =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            MediaRecorder(appContext)
+        } else {
+            @Suppress("DEPRECATION")
+            MediaRecorder()
+        }
 
     fun stop(): FinalizeResult {
         val active = requireNotNull(bundle) { "No active capture" }
