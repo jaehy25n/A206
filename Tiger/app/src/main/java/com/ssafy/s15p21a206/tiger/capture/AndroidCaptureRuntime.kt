@@ -19,9 +19,6 @@ import com.ssafy.s15p21a206.tiger.episode.SessionFinalizer
 import kotlinx.coroutines.flow.StateFlow
 import java.util.EnumSet
 
-/** 수집 경로가 함께 쓰는 logcat 태그. 여러 클래스에서 나오는 한 수집의 로그를 한 줄로 이어 읽는다. */
-internal const val CAPTURE_LOG_TAG = "TigerCapture"
-
 /**
  * 한 번의 수집을 시작하고 마감한다.
  *
