@@ -14,12 +14,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,6 +46,7 @@ import com.ssafy.s15p21a206.tiger.ui.common.ListSectionHeader
 import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeader
 import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeaderHeight
 import com.ssafy.s15p21a206.tiger.ui.common.TigerCard
+import com.ssafy.s15p21a206.tiger.ui.common.TigerMenuItem
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerText
 import com.ssafy.s15p21a206.tiger.ui.upload.labelRes
 
@@ -415,15 +414,19 @@ private fun SessionSummaryItem(
                 //
                 // 두 이름을 Session 행에 저장하기 전에 마감된 세션은 Object가 비어 있다. 그때는 빈
                 // 이름표를 세우지 않고 줄째로 뺀다. 아래 식별자가 올라와 붙으므로 구멍이 남지 않는다.
+                // 이름표 낱말을 적지 않는다. `Object`와 `ID`는 카드마다 똑같이 되풀이되는 비계이고,
+                // 값이 이미 제 성격을 말한다. 무엇을 찍었는지가 이름이고 식별자는 기계가 부르는
+                // 이름이라는 것은 잉크의 단계가 가른다. Object는 한 단계 옅고 식별자는 두 단계
+                // 옅으며, 식별자 앞의 `#`가 그것이 번호임을 한 글자로 말한다.
+                //
+                // 상세에서는 이름표를 적는다. 거기서는 값이 무엇인지 확인하러 들어온 것이고 한 번만
+                // 나오므로 되풀이가 아니다.
                 if (summary.objectName.isNotBlank()) {
-                    Text(
-                        text = stringResource(R.string.session_object, summary.objectName),
-                        style = TigerText.supporting,
-                    )
+                    Text(text = summary.objectName, style = TigerText.supporting)
                 }
                 Text(
-                    text = stringResource(R.string.session_list_short_id, summary.sessionId.take(8)),
-                    style = TigerText.supporting,
+                    text = stringResource(R.string.session_short_id_tag, summary.sessionId.take(8)),
+                    style = TigerText.identifier,
                 )
             }
         }
@@ -432,22 +435,12 @@ private fun SessionSummaryItem(
         // 크기 0짜리 앵커를 누른 지점에 두고 거기에 건다.
         Box(modifier = Modifier.offset { pressPosition }) {
             DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.session_delete), style = TigerText.menuItem) },
-                    leadingIcon = {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_session_delete),
-                            // 이름은 바로 옆 글자가 말한다. 아이콘까지 읽히면 같은 말을 두 번 한다.
-                            contentDescription = null,
-                        )
-                    },
-                    // 업로드가 번들을 읽고 있는 동안은 지울 수 없다. 이유는 카드의 전송 상태가 말한다.
+                // 업로드가 번들을 읽고 있는 동안은 지울 수 없다. 이유는 카드의 전송 상태가 말한다.
+                TigerMenuItem(
+                    label = stringResource(R.string.session_delete),
+                    icon = R.drawable.ic_session_delete,
                     enabled = deleteAction != null,
-                    colors =
-                        MenuDefaults.itemColors(
-                            textColor = MaterialTheme.colorScheme.error,
-                            leadingIconColor = MaterialTheme.colorScheme.error,
-                        ),
+                    destructive = true,
                     onClick = {
                         menuExpanded = false
                         pendingDelete = deleteAction

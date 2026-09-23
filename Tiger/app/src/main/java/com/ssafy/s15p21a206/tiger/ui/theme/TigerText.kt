@@ -21,26 +21,38 @@ import androidx.compose.ui.unit.sp
  * 역할은 두 무리다. 표면 위에서 읽는 글과 프리뷰·영상 위에서 읽는 글은 색 체계가 다르다. 뒤가
  * 장면이면 표면 색을 쓸 수 없으므로 흰색으로 고정한다.
  *
- * 표면 위에서 읽는 아홉 역할은 모두 잉크 두 단계 중 하나를 골라 색을 명시한다. 진한 `onSurface`는
- * 그 항목을 짚는 글([sectionName], [itemName], [body], [value], [menuItem], [formLabel])이고, 옅은
- * `onSurfaceVariant`는 딸린 값과 이름표와 안내([bodyMuted], [supporting], [groupLabel])다.
+ * ## 잉크 셋
  *
- * 크기는 셋이다. title 22sp, body 16sp, callout 14sp. 눈금과 그 이름은 Material 3의 타입 스케일에서
- * 가져오고, 실제 값은 [Typography]가 정한다. 괄호 안은 Apple HIG의 대응이다.
+ * 진한 `onSurface`는 값과 이름([sectionName], [itemName], [body], [value], [formLabel]), 옅은
+ * `onSurfaceVariant`는 값에 딸린 값과 행 이름표([bodyMuted], [supporting]), 가장 옅은 [InkFaint]는
+ * 값이 아니라 값을 가리키는 것([groupLabel], [sectionCount], [identifier])이다.
+ *
+ * 셋째 단계를 둔 것은 표지와 값이 같은 잉크를 쓰면 표지가 값으로 읽히기 때문이다. 묶음 이름표가 행
+ * 이름표와 같은 옅은 잉크였던 동안 `세션 정보`가 `Task`의 작은 버전으로 보였다. 목록 카드에서
+ * 이름표 낱말을 걷어 낼 수 있는 것도 이 단계 덕이다. `Object`와 `ID`를 적지 않아도 어느 쪽이
+ * 기계가 부르는 이름인지 잉크가 말한다.
+ *
+ * [menuItem]만 색을 비운다. 메뉴 항목의 색은 스타일이 아니라 상태가 정한다.
+ *
+ * ## 크기 다섯
+ *
+ * 눈금과 그 이름은 Material 3의 타입 스케일에서 가져오고, 실제 값은 [Typography]가 정한다. 괄호 안은
+ * Apple HIG의 대응이다.
  *
  * | 층 | 크기 | 이 파일의 역할 |
  * | --- | --- | --- |
- * | title (title2 22) | 22 | [sectionName] |
+ * | largeTitle (title1 28) | 28 | [sectionName] |
+ * | title (title2 22) | 22 | 없음. `AlertDialog`가 제 제목에 쓴다 |
  * | body (body 17, headline 17) | 16 | [itemName] [body] [bodyMuted] |
- * | callout (subhead 15) | 14 | [value] [supporting] [menuItem] [formLabel] |
+ * | callout (subhead 15) | 14 | [value] [supporting] [sectionCount] [identifier] [menuItem] [formLabel] |
  * | caption (caption1 12) | 12 | [groupLabel] |
  *
  * caption 층에는 값을 두지 않는다. 묶음 이름표만 든다. 값을 한 단계 더 내리면 층이 늘어나는 것이
  * 아니라 위가 홀로 커지지만, 표지는 값과 같은 층에 있으면 값으로 읽히므로 내려야 한다.
  *
- * **한 화면이 쓰는 크기는 둘**이고 그 둘은 늘 이웃한 칸이다. 목록은 이름([itemName], 16)과
- * 값([supporting], 14), 상세는 제목([sectionName], 22)과 본문([body], [bodyMuted], 16)
- * 이다. 짝이 화면마다 다를 뿐이다.
+ * 화면의 이름만 제 층에 혼자 서고 나머지는 이웃한 두 칸 안에서 짝을 짓는다. 목록은
+ * 이름([itemName], 16)과 값([supporting], 14), 상세는 본문([body], [bodyMuted], 16)과 묶음
+ * 이름표([groupLabel], 12)다.
  *
  * 한 칸을 건너뛰면 위가 홀로 커 보인다. 상세가 본문 층 없이 제목 22sp에서 값 14sp로 곧장 떨어지던
  * 동안 그랬다. 목록 카드가 16·14·12로 세 칸을 쓰던 동안에도 같은 일이 났는데, 이름과 가장 작은
@@ -59,10 +71,16 @@ import androidx.compose.ui.unit.sp
  * 판의 색은 [TigerSurface]가 정한다.
  */
 object TigerText {
-    /** 한 묶음을 이끄는 이름. 홈의 `Tasks`, Task Session 목록의 Task 이름이 여기 해당한다. */
+    /**
+     * 화면의 이름. 홈의 `Tasks`, Task Session 목록의 Task 이름, 상세의 수집 일시.
+     *
+     * 한 화면에 하나뿐이고 크다. iOS 메모의 large title이 같은 자리이며, 그 크기가 "여기가 어디인가"를
+     * 묻지 않아도 답해 준다. 22sp였을 때는 아래 값들과 한 계단 반밖에 차이가 나지 않아 화면의 이름이
+     * 아니라 첫 항목처럼 읽혔다.
+     */
     val sectionName: TextStyle
         @Composable get() =
-            MaterialTheme.typography.titleLarge
+            MaterialTheme.typography.headlineMedium
                 .copy(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -136,6 +154,30 @@ object TigerText {
                 .hugged
 
     /**
+     * 묶음 아래에 그 묶음이 몇 개를 담았는지 적는 줄. 홈의 `1개의 Task`, 목록의 `2개의 Session`.
+     *
+     * 가장 옅은 잉크다. 이름을 읽은 사람이 곧바로 목록으로 눈을 내리는 자리라, 이 줄이 [supporting]
+     * 만큼 진하면 읽고 지나가야 할 값으로 걸린다. iOS 메모도 폴더 이름 아래 개수를 본문보다 옅게 둔다.
+     */
+    val sectionCount: TextStyle
+        @Composable get() =
+            MaterialTheme.typography.bodyMedium
+                .copy(color = InkFaint)
+                .hugged
+
+    /**
+     * 기계가 부르는 이름. 목록 카드의 짧은 Session 식별자.
+     *
+     * 가장 옅은 잉크다. 목록에서 세션을 고를 때 쓰는 값이 아니라 고른 뒤에 쓰는 값이고, 같은 카드의
+     * Object보다 한 단계 물러나야 둘이 다른 성격임이 이름표 없이도 읽힌다.
+     */
+    val identifier: TextStyle
+        @Composable get() =
+            MaterialTheme.typography.bodyMedium
+                .copy(color = InkFaint)
+                .hugged
+
+    /**
      * 한 묶음 위에 붙어 그 묶음이 무엇인지 말하는 이름표. 상세의 `세션 정보`, `업로드 상태`.
      *
      * 묶음 안의 글([body])보다 작고 옅다. 이름표는 읽는 대상이 아니라 무엇을 읽고 있는지 알려 주는
@@ -152,26 +194,25 @@ object TigerText {
     val groupLabel: TextStyle
         @Composable get() =
             MaterialTheme.typography.labelMedium
-                .copy(color = MaterialTheme.colorScheme.onSurface)
+                .copy(color = InkFaint)
                 .hugged
 
     /**
      * 메뉴 항목의 글자.
      *
-     * Material 3의 `DropdownMenuItem`은 `labelLarge`를 집어 쓰는데 그 역할은 Medium 굵기다. 버튼의
-     * 글자를 굵게 세우는 눈금이라 메뉴에서는 항목 넷이 모두 강조된 것처럼 보인다. 굵기만 한 단계
-     * 내린다.
+     * 이 역할만 색을 비운다. 메뉴 항목의 색은 스타일이 아니라 상태가 정하기 때문이다. 되돌릴 수 없는
+     * 항목은 error 색으로, 지금 누를 수 없는 항목은 흐린 색으로 그려야 하는데 그 판단은 컴포넌트가
+     * 한다. 역할이 색을 박으면 그 판단을 덮는다.
      *
-     * 호출부가 `fontWeight`를 직접 지정하고 있었다. 세 자리에서 각자 지정했고 그중 둘은 상수를
-     * 따로 두었다. 조합은 화면이 아니라 여기서 정한다.
+     * 실제로 덮었다. `onSurface`를 박아 둔 동안 삭제 항목의 글리프만 붉고 글자는 검었다. 호출부가
+     * `MenuDefaults.itemColors(textColor = error)`를 주고 있었는데 스타일의 색이 이겼다. 비활성일 때
+     * 흐려지는 것도 같은 이유로 막혀 있었다.
+     *
+     * 색을 비우는 것이 규칙의 예외가 아니라 규칙의 다른 절반이다. 역할은 크기와 굵기를, 컴포넌트는
+     * 상태에 따른 색을 정한다.
      */
     val menuItem: TextStyle
-        @Composable get() =
-            MaterialTheme.typography.labelLarge
-                .copy(
-                    fontWeight = FontWeight.Normal,
-                    color = MaterialTheme.colorScheme.onSurface,
-                ).hugged
+        @Composable get() = MaterialTheme.typography.labelLarge.hugged
 
     /** 입력 모달에서 한 무리의 입력을 이끄는 이름표. */
     val formLabel: TextStyle

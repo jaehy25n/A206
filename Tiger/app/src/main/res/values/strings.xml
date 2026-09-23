@@ -42,9 +42,7 @@
     <string name="session_label_task">Task</string>
     <string name="session_label_object">Object</string>
     <string name="session_label_id">ID</string>
-    <string name="session_task">Task %1$s</string>
-    <string name="session_object">Object %1$s</string>
-    <string name="session_list_short_id">ID %1$s</string>
+    <string name="session_short_id_tag">#%1$s</string>
     <string name="session_detail_back">목록으로</string>
     <string name="session_detail_unavailable">세션을 찾을 수 없습니다.</string>
     <string name="session_detail_duration">%1$d초</string>

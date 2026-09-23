@@ -32,7 +32,9 @@ class SurfaceAndInkTest {
         val card: Color,
         val darkInk: Color,
         val lightInk: Color,
+        val faintInk: Color,
         val surfaceRoles: Map<String, TextStyle>,
+        val menuItem: TextStyle,
     )
 
     private fun palette(): Palette {
@@ -46,6 +48,8 @@ class SurfaceAndInkTest {
                         card = TigerSurface.content,
                         darkInk = MaterialTheme.colorScheme.onSurface,
                         lightInk = MaterialTheme.colorScheme.onSurfaceVariant,
+                        faintInk = InkFaint,
+                        menuItem = TigerText.menuItem,
                         surfaceRoles =
                             mapOf(
                                 "sectionName" to TigerText.sectionName,
@@ -55,7 +59,8 @@ class SurfaceAndInkTest {
                                 "value" to TigerText.value,
                                 "supporting" to TigerText.supporting,
                                 "groupLabel" to TigerText.groupLabel,
-                                "menuItem" to TigerText.menuItem,
+                                "sectionCount" to TigerText.sectionCount,
+                                "identifier" to TigerText.identifier,
                                 "formLabel" to TigerText.formLabel,
                             ),
                     )
@@ -101,6 +106,23 @@ class SurfaceAndInkTest {
         )
     }
 
+    /**
+     * 메뉴 항목만 색을 비운다. 규칙의 예외가 아니라 규칙의 다른 절반이다. 메뉴 항목의 색은 스타일이
+     * 아니라 상태가 정하므로, 역할이 색을 박으면 컴포넌트의 판단을 덮는다.
+     *
+     * 실제로 덮었다. `onSurface`를 박아 둔 동안 삭제 항목의 글리프만 붉고 글자는 검었고, 비활성일 때
+     * 흐려지지도 않았다. 눈으로는 글리프 색만 보고 넘기기 쉬워 검사로 못 박는다.
+     */
+    @Test
+    fun aMenuItemLeavesItsColorToTheComponent() {
+        val palette = palette()
+
+        assertTrue(
+            "메뉴 항목이 색을 박으면 error 색과 비활성 색을 덮는다. 박힌 색: ${hex(palette.menuItem.color)}",
+            palette.menuItem.color == Color.Unspecified,
+        )
+    }
+
     @Test
     fun anItemNameIsNeverWeakerThanTheValuesBesideIt() {
         val palette = palette()
@@ -118,7 +140,7 @@ class SurfaceAndInkTest {
     }
 
     @Test
-    fun bothInksMeetAaOnBothSurfaces() {
+    fun everyInkMeetsAaOnBothSurfaces() {
         val palette = palette()
         val pairs =
             listOf(
@@ -126,6 +148,8 @@ class SurfaceAndInkTest {
                 "옅은 잉크 / 카드" to contrast(palette.lightInk, palette.card),
                 "진한 잉크 / 바닥" to contrast(palette.darkInk, palette.listBackground),
                 "옅은 잉크 / 바닥" to contrast(palette.lightInk, palette.listBackground),
+                "가장 옅은 잉크 / 카드" to contrast(palette.faintInk, palette.card),
+                "가장 옅은 잉크 / 바닥" to contrast(palette.faintInk, palette.listBackground),
             )
 
         val failing = pairs.filter { (_, ratio) -> ratio < AA_NORMAL_TEXT }

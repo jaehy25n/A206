@@ -25,6 +25,6 @@ fun ListSectionHeader(
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(text = title, style = TigerText.sectionName)
-        if (supporting != null) Text(text = supporting, style = TigerText.supporting)
+        if (supporting != null) Text(text = supporting, style = TigerText.sectionCount)
     }
 }

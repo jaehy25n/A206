@@ -65,13 +65,24 @@ val Pretendard =
  *
  * | 층 | 크기 | 쓰는 곳 |
  * | --- | --- | --- |
- * | title | 22sp | 화면과 묶음의 이름. `titleLarge` (title2 22) |
+ * | largeTitle | 28sp | 화면의 이름. `headlineMedium` (title1 28) |
+ * | title | 22sp | `AlertDialog`의 제목. `titleLarge` (title2 22) |
  * | body | 16sp | 상세 본문, 목록 항목의 이름. `bodyLarge`·`titleMedium` (body 17, headline 17) |
  * | callout | 14sp | 목록의 값, 컨트롤의 글자. `bodyMedium`·`titleSmall`·`labelLarge` (subhead 15) |
  * | caption | 12sp | 묶음 이름표. `labelMedium` (caption1 12) |
  *
- * 22 위는 비워 둔다. `display`와 `headline`은 한 화면에 제목이 여럿인 문서형 화면의 눈금이고, 이
- * 앱에는 그런 화면이 없다. `headlineSmall`만 `AlertDialog`가 집어 쓰므로 title 층으로 끌어내린다.
+ * 28 위는 비워 둔다. `display`와 `headlineLarge`는 한 화면에 제목이 여럿인 문서형 화면의 눈금이고, 이
+ * 앱에는 그런 화면이 없다. `headlineSmall`은 `AlertDialog`가 집어 쓰므로 title 층으로 끌어내린다.
+ *
+ * ## 프리뷰 위의 글은 이 스케일을 따르지 않는다
+ *
+ * 수집 화면의 오버레이는 22·18·14·13sp를 쓴다. 표면 위의 눈금과 다른데, 읽는 조건이 다르기 때문이다.
+ * 뒤가 카메라 프리뷰라 배경 밝기가 장면마다 바뀌고, 팔을 뻗은 거리에서 곁눈으로 보며, 글자마다 제
+ * 배경(스크림·알약 배지)을 이고 있다. 표면 위의 글이 읽히는 거리와 바탕이 아니다.
+ *
+ * Material 3과 Apple HIG 모두 맥락에 따라 크기를 따로 잡는 것을 막지 않는다. 다만 그 값이 자리마다
+ * 새로 생기지 않도록 [TigerText]의 `overlay*` 역할에 이름을 붙여 묶어 둔다. 이 스케일은 실기기에서
+ * 프리뷰 위 읽힘을 보고 맞춘 값이므로, 표면 스케일에 맞추려고 옮기지 않는다.
  *
  * 값은 M3 기본에서 글꼴·숫자 꼴과 `headlineSmall`의 크기만 손대고 줄 높이와 자간은 그대로 둔다. 줄상자의 남는
  * 여백은 [TigerText]가 역할마다 깎으므로 여기서 줄 높이를 줄일 이유가 없다.

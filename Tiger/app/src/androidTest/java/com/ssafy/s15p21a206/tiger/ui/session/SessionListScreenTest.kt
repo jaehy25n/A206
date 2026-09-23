@@ -70,10 +70,10 @@ class SessionListScreenTest {
         }
 
         // 메타 둘은 왼쪽에 세로로 쌓여 서로 붙는다. 값을 부호로 이어 붙이지 않고, 묶이는 것은 서로의
-        // 바로 아래위에 있다는 사실이 말한다. 열로 갈라 놓았을 때는 식별자가 전송 상태와 같은 기둥에
-        // 붙어 근접성이 종류를 이겼다.
-        composeRule.onNodeWithText(string(R.string.session_object, "cup")).assertIsDisplayed()
-        composeRule.onNodeWithText(string(R.string.session_list_short_id, "session-")).assertIsDisplayed()
+        // 바로 아래위에 있다는 사실이 말한다. 이름표 낱말은 적지 않고, 무엇이 값이고
+        // 무엇이 기계 이름인지는 잉크의 단계와 `#`가 가른다.
+        composeRule.onNodeWithText("cup").assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.session_short_id_tag, "session-")).assertIsDisplayed()
         composeRule.onNodeWithText(string(R.string.upload_failed)).assertIsDisplayed()
         composeRule.onNodeWithContentDescription(sessionLabel).performClick()
         assertEquals(summary.sessionId, selectedSessionId)
@@ -100,9 +100,9 @@ class SessionListScreenTest {
         }
 
         composeRule.onNodeWithContentDescription(string(R.string.session_list_item_content_description, captureTime)).assertIsDisplayed()
-        // 빈 이름표도, 값 없는 자리를 잇는 가운뎃점도 세우지 않는다. 식별자만 남는다.
-        composeRule.onNodeWithText(string(R.string.session_object, "")).assertDoesNotExist()
-        composeRule.onNodeWithText(string(R.string.session_list_short_id, "session-")).assertIsDisplayed()
+        // 값이 없으면 줄째로 뺀다. 이름표 낱말을 적지 않으므로 빈 줄이 남을 자리도 없다.
+        composeRule.onNodeWithText("cup").assertDoesNotExist()
+        composeRule.onNodeWithText(string(R.string.session_short_id_tag, "session-")).assertIsDisplayed()
     }
 
     /** 삭제는 카드에 표를 두지 않고 길게 누르기에 숨긴다. 확인을 거치지 않으면 지워지지 않는다. */

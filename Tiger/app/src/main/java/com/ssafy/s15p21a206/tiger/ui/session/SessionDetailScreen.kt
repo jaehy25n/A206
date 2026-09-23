@@ -12,12 +12,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,6 +38,7 @@ import com.ssafy.s15p21a206.tiger.ui.common.LabelledGroup
 import com.ssafy.s15p21a206.tiger.ui.common.LabelledValue
 import com.ssafy.s15p21a206.tiger.ui.common.ListSectionHeader
 import com.ssafy.s15p21a206.tiger.ui.common.NavigationHeader
+import com.ssafy.s15p21a206.tiger.ui.common.TigerMenuItem
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerSurface
 import com.ssafy.s15p21a206.tiger.ui.theme.TigerText
 import com.ssafy.s15p21a206.tiger.ui.upload.labelRes
@@ -236,38 +235,19 @@ private fun SessionDetailMenu(
             )
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            DropdownMenuItem(
-                // `DropdownMenuItem`이 상속시키는 `labelLarge`는 Medium이다. 항목이 둘뿐이라
-                // 굵기로 무게를 더 실을 이유가 없고, 삭제 항목의 error 색만으로 충분히 구분된다.
-                text = { Text(stringResource(R.string.session_info_title), style = TigerText.menuItem) },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_session_info),
-                        // 이름은 바로 옆 글자가 말한다. 아이콘까지 읽히면 같은 말을 두 번 한다.
-                        contentDescription = null,
-                    )
-                },
+            TigerMenuItem(
+                label = stringResource(R.string.session_info_title),
+                icon = R.drawable.ic_session_info,
                 onClick = {
                     expanded = false
                     onOpenSessionInfo()
                 },
             )
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.session_delete), style = TigerText.menuItem) },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_session_delete),
-                        contentDescription = null,
-                    )
-                },
+            TigerMenuItem(
+                label = stringResource(R.string.session_delete),
+                icon = R.drawable.ic_session_delete,
                 enabled = deleteAction != null,
-                // 되돌릴 수 없는 항목은 error 색으로 둬서 위 항목과 성격이 다름을 보인다.
-                // 글자와 글리프가 같은 색이어야 한 덩어리로 읽힌다.
-                colors =
-                    MenuDefaults.itemColors(
-                        textColor = MaterialTheme.colorScheme.error,
-                        leadingIconColor = MaterialTheme.colorScheme.error,
-                    ),
+                destructive = true,
                 onClick = {
                     expanded = false
                     deleteAction?.let(onRequestDelete)
