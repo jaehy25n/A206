@@ -13,6 +13,8 @@ import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureResult
 import android.hardware.camera2.TotalCaptureResult
+import android.hardware.camera2.params.OutputConfiguration
+import android.hardware.camera2.params.SessionConfiguration
 import android.media.MediaRecorder
 import android.opengl.GLES20
 import android.os.Handler
@@ -36,6 +38,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
 import java.util.EnumSet
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
 
 class AndroidCaptureRuntime(
@@ -240,8 +243,7 @@ class AndroidCaptureRuntime(
                         sharedCamera.setAppSurfaces(cameraId, listOf(recorder.surface))
                         val surfaces = sharedCamera.arCoreSurfaces.toMutableList().apply { add(recorder.surface) }
                         val request = device.createCaptureRequest(CameraDevice.TEMPLATE_RECORD).apply { surfaces.forEach(::addTarget) }
-                        device.createCaptureSession(
-                            surfaces,
+                        val stateCallback =
                             sharedCamera.createARSessionStateCallback(
                                 object : CameraCaptureSession.StateCallback() {
                                     override fun onConfigured(configured: CameraCaptureSession) {
@@ -276,8 +278,14 @@ class AndroidCaptureRuntime(
                                     }
                                 },
                                 handler,
+                            )
+                        device.createCaptureSession(
+                            SessionConfiguration(
+                                SessionConfiguration.SESSION_REGULAR,
+                                surfaces.map(::OutputConfiguration),
+                                Executor(handler::post),
+                                stateCallback,
                             ),
-                            handler,
                         )
                     } catch (error: Exception) {
                         failure = error
