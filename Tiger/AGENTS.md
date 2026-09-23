@@ -27,17 +27,21 @@ debug APK가 42MB이고 그중 41MB가 dex라 기기에서 처리하는 데 수 
 .\gradlew.bat assembleDebug assembleDebugAndroidTest
 adb install -r app\build\outputs\apk\debug\app-debug.apk
 adb install -r app\build\outputs\apk\androidTest\debug\app-debug-androidTest.apk
-adb shell am instrument -w com.ssafy.s15p21a206.tiger.test/androidx.test.runner.AndroidJUnitRunner
+adb shell am instrument -w com.ssafy.s15p21a206.tigermask.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
 같은 기기에서 전체 20개가 15초에 끝나며, 마지막 줄이 `OK (20 tests)`다. 클래스나 메서드만
 고르려면 `-e class`를 준다.
 
+패키지 이름이 둘이다. `-w` 뒤의 instrumentation은 `applicationId`(`com.ssafy.s15p21a206.tigermask`)를
+따르고, `-e class`의 클래스 이름은 코드 네임스페이스(`com.ssafy.s15p21a206.tiger`)를 따른다. 앞의 것이
+틀리면 `Unable to find instrumentation info`로 바로 실패한다.
+
 ```powershell
 adb shell am instrument -w -e class "com.ssafy.s15p21a206.tiger.ui.session.SessionListScreenTest" `
-  com.ssafy.s15p21a206.tiger.test/androidx.test.runner.AndroidJUnitRunner
+  com.ssafy.s15p21a206.tigermask.test/androidx.test.runner.AndroidJUnitRunner
 adb shell am instrument -w -e class "com.ssafy.s15p21a206.tiger.ui.session.SessionListScreenTest#anEmptyTaskSessionListExplainsHowToAddOne" `
-  com.ssafy.s15p21a206.tiger.test/androidx.test.runner.AndroidJUnitRunner
+  com.ssafy.s15p21a206.tigermask.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
 `-w`는 끝날 때까지 기다린다는 뜻이다. 빼면 명령이 즉시 돌아오고 결과를 볼 수 없다. 사람이 읽을
