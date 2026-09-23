@@ -73,7 +73,7 @@ val Pretendard =
  * 22 위는 비워 둔다. `display`와 `headline`은 한 화면에 제목이 여럿인 문서형 화면의 눈금이고, 이
  * 앱에는 그런 화면이 없다. `headlineSmall`만 `AlertDialog`가 집어 쓰므로 title 층으로 끌어내린다.
  *
- * 값은 M3 기본에서 글꼴과 `headlineSmall`의 크기만 손대고 줄 높이와 자간은 그대로 둔다. 줄상자의 남는
+ * 값은 M3 기본에서 글꼴·숫자 꼴과 `headlineSmall`의 크기만 손대고 줄 높이와 자간은 그대로 둔다. 줄상자의 남는
  * 여백은 [TigerText]가 역할마다 깎으므로 여기서 줄 높이를 줄일 이유가 없다.
  */
 val Typography =
@@ -98,4 +98,19 @@ val Typography =
         )
     }
 
-private fun TextStyle.inPretendard(): TextStyle = copy(fontFamily = Pretendard)
+/**
+ * 글꼴과 숫자 꼴을 함께 준다.
+ *
+ * 숫자는 고정폭(`tnum`)으로 둔다. 기본값인 비례 숫자는 글자마다 폭이 달라 `1`이 좁다. 한 줄로 읽는
+ * 글에서는 그편이 고르지만, 이 앱의 숫자는 세로로 쌓인다. 목록 카드의 수집 일시가 카드마다 같은
+ * 자리에서 시작하고, 세션 정보 시트의 값들도 기둥을 이룬다. 폭이 흔들리면 자릿수가 어긋나 보여 두
+ * 시각을 견주기 어렵다.
+ *
+ * Pretendard가 Inter에서 물려받은 기능이고, 이 가족을 고른 이유 중 하나다. 한 곳에서 켜서 화면과
+ * 컴포넌트가 같은 숫자 꼴을 쓰게 한다.
+ */
+private fun TextStyle.inPretendard(): TextStyle =
+    copy(
+        fontFamily = Pretendard,
+        fontFeatureSettings = "tnum",
+    )
