@@ -2,4 +2,22 @@
 <resources>
 
     <style name="Theme.Tiger" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!--
+        수집 화면의 카메라 설정 시트.
+
+        모달이라 뒤의 제어는 받지 않지만 막은 어둡게 깔지 않는다. 초점·ISO·셔터를 옆의 프리뷰를
+        보며 맞추는 것이 이 시트의 목적이라, 프리뷰가 어두워지면 밝기를 틀리게 읽는다.
+        시트 판은 다른 수집 오버레이와 같은 회색을 불투명하게 쓴다.
+    -->
+    <style name="Theme.Tiger.CameraSheet" parent="Theme.Material3.Dark.SideSheetDialog">
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="sideSheetModalStyle">@style/Widget.Tiger.CameraSheet</item>
+    </style>
+
+    <!-- 패널 항목이 256dp 기본 폭에서는 셔터 preset을 두 줄로 밀어낸다. 원래 패널 폭을 유지한다. -->
+    <style name="Widget.Tiger.CameraSheet" parent="Widget.Material3.SideSheet.Modal">
+        <item name="android:layout_width">320dp</item>
+        <item name="backgroundTint">@color/capture_camera_sheet</item>
+    </style>
 </resources>

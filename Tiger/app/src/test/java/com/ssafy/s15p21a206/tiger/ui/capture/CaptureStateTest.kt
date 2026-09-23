@@ -260,6 +260,24 @@ class CaptureStateTest {
         assertFalse(recording.manualCamera.panelOpen)
     }
 
+    /** 시트는 모달이라 열려 있는 동안 정지를 누를 수 없다. 촬영 중에는 아예 열지 않는다. */
+    @Test
+    fun theSettingsCannotBeOpenedWhileRecording() {
+        val attempted = profiled(collecting()).reduce(CaptureIntent.ToggleManualCameraPanel(true))
+
+        assertFalse(attempted.manualCamera.panelOpen)
+    }
+
+    /** 해상도도 촬영 조건이다. Session 도중 바뀌면 영상과 Intrinsic이 한 해상도로 찍혔다고 말할 수 없다. */
+    @Test
+    fun theResolutionCanBeChangedBeforeTheSessionButNotDuringIt() {
+        val idle = CaptureUiState().reduce(CaptureIntent.Open("task", fullHd))
+        assertEquals(hd, idle.reduce(CaptureIntent.SelectResolution(hd)).resolution)
+
+        val recording = collecting()
+        assertEquals(hd, recording.reduce(CaptureIntent.SelectResolution(fullHd)).resolution)
+    }
+
     /** 능력을 읽기 전에는 좁힐 기준이 없다. 범위를 모르는 값을 담아 두면 그대로 카메라에 걸린다. */
     @Test
     fun noSettingIsHeldBeforeTheCameraHasBeenProfiled() {
