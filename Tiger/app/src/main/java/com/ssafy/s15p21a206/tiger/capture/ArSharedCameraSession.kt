@@ -48,24 +48,6 @@ class ArSharedCameraSession(
     @Volatile private var closedLatch: CountDownLatch? = null
 
     /**
-     * 프레임 타임스탬프를 받는 콜백. 상태가 없어 한 인스턴스가 모든 열기를 감당한다.
-     *
-     * 반복 요청과 ARCore 양쪽에 같은 인스턴스를 건다. 그래서 같은 프레임이 두 번 도착할 수 있고,
-     * 거르는 것은 받는 쪽(`FrameTimestampWriter`)의 몫이다.
-     */
-    private val frameCallback =
-        object : CameraCaptureSession.CaptureCallback() {
-            override fun onCaptureCompleted(
-                cameraSession: CameraCaptureSession,
-                request: CaptureRequest,
-                result: TotalCaptureResult,
-            ) {
-                val timestampNs = result.get(CaptureResult.SENSOR_TIMESTAMP) ?: return
-                onFrameTimestamp(timestampNs)
-            }
-        }
-
-    /**
      * 카메라를 열어 recorder에 프레임을 흘려보낸다. 스트림이 돌기 시작하면 돌아온다.
      *
      * [onStreaming]은 스트림이 실제로 돌기 시작한 시점에 카메라 스레드에서 한 번 불린다. 여기서
@@ -93,6 +75,36 @@ class ArSharedCameraSession(
         )
         withTimeoutOrNull(OPEN_TIMEOUT) { streaming.await() }
             ?: error("Timed out starting ARCore shared camera")
+    }
+
+    /** 프레임 공급을 끊는다. 이미 진행 중인 프레임은 계속 인코딩된다. */
+    fun stopRepeating() {
+        runCatching { session?.stopRepeating() }
+            .onFailure { Log.w(CAPTURE_LOG_TAG, "Could not stop the repeating request", it) }
+    }
+
+    /**
+     * capture session과 camera device를 닫는다.
+     *
+     * ARCore Session보다 먼저 닫아야 한다. capture session이 닫힐 때 ARCore가
+     * `onCaptureSessionClosed`에서 native Session을 건드리는데, Session이 먼저 닫혀 있으면
+     * 콜백 스레드에서 잡히지 않는 예외가 나 프로세스가 죽는다.
+     */
+    fun closeSession() {
+        runCatching { session?.close() }
+        session = null
+        // close는 비동기다. onClosed가 끝난 것을 확인한 뒤 돌아간다.
+        val closed = closedLatch?.await(CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS) ?: true
+        if (!closed) Log.w(CAPTURE_LOG_TAG, "Capture session did not report closing in time")
+        closedLatch = null
+        runCatching { device?.close() }
+        device = null
+    }
+
+    /** 콜백을 나르던 핸들러 스레드를 정리한다. 콜백이 모두 전달된 뒤에 부른다. */
+    fun closeThread() {
+        thread?.quitSafely()
+        thread = null
     }
 
     /** 콜백을 받을 카메라 스레드를 띄우고 그 핸들러를 돌려준다. */
@@ -193,35 +205,23 @@ class ArSharedCameraSession(
         }
     }
 
-    /** 프레임 공급을 끊는다. 이미 진행 중인 프레임은 계속 인코딩된다. */
-    fun stopRepeating() {
-        runCatching { session?.stopRepeating() }
-            .onFailure { Log.w(CAPTURE_LOG_TAG, "Could not stop the repeating request", it) }
-    }
-
     /**
-     * capture session과 camera device를 닫는다.
+     * 프레임 타임스탬프를 받는 콜백. 상태가 없어 한 인스턴스가 모든 열기를 감당한다.
      *
-     * ARCore Session보다 먼저 닫아야 한다. capture session이 닫힐 때 ARCore가
-     * `onCaptureSessionClosed`에서 native Session을 건드리는데, Session이 먼저 닫혀 있으면
-     * 콜백 스레드에서 잡히지 않는 예외가 나 프로세스가 죽는다.
+     * 반복 요청과 ARCore 양쪽에 같은 인스턴스를 건다. 그래서 같은 프레임이 두 번 도착할 수 있고,
+     * 거르는 것은 받는 쪽(`FrameTimestampWriter`)의 몫이다.
      */
-    fun closeSession() {
-        runCatching { session?.close() }
-        session = null
-        // close는 비동기다. onClosed가 끝난 것을 확인한 뒤 돌아간다.
-        val closed = closedLatch?.await(CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS) ?: true
-        if (!closed) Log.w(CAPTURE_LOG_TAG, "Capture session did not report closing in time")
-        closedLatch = null
-        runCatching { device?.close() }
-        device = null
-    }
-
-    /** 콜백을 나르던 핸들러 스레드를 정리한다. 콜백이 모두 전달된 뒤에 부른다. */
-    fun closeThread() {
-        thread?.quitSafely()
-        thread = null
-    }
+    private val frameCallback =
+        object : CameraCaptureSession.CaptureCallback() {
+            override fun onCaptureCompleted(
+                cameraSession: CameraCaptureSession,
+                request: CaptureRequest,
+                result: TotalCaptureResult,
+            ) {
+                val timestampNs = result.get(CaptureResult.SENSOR_TIMESTAMP) ?: return
+                onFrameTimestamp(timestampNs)
+            }
+        }
 
     private companion object {
         /** 카메라가 열려 스트림이 돌기 시작할 때까지 기다리는 한계. */
