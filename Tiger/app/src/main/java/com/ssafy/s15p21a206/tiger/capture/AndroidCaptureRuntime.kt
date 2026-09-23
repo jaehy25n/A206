@@ -62,28 +62,11 @@ class AndroidCaptureRuntime(
         try {
             val session = Session(appContext, EnumSet.of(Session.Feature.SHARED_CAMERA))
             applyRecordingResolution(session, resolution)
-            val recorder =
-                newMediaRecorder().apply {
-                    setVideoSource(MediaRecorder.VideoSource.SURFACE)
-                    setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-                    setVideoEncoder(MediaRecorder.VideoEncoder.H264)
-                    setVideoFrameRate(30)
-                    setVideoSize(session.cameraConfig.textureSize.width, session.cameraConfig.textureSize.height)
-                    setOutputFile(next.mainVideo.absolutePath)
-                    // 회전 정보를 남기지 않는다. 폰을 가로로 눕혀 촬영하므로 센서가 내보내는
-                    // 가로 프레임이 곧 똑바로 선 장면이다. Intrinsic도 같은 기준으로 기록한다.
-                    prepare()
-                }
+            val recorder = prepareRecorder(session, next)
             arSession = session
             mediaRecorder = recorder
             bundle = next
-            // 프리뷰도 녹화와 같은 가로 기준으로 그린다.
-            val textureSize = session.cameraConfig.textureSize
-            val previewSurface =
-                runCatching { previewSurfaces.surfaceFor(textureSize.width, textureSize.height) }
-                    .onFailure { Log.w(CAPTURE_LOG_TAG, "Could not obtain a preview surface", it) }
-                    .getOrNull()
-
+            val previewSurface = previewSurfaceFor(session, previewSurfaces)
             cameraSession.open(session, recorder) {
                 recorder.start()
                 // 인코더가 실제로 돌기 시작한 뒤부터 Camera timestamp를 남긴다.
@@ -100,6 +83,38 @@ class AndroidCaptureRuntime(
             next.directory.deleteRecursively()
             throw error
         }
+    }
+
+    /** 녹화 크기를 ARCore Camera 텍스처에 맞춰 recorder를 준비한다. */
+    private fun prepareRecorder(
+        session: Session,
+        bundle: SessionBundle,
+    ): MediaRecorder =
+        newMediaRecorder().apply {
+            setVideoSource(MediaRecorder.VideoSource.SURFACE)
+            setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+            setVideoEncoder(MediaRecorder.VideoEncoder.H264)
+            setVideoFrameRate(30)
+            setVideoSize(session.cameraConfig.textureSize.width, session.cameraConfig.textureSize.height)
+            setOutputFile(bundle.mainVideo.absolutePath)
+            // 회전 정보를 남기지 않는다. 폰을 가로로 눕혀 촬영하므로 센서가 내보내는
+            // 가로 프레임이 곧 똑바로 선 장면이다. Intrinsic도 같은 기준으로 기록한다.
+            prepare()
+        }
+
+    /**
+     * 프리뷰를 그릴 Surface를 받아 온다. 녹화와 같은 가로 기준으로 크기를 넘긴다.
+     *
+     * 프리뷰를 붙이지 못해도 수집은 이어간다. 화면에 보이지 않을 뿐 기록은 온전하다.
+     */
+    private fun previewSurfaceFor(
+        session: Session,
+        previewSurfaces: PreviewSurfaceProvider,
+    ): Surface? {
+        val textureSize = session.cameraConfig.textureSize
+        return runCatching { previewSurfaces.surfaceFor(textureSize.width, textureSize.height) }
+            .onFailure { Log.w(CAPTURE_LOG_TAG, "Could not obtain a preview surface", it) }
+            .getOrNull()
     }
 
     /**
