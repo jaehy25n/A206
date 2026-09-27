@@ -1,0 +1,16 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# Runtime data lives under /srv on the server and is never committed:
+#   /srv/incoming, /srv/sessions, /srv/locks, /srv/processed
+# Anything accidentally staged from there:
+sessions/
+processed/
+incoming/
+*.mp4
+*.jpg
+*.npz
+validation_report.json
+validation_report.csv

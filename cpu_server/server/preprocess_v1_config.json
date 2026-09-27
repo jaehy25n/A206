@@ -1,0 +1,40 @@
+{
+  "config_version": 1,
+  "timestamp_alignment": {
+    "max_interval_error_ms": 2.0,
+    "max_relative_error_ms": 10.0
+  },
+  "quality_thresholds": {
+    "valid_min_tracking_ratio": 0.98,
+    "valid_max_paused_duration_ms": 100.0,
+    "invalid_max_paused_duration_ms": 2000.0,
+    "thresholds_finalized": false
+  },
+  "pose_validity": {
+    "usable_tracking_states": ["TRACKING"],
+    "quaternion_norm_tolerance": 0.1
+  },
+  "pose_gap": {
+    "interpolate_max_frames": 2,
+    "interpolate_max_gap_ms": 100.0
+  },
+  "trajectory_quality": {
+    "min_publish_segment_frames": 48,
+    "source_hz_reference": 30.0,
+    "policy_hz_reference": 10.0,
+    "action_horizon_reference": 16,
+    "thresholds_finalized": false
+  },
+  "calibration": {
+    "T_camera_EE": [
+      [1.0, 0.0, 0.0, 0.0],
+      [0.0, 1.0, 0.0, 0.0],
+      [0.0, 0.0, 1.0, 0.0],
+      [0.0, 0.0, 0.0, 1.0]
+    ],
+    "status": "placeholder_identity_not_for_training"
+  },
+  "rgb": {
+    "jpeg_qscale": 2
+  }
+}
