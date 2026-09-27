@@ -216,11 +216,3 @@ sudo nginx -t && sudo systemctl reload nginx
 ```
 
 경로(`/srv`, `/home/ubuntu/server`)는 코드와 systemd unit에 하드코딩돼 있다. 인증은 없다. 상세와 검증 절차는 SETUP.md에 있다.
-
-## 알려진 미확정 사항
-
-- `calibration.T_camera_EE`가 identity placeholder이므로 `T_world_EE`, `T_episode0_EE`, 그리고 여기서 파생된 action은 **파이프라인/인터페이스 검증용이며 calibrated EE 학습 라벨이 아니다** (`calibration_status: placeholder_identity_not_for_training`).
-- 업로더가 ARCore SDK 버전을 기록하지 않아, ARCore 1.5 이하의 legacy camera-axis 동작을 배제할 수 없다 (`sdk_version_verified: false`).
-- 품질 라벨 임계값은 잠정이다 (`thresholds_finalized: false`).
-- `trajectory.npz`의 transform-matrix action은 인터페이스 산출물이며 최종 UMI action contract가 아니다. position/rotation/gripper 인코딩은 GPU contract 확정 대기 중.
-- gripper_width는 아직 수집 파이프라인에 없다.
