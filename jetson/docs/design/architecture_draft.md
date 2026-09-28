@@ -50,7 +50,7 @@
      OMX-F Dynamixel ×6
 ```
 
-### 다이어그램 (Mermaid — VS Code 미리보기/GitHub에서 렌더링. Graphviz 버전은 `rqt_graph_draft.dot`)
+### 다이어그램 (Mermaid — VS Code 미리보기/GitHub에서 렌더링. Graphviz 버전은 [`rqt_graph_draft.dot`](rqt_graph_draft.dot), 렌더링 [`rqt_graph_draft.png`](rqt_graph_draft.png))
 
 ```mermaid
 flowchart TB
@@ -257,7 +257,7 @@ omx_bringup       robot.launch.py, mock.launch.py, discovery_server 설정
 - v1로 구조 개정. mode_manager를 `/joint_command`의 유일한 발행자로 두는 안전 설계 채택.
 
 ### 2026-09-23 4차 — 구현
-- v1 구조를 ROS 2 Humble 패키지로 구현. 기존 `dummy_exec` 프로토타입의 규약([H,10] 액션, 6D 회전, 절대 그리퍼 폭, 해석적 IK, 5-DOF 투영)을 그대로 승격.
+- v1 구조를 ROS 2 Humble 패키지로 구현. 기존 [`omx_control/dummy_exec/`](../../omx_control/dummy_exec/) 프로토타입의 규약([H,10] 액션, 6D 회전, 절대 그리퍼 폭, 해석적 IK, 5-DOF 투영)을 그대로 승격.
 - 자세한 내용은 9절.
 
 ---
@@ -267,7 +267,7 @@ omx_bringup       robot.launch.py, mock.launch.py, discovery_server 설정
 ### 위치
 - 코드: WSL `~/omx/omx_control` (기존 git 저장소, 아직 커밋 안 함).
 - 워크스페이스: `~/omx/omx_ws` (`src/omx_control` → 저장소 심볼릭 링크, `src/thirdparty/DynamixelSDK` humble 브랜치 소스 빌드).
-- 라이브 그래프: `제어/rqt_graph_mock.png`, `rqt_graph_mock.dot` (mock 스택 실행 중 `graph_dump.py`로 덤프).
+- 라이브 그래프: [`omx_control/docs/rqt_graph_mock.png`](../../omx_control/docs/rqt_graph_mock.png), [`rqt_graph_mock.dot`](../../omx_control/docs/rqt_graph_mock.dot) (mock 스택 실행 중 `graph_dump.py`로 덤프).
 
 ### 패키지
 
@@ -317,7 +317,7 @@ omx_bringup       robot.launch.py, mock.launch.py, discovery_server 설정
 - 위치: WSL `~/omx/omx_teach` (독립 git 저장소, `main`). 워크스페이스 `~/omx/omx_ws/src/omx_teach` 심볼릭 링크. `omx_control`은 수정하지 않음.
 - 기능: 팔로워를 토크 OFF로 손으로 움직여 `/joint_states`를 CSV로 기록(관절 + FK로 계산한 TCP 궤적), 나중에 TELEOP 모드로 `/teleop/joint_command`에 스트리밍해 재현. 첫 샘플까지 smooth-step 접근, 샘플 점프·관절 이름 검사, 속도 0.1~2배 제한, abort → STOP.
 - 인터페이스: 서비스 `/teach/record_start`, `/teach/record_stop`, `/teach/play`, `/teach/abort`, 상태 `/teach/status`. CLI `ros2 run omx_teach teach record|stop|play|abort|list`.
-- mock 검증: 더미 pick 9.1 s 기록(1830 샘플) → 재생 추종 오차 RMS 0.05°, 최대 1.32°. 토크 OFF 기록(IDLE 전환), 재생 중 abort(STOP) 확인. 그래프: `제어/rqt_graph_teach.png`.
+- mock 검증: 더미 pick 9.1 s 기록(1830 샘플) → 재생 추종 오차 RMS 0.05°, 최대 1.32°. 토크 OFF 기록(IDLE 전환), 재생 중 abort(STOP) 확인. 그래프: [`omx_teach/docs/rqt_graph_teach.png`](../../omx_teach/docs/rqt_graph_teach.png).
 - 제약: XL430(joint1~3)은 전류 기반 위치 모드가 없어 기록 중 토크를 완전히 꺼야 함 → 사람이 팔을 잡고 시연.
 - 테스트 중 발견: `mode_manager`의 `heartbeat_timeout_ms`(300)가 더미 policy heartbeat 주기(250 ms)와 여유가 50 ms뿐이라 CLI 프로세스 기동 부하에 한 번 STOP됨. omx_control 쪽에서 timeout을 1000 ms로 올리거나 heartbeat를 10 Hz로 분리하는 것을 검토(미수정).
 
@@ -328,7 +328,7 @@ omx_bringup       robot.launch.py, mock.launch.py, discovery_server 설정
 - 구성: `ros:humble-ros-base`(멀티아치) + colcon, numpy, robot_state_publisher, usb_cam. 컨테이너 사용자 = 호스트 UID/GID. 워크스페이스 `~/omx_ws`를 `/ws`로 바인드 마운트해 컨테이너 안에서 빌드. `network_mode: host`, `ipc: host`, `/dev/ttyACM0` 장치 전달, `dialout` 그룹.
 - DynamixelSDK는 `src/thirdparty` 소스 빌드(apt 패키지 가용성 변수 제거).
 - policy는 나중에 `dustynv/ros:humble-pytorch-l4t-r36.x` GPU 컨테이너를 같은 호스트 네트워크에 추가(compose에 주석으로 준비).
-- 절차: `제어/jetson_runbook.md` (Docker 기준으로 개정).
+- 절차: [`docs/jetson_runbook.md`](../jetson_runbook.md) (Docker 기준으로 개정).
 
 ## 참고 링크
 - open_manipulator GitHub: https://github.com/ROBOTIS-GIT/open_manipulator

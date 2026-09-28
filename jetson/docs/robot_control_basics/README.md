@@ -19,13 +19,12 @@
 | [04_DXL_직접제어_노트.md](04_DXL_직접제어_노트.md) | Protocol 2.0 손으로, EEPROM/RAM, 핵심 레지스터, 조사에서 나온 사실들, 실행 방법, 직접 드라이버 19단계 사다리 | 서보 붙잡고 있을 때 |
 | [부록_조사원본/](부록_조사원본/) | 두 번의 병렬 조사(각 6관점 + 합성) 원본 JSON | 근거 확인할 때 |
 
-## 관련 폴더 (이미 정리돼 있던 것)
+## 관련 폴더
 
-- `../DXL_직접제어/code/` — `dxl_raw.py`, `s1_ping.py`, `s2_read.py`, `s3_watch.py` (+ `Dockerfile`, `run.sh`).
-  원본과 **바이트 단위로 동일**함을 확인해서 여기엔 중복 복사하지 않음.
-- `../더미데이터/` — ROS 경로로 실기 픽까지 돌렸던 더미 파이프라인 (기구학·chunk 디코더·실행기).
-- `../OMX_제어스택/` — 별도로 설계한 자체 제어 스택 초안.
-- `../OMX_제어부_학습정리.md` — 제어부 설계·기구학 이론 정리.
+- [`prototypes/dxl_basics/`](../../prototypes/dxl_basics/) — `dxl_raw.py`, `s1_ping.py`, `s2_read.py`, `s3_watch.py` (+ `Dockerfile`, `run.sh`).
+- [`prototypes/dummy_pipeline/`](../../prototypes/dummy_pipeline/) — ROS 경로로 실기 픽까지 돌렸던 더미 파이프라인 (기구학·chunk 디코더·실행기).
+- [`docs/design/`](../design/) — 이 정리 다음에 설계한 자체 제어 스택(v1).
+- [`docs/notes/OMX_제어부_학습정리.md`](../notes/OMX_제어부_학습정리.md) — 제어부 설계·기구학 이론 정리.
 
 ## 지금 위치 / 다음 할 일
 

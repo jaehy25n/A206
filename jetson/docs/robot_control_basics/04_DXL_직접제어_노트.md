@@ -1,6 +1,6 @@
 # 04. DYNAMIXEL 직접 제어 노트
 
-코드: `../DXL_직접제어/code/`
+코드: [`prototypes/dxl_basics/`](../../prototypes/dxl_basics/)
 대상: OMX-AI follower — id 11~16, joint1~3 = XL430-W250, joint4·5·gripper = XL330-M288(또는 M077, 미확인), `/dev/ttyACM0`, 1 Mbps, Protocol 2.0
 
 ## 1. 왜 SDK 없이 바이트부터
@@ -115,7 +115,7 @@ cd ~/dxl_basics && python3 s3_watch.py --port /dev/ttyACM0 [--torque-off]
 11. sync_write는 **응답 패킷이 없다** → 실패가 조용하다, 다음 읽기로만 확인. sync_read 응답은 요청 순서로 오므로 한 서보가 침묵하면 뒤의 응답이 **전부 한 칸씩 엉뚱한 관절로 밀린다** → ID 바이트로 매칭 (`recv()`는 현재 ID를 버림).
 12. termios 백엔드 `VTIME=1`은 100 ms 단위 — 제어 주기 2.5개. ping엔 괜찮지만 루프엔 치명적(select 기반 타임아웃 필요).
 
-### 기존 더미 코드의 알려진 결함 (`../더미데이터/`)
+### 기존 더미 코드의 알려진 결함 ([`prototypes/dummy_pipeline/`](../../prototypes/dummy_pipeline/))
 - `omx_kinematics.inverse`가 j5를 (−π, π]로 wrap → roll 179°→180° 명령 시 joint5가 359° 점프, 속도 게이트가 4,488°/s로 읽고 거부 → 팔이 경고 한 줄과 함께 멈춤. 스크립트 픽이 roll=0이라 잠복 중. (`_solve`에서 q_ref 기준 ±2π unwrap으로 해결)
 - tick 제수가 파일마다 다름: `omx_kinematics.py` 주석은 /4095, 나머지는 /4096. 스펙은 4096. 수치 차이는 무시 가능하지만 **변환을 소유하는 파일이 하나도 없다**는 게 문제.
 - IK 재검증: 20,000 샘플 중 17,200 정확(최악 3.24e-16 m), 2,800 거부는 전부 음의 평면 리치(joint1 축 뒤로 접힌 자세). r ≥ 0으로 제한하면 13,887/13,887. 작업 영역은 전부 정확 영역 안. **코드는 이식되지만 캘리브레이션은 안 된다.**
@@ -138,7 +138,7 @@ cd ~/dxl_basics && python3 s3_watch.py --port /dev/ttyACM0 [--torque-off]
 | # | 단계 | 확인 방법 | 위험 | 상태 |
 |---|---|---|---|---|
 | 1 | Protocol 2.0 코덱 | 매뉴얼 예제 패킷 3개 바이트 일치 | none | ✅ |
-| 2 | 해석적 FK/IK + chunk 디코더 + 스크립트 정책 | 20,000 샘플 왕복 최악 3.24e-16 m | none | ✅ (더미데이터) |
+| 2 | 해석적 FK/IK + chunk 디코더 + 스크립트 정책 | 20,000 샘플 왕복 최악 3.24e-16 m | none | ✅ (`prototypes/dummy_pipeline`) |
 | 3 | **버스 단독 소유** — `os.open` 직후 `fcntl.flock` 또는 `TIOCEXCL`, 컨테이너 s6 자동기동 중지, fuser 확인 | s1_ping 두 개 동시 실행 시 두 번째가 EBUSY로 깔끔히 실패 | none | ⬜ |
 | 4 | 실기에서 6개 ping (컨테이너 말고 호스트 → termios 경로 실행) | 6개 응답, 모델 1060×3 + 1200(또는 1190)×3 | none | 🟡 코드 완료, 실기 미실행 |
 | 5 | 컨트롤 테이블 전체 읽기 | 모드·Drive Mode·tick 한계·Homing Offset이 문서가 아니라 서보에서 나온 표 | none | 🟡 경고비트 수정·레지스터 추가 완료, 실기 미실행 |

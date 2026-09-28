@@ -43,7 +43,7 @@ cd ~/omx_ws && chmod +x omx.sh
 ./omx.sh shell         # ROS 환경이 잡힌 셸. 터미널마다 하나씩
 ```
 
-컨테이너 셸 안에서는 런북 6절 이후의 `ros2 ...` 명령을 그대로 쓴다.
+컨테이너 셸 안에서는 [런북](../docs/jetson_runbook.md) 5절 이후의 `ros2 ...` 명령을 그대로 쓴다.
 
 ```bash
 ros2 launch omx_driver driver.launch.py port:=/dev/ttyACM0
@@ -59,5 +59,5 @@ ros2 launch omx_teach teach.launch.py
 - **권한**: 호스트에서 `/dev/ttyACM0`이 `root:dialout 0660`이면 컨테이너 사용자가 `dialout`이라 그대로 읽고 쓸 수 있다. 다르면 호스트에서 udev 규칙(MODE 0666) 적용.
 - **소스 수정**: 호스트의 `~/omx_ws/src`를 고치면 컨테이너에 바로 보인다. Python·launch·yaml은 재빌드 없이, C++는 `./omx.sh build omx_driver`.
 - **기록 파일**: `~/omx_recordings`(호스트) = `/home/omx/omx_recordings`(컨테이너).
-- **노트북에서 토픽 보기**: `network_mode: host`라 호스트와 같은 조건. 런북 10절.
+- **노트북에서 토픽 보기**: `network_mode: host`라 호스트와 같은 조건. [런북](../docs/jetson_runbook.md) 9절.
 - **GPU policy 컨테이너**: `docker-compose.yml`의 `policy` 서비스 주석을 풀고 `dustynv/ros:humble-pytorch-l4t-<r36.x>` 태그를 JetPack 버전에 맞춘다. `runtime: nvidia`. 같은 `/ws`를 마운트하므로 `omx_msgs`를 그대로 import한다.

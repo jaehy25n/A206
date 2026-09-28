@@ -2,7 +2,7 @@
 
 Policy 출력(EE action chunk) → 5-DOF IK → Dynamixel 드라이버까지를 자체 구성한 ROS 2 패키지 모음.
 ROBOTIS 스택에서는 DynamixelSDK, 모터 설정값, URDF 기하만 가져왔다.
-설계 메모: `특화/제어/architecture_draft.md` (Windows 쪽 노트 폴더).
+설계 메모: [`docs/design/architecture_draft.md`](../docs/design/architecture_draft.md), 젯슨 실행 절차: [`docs/jetson_runbook.md`](../docs/jetson_runbook.md).
 
 ```
 omx_msgs          EEState, EEActionChunk, EETarget, ModeState
