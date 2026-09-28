@@ -1,0 +1,8 @@
+# 젯슨·컨테이너(리눅스)에서 실행하는 파일이 대부분이라 줄바꿈을 LF로 통일한다.
+# Windows에서 core.autocrlf=true로 클론해도 셸 스크립트가 CRLF로 깨지지 않는다
+# (bad interpreter: /bin/bash^M — prototypes/dummy_pipeline/README.md 삽질 기록 참고).
+* text=auto eol=lf
+
+*.png binary
+*.stl binary
+*.gz  binary
