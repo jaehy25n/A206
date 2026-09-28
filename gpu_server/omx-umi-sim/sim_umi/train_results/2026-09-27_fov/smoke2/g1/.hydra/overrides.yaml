@@ -1,0 +1,17 @@
+- task.dataset.val_ratio=0.0
+- training.seed=42
+- training.device=cuda:0
+- training.num_epochs=100
+- training.checkpoint_every=10
+- training.sample_every=5
+- +training.mixed_precision=fp16
+- +training.lr_scheduler_total_steps=11400
+- task.dataset_path=/home/j-j15a206/universal_manipulation_interface/sim_umi/data/omx_sim_train_v2_g1_letterbox224.zarr.zip
+- training.resume=False
+- +task.rgb_geometry=g1_letterbox224
+- +training.dataloader_seed=42
+- +training.init_state_path=/home/j-j15a206/universal_manipulation_interface/sim_umi/train_results/2026-09-27_definitive/shared_init/init_state.pt
+- +training.max_opt_steps=100
+- +training.checkpoint_at_steps=[100]
+- +training.log_batch_fingerprints=100
+- exp_name=fov_smoke_g1_letterbox224

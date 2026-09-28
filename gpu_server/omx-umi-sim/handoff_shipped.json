@@ -1,0 +1,13 @@
+{
+  "_comment": "What the Jetson side confirmed receiving and verifying. Updated only by scripts/audit_handoff.py --mark-shipped.",
+  "bundle": {
+    "file": "omx_jetson_handoff_0d9d30d_20260922.zip",
+    "sha256": "9204efd33e0ea3b1ebc0cc79ca727a2d51dd3aa716fa6a2ec567f61b0f822269",
+    "confirmed_by_jetson": "2026-09-22"
+  },
+  "source": {
+    "file": "jetson_inference_source_0d9d30d.tar.gz",
+    "sha256": "7ba9203131fa40ea7609abb43cea067e7c35ba498d8a21c93dcf04d5ecc801aa",
+    "confirmed_by_jetson": "2026-09-22"
+  }
+}

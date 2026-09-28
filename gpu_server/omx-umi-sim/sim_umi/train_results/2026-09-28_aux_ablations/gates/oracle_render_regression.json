@@ -1,0 +1,65 @@
+{
+ "verdict": "PASS",
+ "mismatching_rows": {
+  "sim_umi/data/demos/train/episode_0002.npz": {
+   "target_mask": 0,
+   "ee_gripper_mask": 0,
+   "ee_tip_mask": 0,
+   "ee_finger_y_mm": 0,
+   "target_mask_px_224": 0,
+   "ee_gripper_mask_px_224": 0,
+   "ee_tip_mask_px_224": 0,
+   "rows": 301
+  },
+  "sim_umi/data/demos/train/episode_0017.npz": {
+   "target_mask": 0,
+   "ee_gripper_mask": 0,
+   "ee_tip_mask": 0,
+   "ee_finger_y_mm": 0,
+   "target_mask_px_224": 0,
+   "ee_gripper_mask_px_224": 0,
+   "ee_tip_mask_px_224": 0,
+   "rows": 335
+  },
+  "sim_umi/data/demos/v2_train/episode_0000.npz": {
+   "target_mask": 0,
+   "ee_gripper_mask": 0,
+   "ee_tip_mask": 0,
+   "ee_finger_y_mm": 0,
+   "target_mask_px_224": 0,
+   "ee_gripper_mask_px_224": 0,
+   "ee_tip_mask_px_224": 0,
+   "rows": 376
+  },
+  "sim_umi/data/demos/v2_train/episode_0013.npz": {
+   "target_mask": 0,
+   "ee_gripper_mask": 0,
+   "ee_tip_mask": 0,
+   "ee_finger_y_mm": 0,
+   "target_mask_px_224": 0,
+   "ee_gripper_mask_px_224": 0,
+   "ee_tip_mask_px_224": 0,
+   "rows": 386
+  },
+  "sim_umi/data/demos/v2_train/episode_0020.npz": {
+   "target_mask": 0,
+   "ee_gripper_mask": 0,
+   "ee_tip_mask": 0,
+   "ee_finger_y_mm": 0,
+   "target_mask_px_224": 0,
+   "ee_gripper_mask_px_224": 0,
+   "ee_tip_mask_px_224": 0,
+   "rows": 345
+  },
+  "sim_umi/data/demos/v2_train/episode_0033.npz": {
+   "target_mask": 0,
+   "ee_gripper_mask": 0,
+   "ee_tip_mask": 0,
+   "ee_finger_y_mm": 0,
+   "target_mask_px_224": 0,
+   "ee_gripper_mask_px_224": 0,
+   "ee_tip_mask_px_224": 0,
+   "rows": 317
+  }
+ }
+}

@@ -1,0 +1,30 @@
+===== G0 saved .hydra/config.yaml vs G0 recomposed from its overrides: 0 differing lines =====
+
+===== G0 -> G1: 8 differing keys (timestamps/run dirs excluded) =====
+  exp_name: 'amp_v2_definitive' -> 'fov_g1_letterbox224'
+  logging.tags: ['train_diffusion_unet_timm_omx', 'umi_omx', 'amp_v2_definitive'] -> ['train_diffusion_unet_timm_omx', 'umi_omx', 'fov_g1_letterbox224']
+  task.dataset.dataset_path: '/home/j-j15a206/universal_manipulation_interface/sim_umi/data/omx_sim_train_v2.zarr.zip' -> '/home/j-j15a206/universal_manipulation_interface/sim_umi/data/omx_sim_train_v2_g1_letterbox224.zarr.zip'
+  task.dataset_path: '/home/j-j15a206/universal_manipulation_interface/sim_umi/data/omx_sim_train_v2.zarr.zip' -> '/home/j-j15a206/universal_manipulation_interface/sim_umi/data/omx_sim_train_v2_g1_letterbox224.zarr.zip'
+  task.rgb_geometry: '<absent>' -> 'g1_letterbox224'
+  training.dataloader_seed: '<absent>' -> 42
+  training.log_batch_fingerprints: '<absent>' -> 300
+  training.resume: True -> False
+----- outside the allowed set: none
+
+===== G0 -> G2: 14 differing keys (timestamps/run dirs excluded) =====
+  exp_name: 'amp_v2_definitive' -> 'fov_g2_rect288x176'
+  logging.tags: ['train_diffusion_unet_timm_omx', 'umi_omx', 'amp_v2_definitive'] -> ['train_diffusion_unet_timm_omx', 'umi_omx', 'fov_g2_rect288x176']
+  policy.obs_encoder.shape_meta.obs.camera0_rgb.shape: [3, 224, 224] -> [3, 176, 288]
+  policy.shape_meta.obs.camera0_rgb.shape: [3, 224, 224] -> [3, 176, 288]
+  shape_meta.obs.camera0_rgb.shape: [3, 224, 224] -> [3, 176, 288]
+  task.dataset.dataset_path: '/home/j-j15a206/universal_manipulation_interface/sim_umi/data/omx_sim_train_v2.zarr.zip' -> '/home/j-j15a206/universal_manipulation_interface/sim_umi/data/omx_sim_train_v2_g2_rect288x176.zarr.zip'
+  task.dataset.shape_meta.obs.camera0_rgb.shape: [3, 224, 224] -> [3, 176, 288]
+  task.dataset_path: '/home/j-j15a206/universal_manipulation_interface/sim_umi/data/omx_sim_train_v2.zarr.zip' -> '/home/j-j15a206/universal_manipulation_interface/sim_umi/data/omx_sim_train_v2_g2_rect288x176.zarr.zip'
+  task.rgb_geometry: '<absent>' -> 'g2_rect288x176'
+  task.shape_meta.obs.camera0_rgb.shape: [3, 224, 224] -> [3, 176, 288]
+  training.dataloader_seed: '<absent>' -> 42
+  training.init_state_path: '/home/j-j15a206/universal_manipulation_interface/sim_umi/train_results/2026-09-27_definitive/shared_init/init_state.pt' -> '/home/j-j15a206/universal_manipulation_interface/sim_umi/train_results/2026-09-27_fov/shared_init/init_state_g2.pt'
+  training.log_batch_fingerprints: '<absent>' -> 300
+  training.resume: True -> False
+----- outside the allowed set: none
+

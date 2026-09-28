@@ -1,0 +1,67 @@
+20 expert episodes with a grasp
+
+3. how many grasps this dataset really contains
+  physical episodes                          20
+  independent APPROACH->GRASP transitions     20
+  frames                                   6493
+  16-step training windows                 6153
+  windows whose start is within 1.5s of a closing jaw    620
+  -> 620 windows, but 20 events. The windows overlap by 96.8%; they are the same 20 transitions resampled.
+
+1. the transition, aligned on the instant the jaw starts to shut
+        t  depth mean     sd          p5..p95  pitch mean     sd          p5..p95    EE v
+    -1.5s      -13.44   4.60  -20.92..  -6.83      +12.42   2.38   +7.90.. +16.07   5.475
+    -1.4s      -14.82   4.22  -21.63..  -9.21      +12.35   2.37   +7.97.. +16.05   5.635
+    -1.3s      -16.01   3.96  -22.45.. -10.92      +12.34   2.36   +8.04.. +16.03   5.700
+    -1.2s      -17.10   3.76  -23.31.. -12.40      +12.37   2.37   +8.06.. +16.13   5.751
+    -1.1s      -18.15   3.58  -24.12.. -13.61      +12.39   2.38   +8.06.. +16.19   5.708
+    -1.0s      -19.12   3.26  -24.00.. -14.75      +12.41   2.38   +8.06.. +16.21   5.589
+    -0.9s      -19.96   2.85  -23.81.. -15.87      +12.41   2.39   +8.05.. +16.21   5.509
+    -0.8s      -20.47   2.30  -23.90.. -17.01      +12.40   2.39   +8.03.. +16.20   5.414
+    -0.7s      -20.91   1.95  -23.89.. -17.98      +12.39   2.39   +8.02.. +16.19   5.362
+    -0.6s      -21.49   1.79  -24.42.. -18.60      +12.38   2.39   +8.02.. +16.18   5.341
+    -0.5s      -22.18   1.55  -24.50.. -19.70      +12.37   2.38   +8.02.. +16.17   5.332
+    -0.4s      -22.74   1.29  -24.41.. -20.68      +12.39   2.38   +8.05.. +16.20   4.631
+    -0.3s      -23.05   1.11  -24.33.. -21.13      +12.46   2.39   +8.13.. +16.28   2.693
+    -0.2s      -23.14   1.01  -24.30.. -21.28      +12.51   2.39   +8.18.. +16.34   1.058
+    -0.1s      -23.00   0.90  -24.15.. -21.31      +12.55   2.38   +8.21.. +16.37   0.443
+    +0.0s      -22.62   0.76  -23.61.. -21.19      +12.57   2.38   +8.23.. +16.38   0.148
+    +0.1s      -22.03   0.58  -22.64.. -20.89      +12.57   2.38   +8.23.. +16.39   0.054
+    +0.2s      -21.09   0.40  -21.67.. -20.46      +12.57   2.38   +8.23.. +16.39   0.015
+    +0.3s      -19.84   0.35  -20.34.. -19.48      +12.57   2.38   +8.22.. +16.38   0.014
+    +0.4s      -18.62   0.30  -19.04.. -18.31      +12.56   2.38   +8.22.. +16.38   0.014
+    +0.5s      -17.93   0.10  -18.06.. -17.84      +12.56   2.38   +8.21.. +16.37   0.014
+
+  one second before: depth -19.12 +- 3.26 mm, pitch +12.41 +- 2.38 deg
+  at the close:      depth -22.62 +- 0.76 mm, pitch +12.57 +- 2.38 deg
+  the move itself: depth -3.50 mm, pitch +0.16 deg, and across the twenty episodes those two are spread by only 2.73 mm and 0.05 deg
+
+2. does where the ball is change how it is picked up?
+  ball placement spans radius 65..294 mm, azimuth -135..-31 deg
+  against                 corr r  corr az    value mean      sd            range
+  depth 1 s before         -0.28    -0.46        -19.12    3.26  -24.02.. -13.79
+  pitch 1 s before         -0.12    -0.25        +12.41    2.38   +7.76.. +17.31
+  pitch change             +0.03    -0.03         +0.16    0.05   +0.08..  +0.31
+  depth change             +0.28    +0.50         -3.50    2.73   -8.24..  +1.09
+  path/net (curvature)     +0.07    -0.00         +1.00    0.00   +1.00..  +1.00
+  depth at close           -0.18    -0.20        -22.62    0.76  -23.66.. -21.11
+  pitch at close           -0.12    -0.25        +12.57    2.38   +7.91.. +17.40
+  lateral at close         +0.14    +0.40         -0.62    0.76   -2.26..  +0.05
+
+5. the rollout against that distribution, counted back from its own close
+
+  geom_ep2_b.json.gz
+     before close            lateral                depth           vertical                pitch
+            -1.5s    -1.24 (   +8.1sd)    +9.56 (   +5.0sd)   -18.10 (   +5.1sd)   +27.92 (   +6.5sd)
+            -1.0s    -1.24 (   +6.4sd)    +6.14 (   +7.8sd)    -6.89 (   +5.4sd)   +28.12 (   +6.6sd)
+            -0.5s    -1.27 (   +0.6sd)    +4.16 (  +17.0sd)    +1.93 (   +3.3sd)   +28.63 (   +6.8sd)
+            -0.0s    -1.19 (   -0.7sd)    +2.77 (  +33.6sd)    +8.76 (   +3.0sd)   +29.22 (   +7.0sd)
+    sd is the spread across the twenty expert transitions at that same instant before their own close
+
+  geom_ep2_c.json.gz
+     before close            lateral                depth           vertical                pitch
+            -1.5s    -1.64 (   +7.1sd)   +10.34 (   +5.2sd)   -23.12 (   +4.5sd)   +27.33 (   +6.3sd)
+            -1.0s    -1.55 (   +5.8sd)    +6.08 (   +7.7sd)   -10.73 (   +4.6sd)   +27.35 (   +6.3sd)
+            -0.5s    -1.49 (   +0.4sd)    +3.72 (  +16.8sd)    -2.16 (   +1.9sd)   +27.82 (   +6.5sd)
+            -0.0s    -1.31 (   -0.9sd)    +2.82 (  +33.6sd)    +4.36 (   +0.0sd)   +28.40 (   +6.6sd)
+    sd is the spread across the twenty expert transitions at that same instant before their own close

@@ -1,0 +1,67 @@
+{
+ "checkpoint": "sim_umi/train_results/2026-09-27_fov/smoke/g2/checkpoints/step100.ckpt",
+ "expected_opt_steps": 100,
+ "bytes": 2740958757,
+ "state_dicts": [
+  "ema_model",
+  "model",
+  "optimizer"
+ ],
+ "pickles": {
+  "init_checksum": "ab5362b5495519ed45fe225c975b254021c177525faa6a18c34538aa52c01081",
+  "global_step": 99,
+  "opt_steps": 100,
+  "epoch": 0,
+  "skipped_optimizer_steps": 0,
+  "nonfinite_losses": 0
+ },
+ "opt_steps_pickle": 100,
+ "opt_steps_extra": 100,
+ "ema_update_count": 100,
+ "ema_decay": 0.9681379581259606,
+ "scheduler_last_epoch": 100,
+ "scheduler_step_count": 101,
+ "scheduler_last_lr": [
+  1.4999999999999999e-05,
+  1.5e-06
+ ],
+ "optimizer_lr": [
+  1.4999999999999999e-05,
+  1.5e-06
+ ],
+ "optimizer_initial_lr": [
+  0.0003,
+  2.9999999999999997e-05
+ ],
+ "param_step_histogram": {
+  "100": 299
+ },
+ "scaler": {
+  "scale": 65536.0,
+  "growth_factor": 2.0,
+  "backoff_factor": 0.5,
+  "growth_interval": 2000,
+  "_growth_tracker": 100
+ },
+ "skipped_optimizer_steps": 0,
+ "nonfinite_losses": 0,
+ "epoch": 0,
+ "global_step": 99,
+ "batch_idx_in_epoch": 99,
+ "rng_present": [
+  "numpy",
+  "python",
+  "torch_cpu",
+  "torch_cuda"
+ ],
+ "init_checksum": "ab5362b5495519ed45fe225c975b254021c177525faa6a18c34538aa52c01081",
+ "mixed_precision": "fp16",
+ "dataset_sha256": "f1d8853dbfbb3ac3db9796e8dd83acf393c93f9f096a4535700b6a9819d8e024",
+ "val_ratio": 0.0,
+ "expected_lr": [
+  1.4999999999999999e-05,
+  1.5e-06
+ ],
+ "fail": [],
+ "pass": true
+}

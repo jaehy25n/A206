@@ -1,0 +1,105 @@
+# OMX baseline training config.
+#
+# Inherits everything from upstream train_diffusion_unet_timm_umi_workspace.yaml
+# (policy, obs encoder, EMA, optimizer, schedule) and changes only what is
+# project-specific.  The upstream file is never edited, so `git diff` against
+# upstream stays empty for it and the two can be compared at any time.
+#
+# What differs from upstream
+# --------------------------
+#   task                  umi -> umi_omx          (10 Hz dataset, dataset_path required)
+#   logging.project       umi -> omx-umi
+#   hydra run dir         data/outputs/... -> data/omx/train/...
+#   meta:                 provenance block, logged verbatim into the W&B run config
+#                         by accelerator.init_trackers (handoff doc section 18)
+#
+# Deliberately unchanged: vision backbone (CLIP ViT-B/16), action_horizon 16,
+# num_inference_steps 16, batch 64, AdamW 3e-4, 120 epochs.  Handoff doc section 16
+# says not to touch the encoder before the end-to-end path is closed.
+#
+# GPU selection is by environment, not by config: `training.device` is effectively
+# ignored because the workspace runs under accelerate.  Always launch with
+# CUDA_VISIBLE_DEVICES=5 (then physical GPU 5 appears as cuda:0).
+#
+# Note on this repo's upstream workspace: the validation-loss loop in
+# train_diffusion_unet_image_workspace.py is commented out, so `val_loss` is never
+# logged.  What you get instead is val_action_mse_error from the sampling block.
+# Final model selection is real OMX success rate, not either of these.
+defaults:
+  - train_diffusion_unet_timm_umi_workspace
+  - override /task: umi_omx
+  - _self_
+
+name: train_diffusion_unet_timm_omx
+exp_name: "default"
+
+logging:
+  project: omx-umi
+  mode: online
+  name: ${now:%Y.%m.%d-%H.%M.%S}_${exp_name}
+  tags: ["${name}", "${task_name}", "${exp_name}"]
+
+# Provenance. Filled in by `python -m omx.cli train` from the zarr metadata and
+# git, and logged into W&B automatically because init_trackers receives the whole
+# resolved config. Never edit these by hand.
+meta:
+  experiment: "unset"
+  dataset_name: "unset"
+  dataset_zarr: "unset"
+  dataset_sha256: "unset"
+  dataset_n_episodes: -1
+  dataset_n_frames: -1
+  dataset_stored_fps: -1.0
+  dataset_synthetic: false
+  rgb_mode: "unset"
+  rgb_out_res: "unset"
+  camera_to_ee_calibration_version: "unset"
+  camera_to_ee_status: "unset"
+  gripper_status: "unset"
+  gripper_representation: "unset"
+  collector_calibration_version: "unset"
+  policy_hz: -1.0
+  obs_down_sample_steps: -1
+  git_commit: "unset"
+  git_branch: "unset"
+  git_dirty: false
+  cuda_visible_devices: "unset"
+  train_profile: "unset"
+
+multi_run:
+  run_dir: data/omx/train/${exp_name}/${now:%Y.%m.%d}/${now:%H.%M.%S}
+  wandb_name_base: ${now:%Y.%m.%d-%H.%M.%S}_${exp_name}
+
+hydra:
+  job:
+    override_dirname: ${name}
+  run:
+    dir: data/omx/train/${exp_name}/${now:%Y.%m.%d}/${now:%H.%M.%S}
+  sweep:
+    dir: data/omx/train/${exp_name}/${now:%Y.%m.%d}/${now:%H.%M.%S}
+    subdir: ${hydra.job.num}
+
+# ---------------------------------------------------------------------------
+# Ablation A: G0 + train-only phase-masked time-to-event auxiliary regression.
+# Everything above is a verbatim copy of train_diffusion_unet_timm_omx_workspace.yaml;
+# the ONLY change is below. Design: sim_umi/train_results/2026-09-28_aux_ablations/DESIGN.md
+#   head      g [B,1568] -> LayerNorm -> Linear 256 -> SiLU -> Linear 3 (no activation)
+#   labels    current observation row r of the labels sidecar
+#   phases    APPROACH->close, GRASP_LIFT->lift, TRANSPORT->open, others none
+#   targets   clip(dt / T_e, 0, 1), T_e = P95 of dt_e over that phase's training samples
+#             (checked at start-up against the split itself; val never used)
+#   loss      L_diff + 0.1 * mean(active masked SmoothL1), beta 1.0
+# ---------------------------------------------------------------------------
+policy:
+  _target_: diffusion_policy.policy.diffusion_unet_timm_timing_aux_policy.DiffusionUnetTimmTimingAuxPolicy
+  timing_scales_s: [12.311800003051705, 1.7000000476837158, 13.600000381469727]
+  aux_weight: 0.1
+  smooth_l1_beta: 1.0
+  aux_hidden: 256
+  aux_init_seed: 20260928
+
+task:
+  dataset:
+    _target_: diffusion_policy.dataset.umi_aux_dataset.UmiAuxDataset
+    timing_labels_path: /home/j-j15a206/universal_manipulation_interface/sim_umi/data/sidecars/omx_sim_train_v2.labels.npz
+    expected_timing_scales_s: ${policy.timing_scales_s}

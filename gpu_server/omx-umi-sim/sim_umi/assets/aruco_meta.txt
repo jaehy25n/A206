@@ -1,0 +1,5 @@
+dictionary=4x4_50
+ids=0,1,2,3
+marker_px=480
+quiet_zone_frac=0.15
+physical_marker_mm=60

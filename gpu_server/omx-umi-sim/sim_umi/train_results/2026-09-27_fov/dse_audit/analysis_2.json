@@ -1,0 +1,437 @@
+{
+ "A": {
+  "repeats": [
+   {
+    "kv_fit": 4.86943668343515,
+    "kv_model": 4.86944,
+    "offset1_residual_max": 2.220446049250313e-16,
+    "offset1_residual_median": 0.0,
+    "n_offset1_checked": 491,
+    "moving_ticks": [
+     -99,
+     300
+    ],
+    "ticks_with_a_missing_message": [
+     {
+      "i": -48,
+      "cs": false,
+      "act": false,
+      "verdict": "undetermined (simulator state message missing)"
+     },
+     {
+      "i": 98,
+      "cs": false,
+      "act": false,
+      "verdict": "undetermined (simulator state message missing)"
+     },
+     {
+      "i": 244,
+      "cs": false,
+      "act": false,
+      "verdict": "undetermined (simulator state message missing)"
+     }
+    ],
+    "held_command_ticks": [],
+    "publish_only_loss_ticks": [],
+    "cycle_absent_ticks": [
+     -48,
+     98,
+     244,
+     389
+    ],
+    "controller_state_lost_only": [],
+    "actuator_state_lost_only": [],
+    "clock_delta_1999999ns_ticks": [
+     -48,
+     98,
+     244,
+     389
+    ],
+    "cycle_absent_equals_short_clock_delta": true,
+    "jtc_clock_steps_ms": [
+     -68219.9998,
+     -148.0,
+     -48.0,
+     2.0
+    ],
+    "cs_stamp_periods_ns": [
+     2000000,
+     3999999
+    ]
+   },
+   {
+    "kv_fit": 4.86943668343515,
+    "kv_model": 4.86944,
+    "offset1_residual_max": 1.1102230246251565e-16,
+    "offset1_residual_median": 0.0,
+    "n_offset1_checked": 493,
+    "moving_ticks": [
+     -99,
+     300
+    ],
+    "ticks_with_a_missing_message": [
+     {
+      "i": 35,
+      "cs": false,
+      "act": false,
+      "verdict": "undetermined (simulator state message missing)"
+     },
+     {
+      "i": 180,
+      "cs": false,
+      "act": false,
+      "verdict": "undetermined (simulator state message missing)"
+     }
+    ],
+    "held_command_ticks": [],
+    "publish_only_loss_ticks": [],
+    "cycle_absent_ticks": [
+     35,
+     180,
+     326
+    ],
+    "controller_state_lost_only": [],
+    "actuator_state_lost_only": [],
+    "clock_delta_1999999ns_ticks": [
+     35,
+     180,
+     326
+    ],
+    "cycle_absent_equals_short_clock_delta": true,
+    "jtc_clock_steps_ms": [
+     -196.0,
+     -148.0,
+     -48.0,
+     2.0
+    ],
+    "cs_stamp_periods_ns": [
+     2000000,
+     3999999
+    ]
+   },
+   {
+    "kv_fit": 4.86943668343515,
+    "kv_model": 4.86944,
+    "offset1_residual_max": 1.1102230246251565e-16,
+    "offset1_residual_median": 0.0,
+    "n_offset1_checked": 493,
+    "moving_ticks": [
+     -99,
+     300
+    ],
+    "ticks_with_a_missing_message": [
+     {
+      "i": -28,
+      "cs": false,
+      "act": false,
+      "verdict": "undetermined (simulator state message missing)"
+     },
+     {
+      "i": 117,
+      "cs": false,
+      "act": false,
+      "verdict": "undetermined (simulator state message missing)"
+     },
+     {
+      "i": 263,
+      "cs": false,
+      "act": false,
+      "verdict": "undetermined (simulator state message missing)"
+     }
+    ],
+    "held_command_ticks": [],
+    "publish_only_loss_ticks": [],
+    "cycle_absent_ticks": [
+     -28,
+     117,
+     263
+    ],
+    "controller_state_lost_only": [],
+    "actuator_state_lost_only": [],
+    "clock_delta_1999999ns_ticks": [
+     -28,
+     117,
+     263
+    ],
+    "cycle_absent_equals_short_clock_delta": true,
+    "jtc_clock_steps_ms": [
+     -196.0,
+     -148.0,
+     -48.0,
+     2.0
+    ],
+    "cs_stamp_periods_ns": [
+     2000000,
+     3999999
+    ]
+   }
+  ],
+  "vs_repeat0": [
+   {
+    "first_tick_q_differs": 36,
+    "max_abs_dq_rad": 4.5070426071269765e-06,
+    "first_tick_u_differs": 37,
+    "max_abs_du_rad": 1.6798640256610042e-10
+   },
+   {
+    "first_tick_q_differs": 99,
+    "max_abs_dq_rad": 4.442220567391075e-06,
+    "first_tick_u_differs": 100,
+    "max_abs_du_rad": 1.6798640256610042e-10
+   }
+  ]
+ },
+ "A0": {
+  "repeats": [
+   {
+    "kv_fit": 4.869436683435149,
+    "kv_model": 4.86944,
+    "offset1_residual_max": 1.1102230246251565e-16,
+    "offset1_residual_median": 0.0,
+    "n_offset1_checked": 493,
+    "moving_ticks": [
+     167,
+     399
+    ],
+    "ticks_with_a_missing_message": [
+     {
+      "i": 258,
+      "cs": false,
+      "act": false,
+      "verdict": "undetermined (simulator state message missing)"
+     }
+    ],
+    "held_command_ticks": [],
+    "publish_only_loss_ticks": [],
+    "cycle_absent_ticks": [
+     -33,
+     112,
+     258
+    ],
+    "controller_state_lost_only": [],
+    "actuator_state_lost_only": [],
+    "clock_delta_1999999ns_ticks": [
+     -33,
+     112,
+     258
+    ],
+    "cycle_absent_equals_short_clock_delta": true,
+    "jtc_clock_steps_ms": [
+     -1970.0,
+     -148.0,
+     -48.0,
+     2.0
+    ],
+    "cs_stamp_periods_ns": [
+     2000000,
+     3999999
+    ]
+   },
+   {
+    "kv_fit": 4.869436683435151,
+    "kv_model": 4.86944,
+    "offset1_residual_max": 2.220446049250313e-16,
+    "offset1_residual_median": 0.0,
+    "n_offset1_checked": 491,
+    "moving_ticks": [
+     -99,
+     300
+    ],
+    "ticks_with_a_missing_message": [
+     {
+      "i": -71,
+      "cs": false,
+      "act": false,
+      "verdict": "undetermined (simulator state message missing)"
+     },
+     {
+      "i": 74,
+      "cs": false,
+      "act": false,
+      "verdict": "undetermined (simulator state message missing)"
+     },
+     {
+      "i": 220,
+      "cs": false,
+      "act": false,
+      "verdict": "undetermined (simulator state message missing)"
+     }
+    ],
+    "held_command_ticks": [],
+    "publish_only_loss_ticks": [],
+    "cycle_absent_ticks": [
+     -71,
+     74,
+     220,
+     365
+    ],
+    "controller_state_lost_only": [],
+    "actuator_state_lost_only": [],
+    "clock_delta_1999999ns_ticks": [
+     -71,
+     74,
+     220,
+     365
+    ],
+    "cycle_absent_equals_short_clock_delta": true,
+    "jtc_clock_steps_ms": [
+     -196.0,
+     -148.0,
+     -48.0,
+     2.0
+    ],
+    "cs_stamp_periods_ns": [
+     2000000,
+     3999999
+    ]
+   }
+  ],
+  "vs_repeat0": [
+   {
+    "first_tick_q_differs": -99,
+    "max_abs_dq_rad": 0.08164219873802459,
+    "first_tick_u_differs": -98,
+    "max_abs_du_rad": 0.08905889811375989
+   }
+  ]
+ },
+ "A5": {
+  "repeats": [
+   {
+    "kv_fit": 4.869436683435149,
+    "kv_model": 4.86944,
+    "offset1_residual_max": 1.1102230246251565e-16,
+    "offset1_residual_median": 0.0,
+    "n_offset1_checked": 493,
+    "moving_ticks": [
+     -99,
+     300
+    ],
+    "ticks_with_a_missing_message": [
+     {
+      "i": 11,
+      "cs": false,
+      "act": false,
+      "verdict": "undetermined (simulator state message missing)"
+     },
+     {
+      "i": 157,
+      "cs": false,
+      "act": false,
+      "verdict": "undetermined (simulator state message missing)"
+     }
+    ],
+    "held_command_ticks": [],
+    "publish_only_loss_ticks": [],
+    "cycle_absent_ticks": [
+     11,
+     157,
+     302
+    ],
+    "controller_state_lost_only": [],
+    "actuator_state_lost_only": [],
+    "clock_delta_1999999ns_ticks": [
+     11,
+     157,
+     302
+    ],
+    "cycle_absent_equals_short_clock_delta": true,
+    "jtc_clock_steps_ms": [
+     -196.0,
+     -148.0,
+     -48.0,
+     2.0
+    ],
+    "cs_stamp_periods_ns": [
+     2000000,
+     3999999
+    ]
+   },
+   {
+    "kv_fit": 4.86943668343515,
+    "kv_model": 4.86944,
+    "offset1_residual_max": 2.220446049250313e-16,
+    "offset1_residual_median": 0.0,
+    "n_offset1_checked": 489,
+    "moving_ticks": [
+     -99,
+     300
+    ],
+    "ticks_with_a_missing_message": [
+     {
+      "i": -52,
+      "cs": false,
+      "act": false,
+      "verdict": "undetermined (simulator state message missing)"
+     },
+     {
+      "i": 93,
+      "cs": false,
+      "act": false,
+      "verdict": "undetermined (simulator state message missing)"
+     },
+     {
+      "i": 239,
+      "cs": false,
+      "act": false,
+      "verdict": "undetermined (simulator state message missing)"
+     },
+     {
+      "i": 282,
+      "cs": false,
+      "act": true,
+      "verdict": "new command in effect, value unobserved"
+     },
+     {
+      "i": 283,
+      "cs": false,
+      "act": true,
+      "verdict": "new command in effect, value unobserved"
+     }
+    ],
+    "held_command_ticks": [],
+    "publish_only_loss_ticks": [
+     282,
+     283
+    ],
+    "cycle_absent_ticks": [
+     -52,
+     93,
+     239,
+     385
+    ],
+    "controller_state_lost_only": [
+     282,
+     283
+    ],
+    "actuator_state_lost_only": [],
+    "clock_delta_1999999ns_ticks": [
+     -52,
+     93,
+     239,
+     385
+    ],
+    "cycle_absent_equals_short_clock_delta": true,
+    "jtc_clock_steps_ms": [
+     -194.0,
+     -148.0,
+     -48.0,
+     2.0
+    ],
+    "cs_stamp_periods_ns": [
+     2000000,
+     3999999,
+     6000000
+    ]
+   }
+  ],
+  "vs_repeat0": [
+   {
+    "first_tick_q_differs": 12,
+    "max_abs_dq_rad": 4.506999763620456e-06,
+    "first_tick_u_differs": 13,
+    "max_abs_du_rad": 1.6798296087472409e-10
+   }
+  ]
+ }
+}

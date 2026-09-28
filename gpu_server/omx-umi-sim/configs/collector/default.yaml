@@ -1,0 +1,118 @@
+# OMX collector configuration -- Stage A (integration test).
+#
+# Every value here changes the MEANING of the exported dataset, so the whole
+# resolved config is stamped into the zarr metadata and the W&B run config.
+#
+# Stage A  : T_camera_to_ee = identity placeholder, gripper = placeholder.
+# Stage B  : drop in the real calibration + marker-derived widths and re-run the
+#            same converter.  No re-collection of raw data is needed.
+collector:
+  calibration_version: "v0-stageA-placeholder"
+  notes: >
+    Stage A integration dataset. T_camera_to_ee is an identity placeholder and
+    gripper widths are placeholders, so the exported EE trajectory is NOT a
+    calibrated physical EE trajectory. Use for pipeline validation only.
+
+  pose:
+    # frames.csv gives camera_t{x,y,z} + camera_q{x,y,z,w} = T_world_camera(t)
+    rotation_format: quat_xyzw
+    position_unit: m
+    # ARCore's session-local Y-up world frame is kept as-is (input contract s3).
+    world_axis_remap: identity
+    # ARCore's world origin differs per session, so re-express every episode
+    # relative to its own first EE pose (input contract s5):
+    #     T_episode_ee(t) = inv(T_world_ee(0)) @ T_world_ee(t)
+    # NOTE: this is NOT a frame-to-frame delta; UmiDataset still rebuilds its own
+    # relative representation from the observation's last pose.
+    pose_frame: episode_start
+
+  # T_world_ee = T_world_camera @ T_camera_ee   (handoff doc s6, contract s4)
+  camera_to_ee:
+    status: placeholder          # placeholder | calibrated
+    calibration_version: "none"
+    translation: [0.0, 0.0, 0.0]
+    quaternion: [0.0, 0.0, 0.0, 1.0]   # [qx, qy, qz, qw], identity
+
+  # Canonical representation is PHYSICAL finger opening width in metres, matching
+  # upstream UMI's robot0_gripper_width semantics.
+  gripper:
+    representation: physical_width
+    unit: meter
+    # Stage A: CPU preprocessing does not emit gripper_width_m yet (marker-based
+    # extraction is still being built), so a constant placeholder is written and
+    # the gripper action dimension carries no signal. Integration only.
+    # Stage B: set mode back to width_m and status to calibrated -- one line each,
+    # then re-run the converter on the same processed data.
+    mode: constant               # how the INPUT encodes it: width_m|normalized|binary|constant
+    source: visual_marker
+    status: placeholder          # placeholder | calibrated
+    closed_width_m: 0.025
+    open_width_m: 0.105
+    invert: false
+    placeholder_value_m: 0.105   # used only when mode == constant
+
+  timing:
+    source_fps: 30.0
+    policy_hz: 10.0
+    # 'converter' decimates 30 -> 10 Hz while writing the zarr (contract s11) and
+    # forces the task's obs_down_sample_steps to 1.  'dataset' stores 30 Hz and
+    # lets the UMI sampler stride by 3.  Either way the policy sees 10 Hz --
+    # converter_stride * obs_down_sample_steps is always source_fps/policy_hz.
+    downsample_stage: converter
+
+  validity:
+    use_pose_valid: true
+    use_tracking_state: true
+    good_tracking_states: ["tracking", "normal", "ok", "good", "true", "1"]
+    # The GPU side is the final gate, not a repair step. CPU preprocessing owns
+    # trimming, short-gap interpolation, long-gap splitting and rejecting unusable
+    # segments, and only then writes READY. Anything still invalid here means the
+    # CPU output contract is broken, so fail loudly instead of silently repairing.
+    #   error  reject the build and say why          <- the contract
+    #   trim   keep only the longest valid run       \  debugging a known-bad
+    #   split  cut at interior invalid runs          /  export; never for training
+    #   keep   pass invalid frames straight through  (they stay NaN, never 0)
+    invalid_policy: error
+    # pose_interpolated / pose_valid_original contradicting each other (e.g. an
+    # interpolated row whose original measurement was already valid, or one whose
+    # tracking_state was rewritten to healthy) makes the repair untraceable.
+    # 'error' keeps the inspector and the converter in agreement by default.
+    provenance_policy: error     # error | warn
+    # The CPU stamps handoff_contract into session_metadata.json and every
+    # segment metadata.json: version, source_hz_reference, policy_hz_reference,
+    # action_horizon_reference, min_publish_segment_frames. The first four must
+    # match this config exactly; min_publish_segment_frames only has to be >= the
+    # GPU's own sampler requirement (the CPU may be more conservative).
+    contract_policy: error       # error | warn
+    min_segment_frames: null     # null -> derived from the action horizon
+
+  # Only needed for rgb_mode: matched_center_crop.  fx/fy/cx/cy are preferred;
+  # hfov_deg alone is enough to build the virtual pinhole when no intrinsic
+  # calibration exists yet.
+  camera:
+    # NOTE: image_width/height must be the resolution the frames are ACTUALLY
+    # recorded at -- processed_v1 currently delivers 640x480 (4:3), not 16:9.
+    # Rescaling intrinsics across a different aspect ratio stretches fx and fy by
+    # different factors, which is meaningless for a real lens; the converter
+    # refuses matched_center_crop and drops the FOV report when they disagree.
+    #
+    # hfov_deg below is a DATASHEET GUESS, not a calibration. It only affects the
+    # reported FOV for center_crop/letterbox, but matched_center_crop (the Step 1
+    # camera-matching experiment) needs real fx/fy/cx/cy for both cameras before
+    # its output means anything.
+    collector_intrinsics:
+      image_width: 640
+      image_height: 480
+      hfov_deg: 63.5             # Galaxy S10 main camera, PROVISIONAL
+      model: pinhole
+    robot_intrinsics:
+      image_width: 640
+      image_height: 480
+      hfov_deg: 63.5             # OMX wrist webcam, PROVISIONAL
+      model: pinhole
+    matched_fov_deg: null        # null -> robot_intrinsics square-crop HFOV
+    matched_fov_axis: horizontal
+
+  # Pin frames.csv column names here if they ever differ from the contract, e.g.
+  #   field_map: {timestamp_ns: t_ns, gripper: gripper_width_m}
+  field_map: {}

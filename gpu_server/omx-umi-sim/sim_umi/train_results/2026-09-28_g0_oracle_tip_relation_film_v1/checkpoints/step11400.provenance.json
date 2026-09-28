@@ -1,0 +1,107 @@
+{
+ "tag": "step11400",
+ "checkpoint": "/home/j-j15a206/universal_manipulation_interface/sim_umi/train_results/2026-09-28_g0_oracle_tip_relation_film_v1/checkpoints/step11400.ckpt",
+ "opt_steps": 11400,
+ "global_step": 11400,
+ "epoch": 33,
+ "batch_idx_in_epoch": 279,
+ "trainable_parameters": 305,
+ "params_with_optimizer_state": 305,
+ "param_step_histogram": {
+  "11400": 305
+ },
+ "lr_group0": 0.0,
+ "lr_group1": 0.0,
+ "scheduler_state": {
+  "base_lrs": [
+   0.0003,
+   2.9999999999999997e-05,
+   0.0003
+  ],
+  "last_epoch": 11400,
+  "verbose": false,
+  "_step_count": 11401,
+  "_get_lr_called_within_step": false,
+  "_last_lr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "lr_lambdas": "list"
+ },
+ "ema_update_count": 11400,
+ "ema_decay": 0.9990935373068365,
+ "scaler": {
+  "scale": 1048576.0,
+  "growth_factor": 2.0,
+  "backoff_factor": 0.5,
+  "growth_interval": 2000.0,
+  "_growth_tracker": 1132.0
+ },
+ "skipped_optimizer_steps": 1,
+ "nonfinite_losses": 0,
+ "evaluation_weight_source": "ema_model",
+ "git": {
+  "commit": "63048c5a3c95b54979d3ccfd4f83144764cff52f",
+  "dirty_tracked_files": false
+ },
+ "hostname": "jupyter02",
+ "cuda_visible_devices": "5",
+ "mixed_precision": "fp16",
+ "batch_size": 64,
+ "gradient_accumulate_every": 1,
+ "dataset": {
+  "path": "/home/j-j15a206/universal_manipulation_interface/sim_umi/data/omx_sim_train_v2.zarr.zip",
+  "bytes": 173427432,
+  "mtime": 1790428623.3120992,
+  "sha256": "905749cd56e34b2f4d9e8c3195abff119406d8226a11601bc07ca7ddc75ff24c"
+ },
+ "val_ratio": 0.0,
+ "train_samples": 21532,
+ "dataloader_len": 337,
+ "lr_scheduler_total_steps": 11400,
+ "lr_warmup_steps": 2000,
+ "init_state_source": "/home/j-j15a206/universal_manipulation_interface/sim_umi/train_results/2026-09-27_definitive/shared_init/init_state.pt",
+ "init_checksum": "954f2db431f05d4367ee9355b7df92bd1fa2d66a0e48eeb39bde294713d4c52d",
+ "seed_init_checksum": "954f2db431f05d4367ee9355b7df92bd1fa2d66a0e48eeb39bde294713d4c52d",
+ "shared_init_checksum": "a4cd264fbf9439ef9d8b3fdb4dc51e3559ec82559dbeab591faa8cce06c28076",
+ "new_module_prefixes": [
+  "obs_encoder.relation_film."
+ ],
+ "ablation": {
+  "ablation": "oracle_tip_relation_film",
+  "ee_mask": "camera0_ee_tip_mask",
+  "target_mask": "camera0_target_mask",
+  "valid_key": "camera0_target_mask_valid",
+  "min_target_px_hard_gate": 12,
+  "relation_in_dim": 3077,
+  "relation_init_seed": 20260928,
+  "film": "CLS' = CLS * (1 + gamma) + beta, last Linear zero-init, per-frame hard gate"
+ },
+ "sidecars": {
+  "zarr_fingerprint_sha1(episode_ends+gripper_width)": "81c5f33a8c56d3fa46fb46ecb69c07196482b136",
+  "oracle_masks": {
+   "path": "/home/j-j15a206/universal_manipulation_interface/sim_umi/data/sidecars/omx_sim_train_v2.oracle_masks_g0.zarr.zip",
+   "sha256": "a0ef534f975d13189d58b2f2ef27322adb4847bfb98d0f495ad634656face933",
+   "names": [
+    "target_mask",
+    "ee_tip_mask"
+   ]
+  }
+ },
+ "optimizer_groups": [
+  {
+   "n_tensors": 148,
+   "initial_lr": 0.0003
+  },
+  {
+   "n_tensors": 151,
+   "initial_lr": 2.9999999999999997e-05
+  },
+  {
+   "n_tensors": 6,
+   "initial_lr": 0.0003
+  }
+ ],
+ "resumed_from": null
+}

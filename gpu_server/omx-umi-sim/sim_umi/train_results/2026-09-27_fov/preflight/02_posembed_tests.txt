@@ -1,0 +1,11 @@
+PASS  identity at 14x14  max |d| 0.00e+00
+PASS  shape [1, 199, 768]  (1, 199, 768)
+PASS  CLS row copied bit for bit  
+PASS  row index runs down 11 rows, constant across  first/last row 0.10 / 12.90
+PASS  column index runs across 18 columns, constant down  first/last col -0.07 / 13.07
+PASS  (18, 11) is a different embedding (swap would be caught)  
+PASS  equals timm resample_abs_pos_embed (bicubic, no antialias)  max |d| 0.00e+00
+PASS  deterministic  
+PASS  timm ViT(176x288) grid  grid (11, 18) pos_embed (1, 199, 768)
+PASS  token sequence [2, 199, 768] and CLS [2, 768]  tokens (2, 199, 768) output (2, 199, 768)
+PASS  224x224 into the 176x288 model is refused  AssertionError

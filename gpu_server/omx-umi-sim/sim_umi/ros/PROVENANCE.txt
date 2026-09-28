@@ -1,0 +1,2 @@
+0a4af6a923b8b7d80b8c20506d1839c54d2e993e Tue Sep 15 15:25:01 2026 +0900
+source: https://github.com/ROBOTIS-GIT/open_manipulator (open_manipulator_moveit_config/config/omx_f, open_manipulator_description)

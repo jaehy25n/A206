@@ -1,0 +1,101 @@
+{
+ "mode": "production",
+ "launched": {
+  "G1": {
+   "pid": 1015383,
+   "gpu_intended": 0,
+   "run_dir": "/home/j-j15a206/universal_manipulation_interface/sim_umi/train_results/2026-09-27_fov_g1_letterbox224",
+   "log": "/home/j-j15a206/universal_manipulation_interface/sim_umi/train_results/2026-09-27_fov/train_G1_production.log",
+   "cmd": [
+    "/home/j-j15a206/.conda/envs/umi/bin/python",
+    "train.py",
+    "--config-name=train_diffusion_unet_timm_omx_workspace",
+    "task.dataset.val_ratio=0.0",
+    "training.seed=42",
+    "training.device=cuda:0",
+    "training.num_epochs=100",
+    "training.checkpoint_every=10",
+    "training.sample_every=5",
+    "+training.mixed_precision=fp16",
+    "+training.lr_scheduler_total_steps=11400",
+    "+training.checkpoint_at_steps=[5985,5986,8000,10000,11400]",
+    "+training.max_opt_steps=11400",
+    "task.dataset_path=/home/j-j15a206/universal_manipulation_interface/sim_umi/data/omx_sim_train_v2_g1_letterbox224.zarr.zip",
+    "exp_name=fov_g1_letterbox224",
+    "training.resume=False",
+    "+task.rgb_geometry=g1_letterbox224",
+    "+training.dataloader_seed=42",
+    "+training.log_batch_fingerprints=300",
+    "+training.init_state_path=/home/j-j15a206/universal_manipulation_interface/sim_umi/train_results/2026-09-27_definitive/shared_init/init_state.pt",
+    "hydra.run.dir=/home/j-j15a206/universal_manipulation_interface/sim_umi/train_results/2026-09-27_fov_g1_letterbox224"
+   ],
+   "cuda_visible_devices": "0",
+   "git": "0352476c45572eb303fae414a21b072a34a9441f",
+   "started": "2026-09-27T10:36:39.544732+09:00"
+  },
+  "G2": {
+   "pid": 1015384,
+   "gpu_intended": 5,
+   "run_dir": "/home/j-j15a206/universal_manipulation_interface/sim_umi/train_results/2026-09-27_fov_g2_rect288x176",
+   "log": "/home/j-j15a206/universal_manipulation_interface/sim_umi/train_results/2026-09-27_fov/train_G2_production.log",
+   "cmd": [
+    "/home/j-j15a206/.conda/envs/umi/bin/python",
+    "train.py",
+    "--config-name=train_diffusion_unet_timm_omx_workspace",
+    "task.dataset.val_ratio=0.0",
+    "training.seed=42",
+    "training.device=cuda:0",
+    "training.num_epochs=100",
+    "training.checkpoint_every=10",
+    "training.sample_every=5",
+    "+training.mixed_precision=fp16",
+    "+training.lr_scheduler_total_steps=11400",
+    "+training.checkpoint_at_steps=[5985,5986,8000,10000,11400]",
+    "+training.max_opt_steps=11400",
+    "task.dataset_path=/home/j-j15a206/universal_manipulation_interface/sim_umi/data/omx_sim_train_v2_g2_rect288x176.zarr.zip",
+    "exp_name=fov_g2_rect288x176",
+    "training.resume=False",
+    "+task.rgb_geometry=g2_rect288x176",
+    "+training.dataloader_seed=42",
+    "+training.log_batch_fingerprints=300",
+    "+training.init_state_path=/home/j-j15a206/universal_manipulation_interface/sim_umi/train_results/2026-09-27_fov/shared_init/init_state_g2.pt",
+    "task.shape_meta.obs.camera0_rgb.shape=[3,176,288]",
+    "task.dataset.shape_meta.obs.camera0_rgb.shape=[3,176,288]",
+    "hydra.run.dir=/home/j-j15a206/universal_manipulation_interface/sim_umi/train_results/2026-09-27_fov_g2_rect288x176"
+   ],
+   "cuda_visible_devices": "5",
+   "git": "0352476c45572eb303fae414a21b072a34a9441f",
+   "started": "2026-09-27T10:36:39.547741+09:00"
+  }
+ },
+ "gpu_check": {
+  "G1": {
+   "pids_on_gpu": {
+    "1015383": [
+     [
+      0,
+      "1680 MiB"
+     ]
+    ]
+   },
+   "physical_gpus": [
+    0
+   ]
+  },
+  "G2": {
+   "pids_on_gpu": {
+    "1015384": [
+     [
+      5,
+      "1680 MiB"
+     ]
+    ]
+   },
+   "physical_gpus": [
+    5
+   ]
+  }
+ },
+ "checked": "2026-09-27T10:37:10.242638+09:00",
+ "pass": true
+}

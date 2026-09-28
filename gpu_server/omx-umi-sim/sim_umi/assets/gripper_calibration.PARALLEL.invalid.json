@@ -1,0 +1,31 @@
+{
+  "scale": {
+    "a": 0.0005092888860300071,
+    "b": -0.03703806339400443,
+    "rmse_m": 4.677945067548338e-05,
+    "max_abs_err_m": 0.0001585301553470378,
+    "n": 450
+  },
+  "detector": {
+    "hue_range": [
+      140,
+      170
+    ],
+    "sat_min": 90,
+    "val_min": 60,
+    "roi": [
+      0.35,
+      1.0,
+      0.0,
+      1.0
+    ],
+    "min_blob_area": 4,
+    "mask_dilate": 3
+  },
+  "fit_seed": 4242,
+  "holdout_seed": 999001,
+  "detection_rate_fit": 1.0,
+  "detection_rate_holdout": 1.0,
+  "holdout_rmse_m": 4.6830819665969264e-05,
+  "holdout_max_abs_err_m": 0.00013080908821568732
+}

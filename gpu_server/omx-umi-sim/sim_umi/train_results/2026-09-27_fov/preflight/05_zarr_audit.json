@@ -1,0 +1,98 @@
+{
+ "G0": {
+  "N": 21532,
+  "dataloader_len": 337
+ },
+ "g1_letterbox224": {
+  "non_image_keys_identical_bytes": true,
+  "camera0_rgb": {
+   "shape": [
+    22942,
+    224,
+    224,
+    3
+   ],
+   "chunks": [
+    1,
+    224,
+    224,
+    3
+   ],
+   "dtype": "uint8",
+   "compressor": "JpegXl(decodingspeed=None, distance=None, effort=None, index=None, keeporientation=None, level=99, lossless=False, numthreads=1, photometric=None, planar=None, usecontainer=None)"
+  },
+  "content_decoded_vs_source_geometry_maxdiff (JPEG-XL loss)": [
+   8,
+   6,
+   8
+  ],
+  "padding_max_abs_dev_from_128": [
+   5,
+   4,
+   6
+  ],
+  "padding_dev_within_codec_content_error": true,
+  "N": 21532,
+  "dataloader_len": 337,
+  "batch_size": 64,
+  "drop_last": false,
+  "sample_camera0_rgb_shape": [
+   2,
+   3,
+   224,
+   224
+  ],
+  "sample_camera0_rgb_range": [
+   0.0117647061124444,
+   1.0
+  ],
+  "low_dim_obs_and_action_equal_to_G0_same_index_same_seed": true,
+  "pass": true
+ },
+ "g2_rect288x176": {
+  "non_image_keys_identical_bytes": true,
+  "camera0_rgb": {
+   "shape": [
+    22942,
+    176,
+    288,
+    3
+   ],
+   "chunks": [
+    1,
+    176,
+    288,
+    3
+   ],
+   "dtype": "uint8",
+   "compressor": "JpegXl(decodingspeed=None, distance=None, effort=None, index=None, keeporientation=None, level=99, lossless=False, numthreads=1, photometric=None, planar=None, usecontainer=None)"
+  },
+  "content_decoded_vs_source_geometry_maxdiff (JPEG-XL loss)": [
+   7,
+   4,
+   9
+  ],
+  "padding_max_abs_dev_from_128": [
+   4,
+   3,
+   4
+  ],
+  "padding_dev_within_codec_content_error": true,
+  "N": 21532,
+  "dataloader_len": 337,
+  "batch_size": 64,
+  "drop_last": false,
+  "sample_camera0_rgb_shape": [
+   2,
+   3,
+   176,
+   288
+  ],
+  "sample_camera0_rgb_range": [
+   0.0,
+   1.0
+  ],
+  "low_dim_obs_and_action_equal_to_G0_same_index_same_seed": true,
+  "pass": true
+ }
+}

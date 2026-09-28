@@ -1,0 +1,33 @@
+=== CHECK 1: what did resume=True load in the clean run? ===
+  'Resuming from checkpoint' lines in train_clean.log: 0
+  run_provenance: resumed_from = None | opt_steps_at_start = 0 | init_state_source = init_state.pt | init_checksum = a4cd264fbf9439ef | ema==model at start = True
+  code path: resume only loads <run_dir>/checkpoints/latest.ckpt if that file exists; seed and init_state are applied in __init__ regardless; optimizer saving no longer depends on resume.
+=== CHECK 2: where is global_step used? ===
+88:    include_keys = ['global_step', 'epoch', 'opt_steps',
+148:        self.global_step = 0
+149:        # Optimizer updates, counted separately from global_step. They are not
+150:        # the same number: global_step skips the last batch of each epoch and
+196:                'global_step': int(self.global_step),
+232:            'global_step': int(self.global_step),
+287:                # position is only known through global_step
+339:            # schedule is a function of; global_step skips a batch per epoch
+343:                        else self.global_step) - 1
+520:                        if self.global_step % cfg.training.gradient_accumulate_every == 0:
+565:                            'global_step': self.global_step,
+573:                            accelerator.log(step_log, step=self.global_step)
+575:                            self.global_step += 1
+677:                accelerator.log(step_log, step=self.global_step)
+679:                self.global_step += 1
+  global_step in policy/dataset/model code:
+    none
+  smoke A step5: opt_steps 5 global_step 4   smoke B step6: opt_steps 6 global_step 4
+  VERDICT (check 2): global_step is a logging counter. Its only non-logging use is the
+  gradient-accumulation guard `global_step % gradient_accumulate_every == 0`, which is
+  always true at gradient_accumulate_every = 1 (both definitive runs). It is not used by
+  the scheduler for new-format runs (positioned by opt_steps; global_step only for
+  checkpoints that predate opt_steps), nor by the sampler, augmentation, RNG, epoch-based
+  sample/checkpoint triggers (self.epoch), step checkpoints or the stop condition
+  (opt_steps). The 4 -> 4: a mid-epoch step checkpoint is taken inside the update block,
+  before that batch's post-logging `global_step += 1`, so step5.ckpt holds global_step=4;
+  after resume the first update is saved at step6 before its own increment, again 4.
+  An uninterrupted run would read 5 there. Logging drift only; no training effect.

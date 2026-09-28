@@ -1,0 +1,8 @@
+=== CHECK 4: disk ===
+/dev/mapper/ubuntu--vg-lv--2   12T  1.1T   10T  10% /home
+--- run directories ---
+5.2G	sim_umi/train_results/2026-09-27_amp_clean_definitive
+37G	sim_umi/train_results/2026-09-27_definitive
+--- projected ---
+  clean ~10 ckpts = 27 GB, v2 ~10 ckpts = 27 GB, total ~55 GB (+ smoke tests already on disk)
+  free space vs need: ample (terabytes free vs ~55 GB)

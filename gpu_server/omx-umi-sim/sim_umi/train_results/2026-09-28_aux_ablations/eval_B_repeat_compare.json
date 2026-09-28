@@ -1,0 +1,339 @@
+{
+ "0": {
+  "reset_state_equal": false,
+  "capture_ticks_equal": true,
+  "plans": [
+   31,
+   31
+  ],
+  "obs_frame_ticks_first_diff_plan": 0,
+  "obs_dt_first_diff_plan": null,
+  "alignment_all_rgb_snapshot": true,
+  "policy_input_first_diff_plan": 2,
+  "policy_output_first_diff_plan": 2,
+  "policy_output_max_abs_diff": 0.010849179700016975,
+  "policy_lowdim_max_abs_diff": 255.0,
+  "policy_rgb_first_diff_plan": 2,
+  "action_age_first_diff_plan": null,
+  "action_age_values": [
+   [
+    0.216,
+    0.218,
+    0.29
+   ]
+  ],
+  "kstar_first_diff_plan": null,
+  "sent_waypoints_first_diff_plan": 2,
+  "jaw_first_diff": 0,
+  "commanded_max_abs_diff": 0.016783141269771373,
+  "commanded_first_diff_tick": "1009",
+  "commanded_ticks_compared": 10191,
+  "state_max_abs_diff": 0.015423768223697645,
+  "state_first_diff_tick": "1010",
+  "state_ticks_compared": 10191,
+  "first_command_equal": true,
+  "ee_first_diff_tick": null,
+  "ee_max_abs_diff_mm": null,
+  "ee_ticks_compared": 0,
+  "skips_rel": [
+   [],
+   []
+  ],
+  "outcome": [
+   {
+    "success": true,
+    "grasped": true,
+    "stopped_because": "the ball is in the bin",
+    "steps": 120,
+    "furthest_stage": "AFTER_RELEASE"
+   },
+   {
+    "success": true,
+    "grasped": true,
+    "stopped_because": "the ball is in the bin",
+    "steps": 120,
+    "furthest_stage": "AFTER_RELEASE"
+   }
+  ],
+  "outcome_equal": false,
+  "gates": [
+   true,
+   true
+  ]
+ },
+ "1": {
+  "reset_state_equal": true,
+  "capture_ticks_equal": true,
+  "plans": [
+   45,
+   45
+  ],
+  "obs_frame_ticks_first_diff_plan": 0,
+  "obs_dt_first_diff_plan": null,
+  "alignment_all_rgb_snapshot": true,
+  "policy_input_first_diff_plan": 5,
+  "policy_output_first_diff_plan": 5,
+  "policy_output_max_abs_diff": 0.1288844645023346,
+  "policy_lowdim_max_abs_diff": 255.0,
+  "policy_rgb_first_diff_plan": 5,
+  "action_age_first_diff_plan": null,
+  "action_age_values": [
+   [
+    0.216,
+    0.218,
+    0.29
+   ],
+   [
+    0.216,
+    null,
+    null
+   ]
+  ],
+  "kstar_first_diff_plan": null,
+  "sent_waypoints_first_diff_plan": 5,
+  "jaw_first_diff": 0,
+  "commanded_max_abs_diff": 0.3317986234044512,
+  "commanded_first_diff_tick": "1909",
+  "commanded_ticks_compared": 14356,
+  "state_max_abs_diff": 0.3127206217549161,
+  "state_first_diff_tick": "1910",
+  "state_ticks_compared": 14356,
+  "first_command_equal": true,
+  "ee_first_diff_tick": null,
+  "ee_max_abs_diff_mm": null,
+  "ee_ticks_compared": 0,
+  "skips_rel": [
+   [
+    7619
+   ],
+   [
+    10354
+   ]
+  ],
+  "outcome": [
+   {
+    "success": false,
+    "grasped": true,
+    "stopped_because": "eight plans in a row the arm could not reach",
+    "steps": 148,
+    "furthest_stage": "AFTER_RELEASE"
+   },
+   {
+    "success": false,
+    "grasped": true,
+    "stopped_because": "eight plans in a row the arm could not reach",
+    "steps": 148,
+    "furthest_stage": "SEARCH_BIN"
+   }
+  ],
+  "outcome_equal": false,
+  "gates": [
+   true,
+   true
+  ]
+ },
+ "2": {
+  "reset_state_equal": false,
+  "capture_ticks_equal": true,
+  "plans": [
+   63,
+   63
+  ],
+  "obs_frame_ticks_first_diff_plan": 0,
+  "obs_dt_first_diff_plan": null,
+  "alignment_all_rgb_snapshot": true,
+  "policy_input_first_diff_plan": 1,
+  "policy_output_first_diff_plan": 1,
+  "policy_output_max_abs_diff": 0.37015366554260254,
+  "policy_lowdim_max_abs_diff": 255.0,
+  "policy_rgb_first_diff_plan": 1,
+  "action_age_first_diff_plan": null,
+  "action_age_values": [
+   [
+    0.216,
+    0.218,
+    0.29
+   ],
+   [
+    0.216,
+    null,
+    null
+   ]
+  ],
+  "kstar_first_diff_plan": null,
+  "sent_waypoints_first_diff_plan": 1,
+  "jaw_first_diff": 0,
+  "commanded_max_abs_diff": 2.6936514107925063,
+  "commanded_first_diff_tick": "709",
+  "commanded_ticks_compared": 19756,
+  "state_max_abs_diff": 2.687915709490948,
+  "state_first_diff_tick": "710",
+  "state_ticks_compared": 19756,
+  "first_command_equal": true,
+  "ee_first_diff_tick": null,
+  "ee_max_abs_diff_mm": null,
+  "ee_ticks_compared": 0,
+  "skips_rel": [
+   [
+    14405
+   ],
+   [
+    17141
+   ]
+  ],
+  "outcome": [
+   {
+    "success": false,
+    "grasped": false,
+    "stopped_because": "eight plans in a row the arm could not reach",
+    "steps": 220,
+    "furthest_stage": "GRASP"
+   },
+   {
+    "success": false,
+    "grasped": false,
+    "stopped_because": "eight plans in a row the arm could not reach",
+    "steps": 213,
+    "furthest_stage": "GRASP"
+   }
+  ],
+  "outcome_equal": false,
+  "gates": [
+   true,
+   false
+  ]
+ },
+ "3": {
+  "reset_state_equal": false,
+  "capture_ticks_equal": true,
+  "plans": [
+   49,
+   48
+  ],
+  "obs_frame_ticks_first_diff_plan": 0,
+  "obs_dt_first_diff_plan": 48,
+  "alignment_all_rgb_snapshot": true,
+  "policy_input_first_diff_plan": 5,
+  "policy_output_first_diff_plan": 5,
+  "policy_output_max_abs_diff": 0.16200634837150574,
+  "policy_lowdim_max_abs_diff": 255.0,
+  "policy_rgb_first_diff_plan": 5,
+  "action_age_first_diff_plan": 48,
+  "action_age_values": [
+   [
+    0.216,
+    0.218,
+    0.29
+   ]
+  ],
+  "kstar_first_diff_plan": 48,
+  "sent_waypoints_first_diff_plan": 5,
+  "jaw_first_diff": 0,
+  "commanded_max_abs_diff": 0.34806716570184904,
+  "commanded_first_diff_tick": "1909",
+  "commanded_ticks_compared": 15267,
+  "state_max_abs_diff": 0.3371659965520529,
+  "state_first_diff_tick": "1910",
+  "state_ticks_compared": 15267,
+  "first_command_equal": true,
+  "ee_first_diff_tick": null,
+  "ee_max_abs_diff_mm": null,
+  "ee_ticks_compared": 0,
+  "skips_rel": [
+   [
+    15792
+   ],
+   []
+  ],
+  "outcome": [
+   {
+    "success": true,
+    "grasped": true,
+    "stopped_because": "the ball is in the bin",
+    "steps": 195,
+    "furthest_stage": "AFTER_RELEASE"
+   },
+   {
+    "success": true,
+    "grasped": true,
+    "stopped_because": "the ball is in the bin",
+    "steps": 188,
+    "furthest_stage": "AFTER_RELEASE"
+   }
+  ],
+  "outcome_equal": false,
+  "gates": [
+   true,
+   true
+  ]
+ },
+ "4": {
+  "reset_state_equal": false,
+  "capture_ticks_equal": true,
+  "plans": [
+   44,
+   40
+  ],
+  "obs_frame_ticks_first_diff_plan": 40,
+  "obs_dt_first_diff_plan": 40,
+  "alignment_all_rgb_snapshot": true,
+  "policy_input_first_diff_plan": 4,
+  "policy_output_first_diff_plan": 4,
+  "policy_output_max_abs_diff": 0.15291178226470947,
+  "policy_lowdim_max_abs_diff": 255.0,
+  "policy_rgb_first_diff_plan": 4,
+  "action_age_first_diff_plan": 32,
+  "action_age_values": [
+   [
+    0.216,
+    0.218,
+    0.29
+   ],
+   [
+    0.216,
+    null,
+    null
+   ]
+  ],
+  "kstar_first_diff_plan": 32,
+  "sent_waypoints_first_diff_plan": 4,
+  "jaw_first_diff": 84,
+  "commanded_max_abs_diff": 1.021487950898813,
+  "commanded_first_diff_tick": "1609",
+  "commanded_ticks_compared": 12857,
+  "state_max_abs_diff": 1.0261765358367032,
+  "state_first_diff_tick": "1610",
+  "state_ticks_compared": 12857,
+  "first_command_equal": true,
+  "ee_first_diff_tick": 1675,
+  "ee_max_abs_diff_mm": 40.412,
+  "ee_ticks_compared": 2421,
+  "skips_rel": [
+   [],
+   [
+    3263
+   ]
+  ],
+  "outcome": [
+   {
+    "success": false,
+    "grasped": false,
+    "stopped_because": "eight plans in a row the arm could not reach",
+    "steps": 144,
+    "furthest_stage": "GRASP"
+   },
+   {
+    "success": false,
+    "grasped": false,
+    "stopped_because": "eight plans in a row the arm could not reach",
+    "steps": 125,
+    "furthest_stage": "GRASP"
+   }
+  ],
+  "outcome_equal": false,
+  "gates": [
+   true,
+   true
+  ]
+ }
+}

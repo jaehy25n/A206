@@ -1,0 +1,224 @@
+{
+ "nominal": {
+  "g0_range": {
+   "entered_corridor": [
+    2,
+    3
+   ],
+   "object_lifted": [
+    2,
+    4
+   ],
+   "strict_gt_secure_grasp": [
+    0,
+    1
+   ],
+   "bin_success": [
+    0,
+    3
+   ],
+   "consecutive_unreachable_abort": [
+    2,
+    4
+   ],
+   "depth_med": [
+    -12.401630277185323,
+    -9.511047915318628
+   ],
+   "vert_med": [
+    5.879496119958381,
+    10.300858190812347
+   ]
+  },
+  "g0_runs": {
+   "def": {
+    "entered_corridor": 3,
+    "object_lifted": 3,
+    "strict_gt_secure_grasp": 1,
+    "bin_success": 2,
+    "consecutive_unreachable_abort": 2,
+    "depth_med": -11.004321009307949,
+    "vert_med": 6.8855087782137465,
+    "n": 5
+   },
+   "v1": {
+    "entered_corridor": 3,
+    "object_lifted": 3,
+    "strict_gt_secure_grasp": 1,
+    "bin_success": 0,
+    "consecutive_unreachable_abort": 3,
+    "depth_med": -9.511047915318628,
+    "vert_med": 8.410557971145597,
+    "n": 5
+   },
+   "v2": {
+    "entered_corridor": 2,
+    "object_lifted": 4,
+    "strict_gt_secure_grasp": 0,
+    "bin_success": 1,
+    "consecutive_unreachable_abort": 4,
+    "depth_med": -11.681229095194755,
+    "vert_med": 7.736866161948301,
+    "n": 5
+   },
+   "rep1": {
+    "entered_corridor": 2,
+    "object_lifted": 2,
+    "strict_gt_secure_grasp": 1,
+    "bin_success": 0,
+    "consecutive_unreachable_abort": 4,
+    "depth_med": -10.339953535116756,
+    "vert_med": 10.300858190812347,
+    "n": 5
+   },
+   "rep2": {
+    "entered_corridor": 3,
+    "object_lifted": 3,
+    "strict_gt_secure_grasp": 0,
+    "bin_success": 3,
+    "consecutive_unreachable_abort": 2,
+    "depth_med": -12.401630277185323,
+    "vert_med": 5.879496119958381,
+    "n": 5
+   }
+  },
+  "G1": {
+   "entered_corridor": 2,
+   "object_lifted": 3,
+   "strict_gt_secure_grasp": 3,
+   "bin_success": 1,
+   "consecutive_unreachable_abort": 3,
+   "depth_med": -10.210879205563355,
+   "vert_med": 6.678024688112151,
+   "n": 5
+  },
+  "G2": {
+   "entered_corridor": 0,
+   "object_lifted": 2,
+   "strict_gt_secure_grasp": 1,
+   "bin_success": 1,
+   "consecutive_unreachable_abort": 2,
+   "depth_med": -10.79657257213207,
+   "vert_med": 2.880717608384743,
+   "n": 5
+  }
+ },
+ "val18": {
+  "g0_range": {
+   "entered_corridor": [
+    4,
+    7
+   ],
+   "object_lifted": [
+    10,
+    14
+   ],
+   "strict_gt_secure_grasp": [
+    6,
+    10
+   ],
+   "bin_success": [
+    3,
+    6
+   ],
+   "consecutive_unreachable_abort": [
+    7,
+    9
+   ],
+   "depth_med": [
+    -12.954630114725223,
+    -10.697601611489059
+   ],
+   "vert_med": [
+    5.621978015512461,
+    7.780083189337363
+   ]
+  },
+  "g0_runs": {
+   "def": {
+    "entered_corridor": 5,
+    "object_lifted": 10,
+    "strict_gt_secure_grasp": 8,
+    "bin_success": 4,
+    "consecutive_unreachable_abort": 7,
+    "depth_med": -10.709186785456694,
+    "vert_med": 7.780083189337363,
+    "n": 16
+   },
+   "v1": {
+    "entered_corridor": 7,
+    "object_lifted": 14,
+    "strict_gt_secure_grasp": 10,
+    "bin_success": 6,
+    "consecutive_unreachable_abort": 7,
+    "depth_med": -12.954630114725223,
+    "vert_med": 6.399573653679974,
+    "n": 16
+   },
+   "v2": {
+    "entered_corridor": 5,
+    "object_lifted": 10,
+    "strict_gt_secure_grasp": 6,
+    "bin_success": 4,
+    "consecutive_unreachable_abort": 7,
+    "depth_med": -11.732396855895825,
+    "vert_med": 5.621978015512461,
+    "n": 16
+   },
+   "rep1": {
+    "entered_corridor": 6,
+    "object_lifted": 10,
+    "strict_gt_secure_grasp": 7,
+    "bin_success": 5,
+    "consecutive_unreachable_abort": 8,
+    "depth_med": -12.282533172506866,
+    "vert_med": 7.581593185642361,
+    "n": 16
+   },
+   "rep2": {
+    "entered_corridor": 4,
+    "object_lifted": 10,
+    "strict_gt_secure_grasp": 6,
+    "bin_success": 3,
+    "consecutive_unreachable_abort": 9,
+    "depth_med": -10.697601611489059,
+    "vert_med": 7.135936025022126,
+    "n": 16
+   }
+  },
+  "G1": {
+   "entered_corridor": 4,
+   "object_lifted": 10,
+   "strict_gt_secure_grasp": 6,
+   "bin_success": 3,
+   "consecutive_unreachable_abort": 7,
+   "depth_med": -11.750639266599396,
+   "vert_med": 6.177390672567592,
+   "n": 16
+  },
+  "G2": {
+   "entered_corridor": 4,
+   "object_lifted": 8,
+   "strict_gt_secure_grasp": 4,
+   "bin_success": 4,
+   "consecutive_unreachable_abort": 10,
+   "depth_med": -14.6862603061149,
+   "vert_med": 5.622311011725756,
+   "n": 16
+  }
+ },
+ "G1_rule": {
+  "1_lifted_and_bin_outside_by_2": false,
+  "direction": null,
+  "2_nominal_not_opposite": true,
+  "3_close_geometry_shift_3mm": false,
+  "4_qualitative": "see per-episode table"
+ },
+ "G2_rule": {
+  "1_lifted_and_bin_outside_by_2": false,
+  "direction": null,
+  "2_nominal_not_opposite": true,
+  "3_close_geometry_shift_3mm": false,
+  "4_qualitative": "see per-episode table"
+ }
+}

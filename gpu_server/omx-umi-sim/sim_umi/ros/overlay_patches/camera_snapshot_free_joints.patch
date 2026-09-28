@@ -1,0 +1,69 @@
+diff -ru /tmp/claude-1003/-home-j-j15a206-universal-manipulation-interface/71c73aef-33b2-49ee-bca8-821148c30e91/scratchpad/plugins_before_freejoints/src/camera_plugin.cpp mujoco_ros2_control_plugins/src/camera_plugin.cpp
+--- /tmp/claude-1003/-home-j-j15a206-universal-manipulation-interface/71c73aef-33b2-49ee-bca8-821148c30e91/scratchpad/plugins_before_freejoints/src/camera_plugin.cpp	2026-09-28 01:02:16.882164108 +0900
++++ mujoco_ros2_control_plugins/src/camera_plugin.cpp	2026-09-28 01:05:42.446899640 +0900
+@@ -241,9 +241,33 @@
+         snap_qpos_adr_.push_back(mj_model_->jnt_qposadr[j]);
+         snap_dof_adr_.push_back(mj_model_->jnt_dofadr[j]);
+       }
++      const std::string free_param = param_prefix + "joint_snapshot_free_joints";
++      if (!node_->has_parameter(free_param))
++      {
++        node_->declare_parameter(free_param, false);
++      }
++      if (node_->get_parameter(free_param).as_bool())
++      {
++        static const char* suffix[7] = { "/x", "/y", "/z", "/qw", "/qx", "/qy", "/qz" };
++        for (int j = 0; j < mj_model_->njnt; ++j)
++        {
++          if (mj_model_->jnt_type[j] != mjJNT_FREE)
++          {
++            continue;
++          }
++          snap_free_qpos_adr_.push_back(mj_model_->jnt_qposadr[j]);
++          for (int k = 0; k < 7; ++k)
++          {
++            // free joints are unnamed in this model: name them by their body, as the
++            // free-joint state publisher does (object, bin)
++            snap_free_names_.emplace_back(
++                std::string(mj_model_->names + mj_model_->name_bodyadr[mj_model_->jnt_bodyid[j]]) + suffix[k]);
++          }
++        }
++      }
+       joint_snapshot_pub_ = node_->create_publisher<sensor_msgs::msg::JointState>(snap_topic, 100);
+-      RCLCPP_INFO(node_->get_logger(), "Joint snapshot of every capture on %s (%zu joints)",
+-                  snap_topic.c_str(), snap_names_.size());
++      RCLCPP_INFO(node_->get_logger(), "Joint snapshot of every capture on %s (%zu joints, %zu free joints)",
++                  snap_topic.c_str(), snap_names_.size(), snap_free_qpos_adr_.size());
+     }
+   }
+   else
+@@ -677,6 +701,15 @@
+       js.position.push_back(mj_camera_data_->qpos[snap_qpos_adr_[k]]);
+       js.velocity.push_back(mj_camera_data_->qvel[snap_dof_adr_[k]]);
+     }
++    for (size_t f = 0; f < snap_free_qpos_adr_.size(); ++f)
++    {
++      for (int k = 0; k < 7; ++k)
++      {
++        js.name.push_back(snap_free_names_[7 * f + k]);
++        js.position.push_back(mj_camera_data_->qpos[snap_free_qpos_adr_[f] + k]);
++        js.velocity.push_back(0.0);
++      }
++    }
+     joint_snapshot_pub_->publish(js);
+   }
+ 
+diff -ru /tmp/claude-1003/-home-j-j15a206-universal-manipulation-interface/71c73aef-33b2-49ee-bca8-821148c30e91/scratchpad/plugins_before_freejoints/src/camera_plugin.hpp mujoco_ros2_control_plugins/src/camera_plugin.hpp
+--- /tmp/claude-1003/-home-j-j15a206-universal-manipulation-interface/71c73aef-33b2-49ee-bca8-821148c30e91/scratchpad/plugins_before_freejoints/src/camera_plugin.hpp	2026-09-28 01:02:16.882164108 +0900
++++ mujoco_ros2_control_plugins/src/camera_plugin.hpp	2026-09-28 01:02:16.906166071 +0900
+@@ -257,6 +257,10 @@
+   std::vector<std::string> snap_names_;
+   std::vector<int> snap_qpos_adr_;
+   std::vector<int> snap_dof_adr_;
++  // optional (joint_snapshot_free_joints): every free joint's 7 qpos of the SAME snapshot,
++  // appended after the hinge/slide entries as <joint>/x /y /z /qw /qx /qy /qz (velocity 0)
++  std::vector<int> snap_free_qpos_adr_;
++  std::vector<std::string> snap_free_names_;
+ 
+   // Whether any streaming camera is registered. This lets the update loop skip the
+   // streaming time check entirely when only polled/disabled cameras exist.

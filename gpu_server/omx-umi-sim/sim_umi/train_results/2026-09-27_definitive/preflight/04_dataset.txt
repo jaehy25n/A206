@@ -1,0 +1,6 @@
+clean     omx_sim_train.zarr.zip  49.7 MB  sha256 b7fbfddc672d9b6b..
+          segments 25  frames 6455  sampler 6080  dataset 6080  dataloader 95 (batch 64, drop_last False)  val_ratio 0.0  train segs 25 held-out 0
+combined  omx_sim_train_v2.zarr.zip  173.4 MB  sha256 905749cd56e34b2f..
+          segments 94  frames 22942  sampler 21532  dataset 21532  dataloader 337 (batch 64, drop_last False)  val_ratio 0.0  train segs 94 held-out 0
+v2_train  segments 69  frames 16487  N 15452 (per-segment rule gives 15452)  clean prefix identical: True
+DATASET PREFLIGHT PASSED []

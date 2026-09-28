@@ -1,0 +1,7 @@
+def: plans 1767, latency median 0.220, k_first {4: 8, 5: 1673, 10: 1, 11: 1}, slack median 60 ms, slack<20 ms 0.7%, frame gap q05/q50/q95 0.100/0.100/0.350 s, |gap-0.1|>20 ms 40.0%
+v1: plans 1546, latency median 0.234, k_first {5: 1439, 6: 12, 11: 2}, slack median 46 ms, slack<20 ms 7.4%, frame gap q05/q50/q95 0.100/0.100/0.300 s, |gap-0.1|>20 ms 39.7%
+v2: plans 1541, latency median 0.220, k_first {4: 3, 5: 1431, 10: 2}, slack median 60 ms, slack<20 ms 0.6%, frame gap q05/q50/q95 0.100/0.100/0.300 s, |gap-0.1|>20 ms 36.5%
+APPROACH+GRASP plans, episodes lifted=yes vs no: yes (n=44): k_first 5.00, slack<20ms 4.3%, gap off-grid 38.0%, latency 0.223 | no (n=19): k_first 5.00, slack<20ms 2.0%, gap off-grid 35.0%, latency 0.224
+APPROACH+GRASP plans, episodes bin=yes vs no: yes (n=17): k_first 5.00, slack<20ms 4.2%, gap off-grid 41.5%, latency 0.223 | no (n=46): k_first 5.00, slack<20ms 3.4%, gap off-grid 35.5%, latency 0.223
+run pairs of the same episode: 63; parting (>2 mm) found in 63; parting plan index median 6, at t median 3.5 s; stage at parting {'APPROACH_OBJECT': 51, 'SEARCH_OBJECT': 6, 'GRASP': 6}
+in the 4 plans up to the parting: k_first differs in 5/63 pairs; the obs frame pair's spacing differs by >20 ms in 57/63 pairs

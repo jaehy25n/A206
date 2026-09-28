@@ -1,0 +1,1079 @@
+[
+ {
+  "episode": 0,
+  "ticks": 102,
+  "ended": "eight plans in a row the arm could not reach",
+  "stage_path": [
+   "SEARCH_OBJECT@0",
+   "APPROACH_OBJECT@0",
+   "GRASP@84",
+   "LIFT@97"
+  ],
+  "grasped_flag": true,
+  "bin": false,
+  "ball_max_rise_mm": 40.7,
+  "closing_onsets": [
+   {
+    "grasp_entry_tick": 84,
+    "t": 15.1,
+    "lateral": -1.91,
+    "depth": -13.01,
+    "vertical": 6.87,
+    "pitch": 11.75,
+    "jaw_min_after_mm": 31.6,
+    "object_visible_near": true
+   }
+  ],
+  "ball_radius_mm": {
+   "start": 201.4,
+   "end": 163.0,
+   "max": 201.4
+  },
+  "deepest_before_first_close_mm": -13.99,
+  "deepest_ever_mm": -17.42,
+  "object_visible_in_approach_grasp": "30/30 plans",
+  "plans": 40,
+  "plans_nothing_sendable": 8,
+  "plans_with_any_refusal": 10,
+  "first_refusal": {
+   "plan": 30,
+   "t": 16.92,
+   "stage": "GRASP",
+   "sent_before_it": 6
+  },
+  "abort_streak": {
+   "first_plan": 32,
+   "length": 8,
+   "t": 18.02,
+   "stage": "LIFT",
+   "plan_before": {
+    "plan": 31,
+    "sent": 1
+   },
+   "measured_joints_at_start": {
+    "joint1": {
+     "q_deg": 38.11,
+     "to_lower_deg": 308.11,
+     "to_upper_deg": 321.89
+    },
+    "joint2": {
+     "q_deg": -40.28,
+     "to_lower_deg": 79.72,
+     "to_upper_deg": 130.28
+    },
+    "joint3": {
+     "q_deg": 88.16,
+     "to_lower_deg": 208.16,
+     "to_upper_deg": 1.84
+    },
+    "joint4": {
+     "q_deg": -26.82,
+     "to_lower_deg": 73.18,
+     "to_upper_deg": 126.82
+    },
+    "joint5": {
+     "q_deg": 0.0,
+     "to_lower_deg": 270.0,
+     "to_upper_deg": 270.0
+    }
+   },
+   "ball_at_start": {
+    "rise_mm": 33.7,
+    "toolframe_mm": [
+     0.1,
+     -15.5,
+     6.4
+    ]
+   },
+   "plans_detail": [
+    {
+     "plan": 32,
+     "t": 18.02,
+     "stage": "LIFT",
+     "object_visible": true,
+     "bin_visible": false,
+     "first_due_k": 5,
+     "first_due": {
+      "miss_mm": 20.62,
+      "asked_pitch_deg": 23.29,
+      "pinned": [
+       "joint3 upper"
+      ],
+      "past_limit_deg_if_unclipped": {
+       "joint3": 3.01
+      },
+      "unclipped_miss_mm": 0.01,
+      "best_pitch_deg": 46.0,
+      "best_pitch_miss_mm": 0.0,
+      "reachable_at_some_pitch": true,
+      "yaw_discarded_deg": 0.0,
+      "radius_mm": 166.3,
+      "z_mm": 69.0
+     },
+     "raw_misses_all_16_mm": [
+      0.0,
+      0.0,
+      3.0,
+      9.2,
+      14.6,
+      20.6,
+      20.1,
+      17.4,
+      11.8,
+      4.1,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "raw_unreachable_of_16": 8,
+     "target_minus_ee_mm": [
+      8.5,
+      -11.8,
+      23.0
+     ]
+    },
+    {
+     "plan": 33,
+     "t": 18.43,
+     "stage": "LIFT",
+     "object_visible": true,
+     "bin_visible": false,
+     "first_due_k": 5,
+     "first_due": {
+      "miss_mm": 26.1,
+      "asked_pitch_deg": 23.49,
+      "pinned": [
+       "joint3 upper"
+      ],
+      "past_limit_deg_if_unclipped": {
+       "joint3": 3.54
+      },
+      "unclipped_miss_mm": 0.0,
+      "best_pitch_deg": 50.0,
+      "best_pitch_miss_mm": 0.0,
+      "reachable_at_some_pitch": true,
+      "yaw_discarded_deg": 0.0,
+      "radius_mm": 163.5,
+      "z_mm": 73.0
+     },
+     "raw_misses_all_16_mm": [
+      0.0,
+      3.9,
+      11.2,
+      16.5,
+      20.3,
+      26.1,
+      21.8,
+      17.0,
+      9.7,
+      1.3,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "raw_unreachable_of_16": 8,
+     "target_minus_ee_mm": [
+      7.8,
+      -11.0,
+      20.7
+     ]
+    },
+    {
+     "plan": 34,
+     "t": 18.78,
+     "stage": "LIFT",
+     "object_visible": true,
+     "bin_visible": false,
+     "first_due_k": 5,
+     "first_due": {
+      "miss_mm": 25.04,
+      "asked_pitch_deg": 23.39,
+      "pinned": [
+       "joint3 upper"
+      ],
+      "past_limit_deg_if_unclipped": {
+       "joint3": 3.44
+      },
+      "unclipped_miss_mm": 0.0,
+      "best_pitch_deg": 50.0,
+      "best_pitch_miss_mm": 0.0,
+      "reachable_at_some_pitch": true,
+      "yaw_discarded_deg": 0.0,
+      "radius_mm": 164.1,
+      "z_mm": 72.4
+     },
+     "raw_misses_all_16_mm": [
+      0.0,
+      3.6,
+      10.5,
+      15.6,
+      19.4,
+      25.0,
+      21.3,
+      16.9,
+      9.9,
+      1.8,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "raw_unreachable_of_16": 8,
+     "target_minus_ee_mm": [
+      7.4,
+      -10.5,
+      19.9
+     ]
+    },
+    {
+     "plan": 35,
+     "t": 19.18,
+     "stage": "LIFT",
+     "object_visible": true,
+     "bin_visible": false,
+     "first_due_k": 5,
+     "first_due": {
+      "miss_mm": 24.58,
+      "asked_pitch_deg": 23.41,
+      "pinned": [
+       "joint3 upper"
+      ],
+      "past_limit_deg_if_unclipped": {
+       "joint3": 3.4
+      },
+      "unclipped_miss_mm": 0.0,
+      "best_pitch_deg": 50.0,
+      "best_pitch_miss_mm": 0.0,
+      "reachable_at_some_pitch": true,
+      "yaw_discarded_deg": 0.0,
+      "radius_mm": 164.2,
+      "z_mm": 72.3
+     },
+     "raw_misses_all_16_mm": [
+      0.0,
+      3.6,
+      10.5,
+      15.4,
+      19.0,
+      24.6,
+      20.7,
+      16.4,
+      9.5,
+      1.4,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "raw_unreachable_of_16": 8,
+     "target_minus_ee_mm": [
+      7.3,
+      -10.3,
+      19.8
+     ]
+    },
+    {
+     "plan": 36,
+     "t": 19.58,
+     "stage": "LIFT",
+     "object_visible": true,
+     "bin_visible": false,
+     "first_due_k": 5,
+     "first_due": {
+      "miss_mm": 25.48,
+      "asked_pitch_deg": 23.41,
+      "pinned": [
+       "joint3 upper"
+      ],
+      "past_limit_deg_if_unclipped": {
+       "joint3": 3.49
+      },
+      "unclipped_miss_mm": 0.0,
+      "best_pitch_deg": 52.0,
+      "best_pitch_miss_mm": 0.0,
+      "reachable_at_some_pitch": true,
+      "yaw_discarded_deg": 0.0,
+      "radius_mm": 164.0,
+      "z_mm": 72.3
+     },
+     "raw_misses_all_16_mm": [
+      0.0,
+      3.7,
+      10.8,
+      15.9,
+      19.7,
+      25.5,
+      21.7,
+      17.4,
+      10.4,
+      2.3,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "raw_unreachable_of_16": 9,
+     "target_minus_ee_mm": [
+      7.4,
+      -10.4,
+      19.8
+     ]
+    },
+    {
+     "plan": 37,
+     "t": 19.98,
+     "stage": "LIFT",
+     "object_visible": true,
+     "bin_visible": false,
+     "first_due_k": 5,
+     "first_due": {
+      "miss_mm": 25.57,
+      "asked_pitch_deg": 23.42,
+      "pinned": [
+       "joint3 upper"
+      ],
+      "past_limit_deg_if_unclipped": {
+       "joint3": 3.5
+      },
+      "unclipped_miss_mm": 0.0,
+      "best_pitch_deg": 52.0,
+      "best_pitch_miss_mm": 0.0,
+      "reachable_at_some_pitch": true,
+      "yaw_discarded_deg": 0.0,
+      "radius_mm": 164.0,
+      "z_mm": 72.3
+     },
+     "raw_misses_all_16_mm": [
+      0.0,
+      3.9,
+      10.9,
+      16.0,
+      19.7,
+      25.6,
+      21.7,
+      17.4,
+      10.4,
+      2.3,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "raw_unreachable_of_16": 9,
+     "target_minus_ee_mm": [
+      7.4,
+      -10.4,
+      19.9
+     ]
+    },
+    {
+     "plan": 38,
+     "t": 20.33,
+     "stage": "LIFT",
+     "object_visible": true,
+     "bin_visible": false,
+     "first_due_k": 5,
+     "first_due": {
+      "miss_mm": 25.7,
+      "asked_pitch_deg": 23.43,
+      "pinned": [
+       "joint3 upper"
+      ],
+      "past_limit_deg_if_unclipped": {
+       "joint3": 3.51
+      },
+      "unclipped_miss_mm": 0.0,
+      "best_pitch_deg": 52.0,
+      "best_pitch_miss_mm": 0.0,
+      "reachable_at_some_pitch": true,
+      "yaw_discarded_deg": 0.0,
+      "radius_mm": 164.0,
+      "z_mm": 72.2
+     },
+     "raw_misses_all_16_mm": [
+      0.0,
+      4.0,
+      11.0,
+      16.1,
+      19.9,
+      25.7,
+      21.8,
+      17.5,
+      10.5,
+      2.3,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "raw_unreachable_of_16": 9,
+     "target_minus_ee_mm": [
+      7.4,
+      -10.4,
+      19.8
+     ]
+    },
+    {
+     "plan": 39,
+     "t": 20.73,
+     "stage": "LIFT",
+     "object_visible": true,
+     "bin_visible": false,
+     "first_due_k": 5,
+     "first_due": {
+      "miss_mm": 25.84,
+      "asked_pitch_deg": 23.44,
+      "pinned": [
+       "joint3 upper"
+      ],
+      "past_limit_deg_if_unclipped": {
+       "joint3": 3.53
+      },
+      "unclipped_miss_mm": 0.0,
+      "best_pitch_deg": 46.0,
+      "best_pitch_miss_mm": 0.0,
+      "reachable_at_some_pitch": true,
+      "yaw_discarded_deg": 0.0,
+      "radius_mm": 164.0,
+      "z_mm": 72.1
+     },
+     "raw_misses_all_16_mm": [
+      0.0,
+      4.1,
+      11.1,
+      16.2,
+      20.0,
+      25.8,
+      22.0,
+      17.7,
+      10.7,
+      2.6,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "raw_unreachable_of_16": 9,
+     "target_minus_ee_mm": [
+      7.4,
+      -10.4,
+      19.8
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "episode": 1,
+  "ticks": 600,
+  "ended": "ran out of ticks",
+  "stage_path": [
+   "SEARCH_OBJECT@0",
+   "APPROACH_OBJECT@27",
+   "GRASP@123",
+   "APPROACH_OBJECT@143",
+   "GRASP@147",
+   "APPROACH_OBJECT@171",
+   "GRASP@179",
+   "APPROACH_OBJECT@199"
+  ],
+  "grasped_flag": false,
+  "bin": false,
+  "ball_max_rise_mm": 3.3,
+  "closing_onsets": [
+   {
+    "grasp_entry_tick": 123,
+    "t": 20.15,
+    "lateral": 3.18,
+    "depth": -9.09,
+    "vertical": 14.31,
+    "pitch": 20.81,
+    "jaw_min_after_mm": 38.5,
+    "object_visible_near": true
+   },
+   {
+    "grasp_entry_tick": 147,
+    "same_close_as_before": true,
+    "jaw_max_since_last_entry_mm": 48.0,
+    "jaw_at_entry_mm": 43.9
+   },
+   {
+    "grasp_entry_tick": 179,
+    "same_close_as_before": true,
+    "jaw_max_since_last_entry_mm": 47.1,
+    "jaw_at_entry_mm": 44.3
+   }
+  ],
+  "ball_radius_mm": {
+   "start": 225.2,
+   "end": 288.9,
+   "max": 288.9
+  },
+  "deepest_before_first_close_mm": -8.62,
+  "deepest_ever_mm": -9.09,
+  "object_visible_in_approach_grasp": "146/146 plans",
+  "plans": 157,
+  "plans_nothing_sendable": 0,
+  "plans_with_any_refusal": 0
+ },
+ {
+  "episode": 2,
+  "ticks": 166,
+  "ended": "the ball is in the bin",
+  "stage_path": [
+   "SEARCH_OBJECT@0",
+   "APPROACH_OBJECT@0",
+   "GRASP@77",
+   "LIFT@92",
+   "TRANSPORT@110",
+   "PLACE@150",
+   "AFTER_RELEASE@166"
+  ],
+  "grasped_flag": true,
+  "bin": true,
+  "ball_max_rise_mm": 184.2,
+  "closing_onsets": [
+   {
+    "grasp_entry_tick": 77,
+    "t": 13.41,
+    "lateral": -2.01,
+    "depth": -14.36,
+    "vertical": 6.89,
+    "pitch": 14.43,
+    "jaw_min_after_mm": 31.3,
+    "object_visible_near": true
+   }
+  ],
+  "ball_radius_mm": {
+   "start": 222.4,
+   "end": 202.5,
+   "max": 222.4
+  },
+  "deepest_before_first_close_mm": -15.79,
+  "deepest_ever_mm": -20.15,
+  "object_visible_in_approach_grasp": "27/27 plans",
+  "plans": 55,
+  "plans_nothing_sendable": 0,
+  "plans_with_any_refusal": 0
+ },
+ {
+  "episode": 3,
+  "ticks": 172,
+  "ended": "the ball is in the bin",
+  "stage_path": [
+   "SEARCH_OBJECT@0",
+   "APPROACH_OBJECT@0",
+   "GRASP@79",
+   "LIFT@94",
+   "TRANSPORT@133",
+   "PLACE@156",
+   "AFTER_RELEASE@172"
+  ],
+  "grasped_flag": true,
+  "bin": true,
+  "ball_max_rise_mm": 200.7,
+  "closing_onsets": [
+   {
+    "grasp_entry_tick": 79,
+    "t": 13.83,
+    "lateral": 3.07,
+    "depth": -11.0,
+    "vertical": 4.12,
+    "pitch": 12.05,
+    "jaw_min_after_mm": 32.3,
+    "object_visible_near": true
+   }
+  ],
+  "ball_radius_mm": {
+   "start": 210.3,
+   "end": 208.0,
+   "max": 214.1
+  },
+  "deepest_before_first_close_mm": -11.03,
+  "deepest_ever_mm": -22.46,
+  "object_visible_in_approach_grasp": "29/29 plans",
+  "plans": 56,
+  "plans_nothing_sendable": 0,
+  "plans_with_any_refusal": 0
+ },
+ {
+  "episode": 4,
+  "ticks": 175,
+  "ended": "eight plans in a row the arm could not reach",
+  "stage_path": [
+   "SEARCH_OBJECT@0",
+   "APPROACH_OBJECT@3",
+   "GRASP@68",
+   "APPROACH_OBJECT@80",
+   "GRASP@155",
+   "APPROACH_OBJECT@168"
+  ],
+  "grasped_flag": false,
+  "bin": false,
+  "ball_max_rise_mm": 3.9,
+  "closing_onsets": [
+   {
+    "grasp_entry_tick": 68,
+    "t": 10.83,
+    "lateral": 1.38,
+    "depth": -7.86,
+    "vertical": 15.58,
+    "pitch": 25.73,
+    "jaw_min_after_mm": 30.7,
+    "object_visible_near": true
+   },
+   {
+    "grasp_entry_tick": 155,
+    "t": 25.88,
+    "lateral": -0.04,
+    "depth": -8.67,
+    "vertical": 2.96,
+    "pitch": -1.83,
+    "jaw_min_after_mm": 30.7,
+    "object_visible_near": true
+   }
+  ],
+  "ball_radius_mm": {
+   "start": 300.7,
+   "end": 445.1,
+   "max": 445.1
+  },
+  "deepest_before_first_close_mm": -7.86,
+  "deepest_ever_mm": -9.11,
+  "object_visible_in_approach_grasp": "63/63 plans",
+  "plans": 66,
+  "plans_nothing_sendable": 8,
+  "plans_with_any_refusal": 9,
+  "first_refusal": {
+   "plan": 57,
+   "t": 29.36,
+   "stage": "GRASP",
+   "sent_before_it": 5
+  },
+  "abort_streak": {
+   "first_plan": 58,
+   "length": 8,
+   "t": 30.01,
+   "stage": "APPROACH_OBJECT",
+   "plan_before": {
+    "plan": 57,
+    "sent": 5
+   },
+   "measured_joints_at_start": {
+    "joint1": {
+     "q_deg": 7.51,
+     "to_lower_deg": 277.51,
+     "to_upper_deg": 352.49
+    },
+    "joint2": {
+     "q_deg": 75.41,
+     "to_lower_deg": 195.41,
+     "to_upper_deg": 14.59
+    },
+    "joint3": {
+     "q_deg": -49.55,
+     "to_lower_deg": 70.45,
+     "to_upper_deg": 139.55
+    },
+    "joint4": {
+     "q_deg": -30.04,
+     "to_lower_deg": 69.96,
+     "to_upper_deg": 130.04
+    },
+    "joint5": {
+     "q_deg": -0.01,
+     "to_lower_deg": 269.99,
+     "to_upper_deg": 270.01
+    }
+   },
+   "ball_at_start": {
+    "rise_mm": -0.2,
+    "toolframe_mm": [
+     4.7,
+     19.7,
+     -0.6
+    ]
+   },
+   "plans_detail": [
+    {
+     "plan": 58,
+     "t": 30.01,
+     "stage": "APPROACH_OBJECT",
+     "object_visible": true,
+     "bin_visible": false,
+     "first_due_k": 5,
+     "first_due": {
+      "miss_mm": 7.41,
+      "asked_pitch_deg": -5.53,
+      "pinned": [],
+      "past_limit_deg_if_unclipped": {},
+      "unclipped_miss_mm": 7.41,
+      "best_pitch_deg": 12.0,
+      "best_pitch_miss_mm": 0.31,
+      "reachable_at_some_pitch": true,
+      "yaw_discarded_deg": 0.3,
+      "radius_mm": 395.8,
+      "z_mm": 19.4
+     },
+     "raw_misses_all_16_mm": [
+      0.0,
+      0.0,
+      0.5,
+      2.7,
+      4.7,
+      7.4,
+      8.0,
+      9.0,
+      10.5,
+      12.2,
+      14.1,
+      15.3,
+      16.7,
+      18.2,
+      18.8,
+      21.3
+     ],
+     "raw_unreachable_of_16": 13,
+     "target_minus_ee_mm": [
+      -1.5,
+      9.9,
+      -4.5
+     ]
+    },
+    {
+     "plan": 59,
+     "t": 30.36,
+     "stage": "APPROACH_OBJECT",
+     "object_visible": true,
+     "bin_visible": false,
+     "first_due_k": 5,
+     "first_due": {
+      "miss_mm": 11.83,
+      "asked_pitch_deg": -7.02,
+      "pinned": [],
+      "past_limit_deg_if_unclipped": {},
+      "unclipped_miss_mm": 11.83,
+      "best_pitch_deg": 10.0,
+      "best_pitch_miss_mm": 3.67,
+      "reachable_at_some_pitch": false,
+      "yaw_discarded_deg": 0.3,
+      "radius_mm": 399.5,
+      "z_mm": 20.5
+     },
+     "raw_misses_all_16_mm": [
+      0.0,
+      1.3,
+      4.5,
+      6.8,
+      8.9,
+      11.8,
+      12.6,
+      13.7,
+      15.3,
+      17.0,
+      19.1,
+      20.2,
+      21.4,
+      22.3,
+      22.4,
+      24.0
+     ],
+     "raw_unreachable_of_16": 14,
+     "target_minus_ee_mm": [
+      -1.5,
+      9.9,
+      -4.1
+     ]
+    },
+    {
+     "plan": 60,
+     "t": 30.76,
+     "stage": "APPROACH_OBJECT",
+     "object_visible": true,
+     "bin_visible": false,
+     "first_due_k": 5,
+     "first_due": {
+      "miss_mm": 9.66,
+      "asked_pitch_deg": -6.84,
+      "pinned": [],
+      "past_limit_deg_if_unclipped": {},
+      "unclipped_miss_mm": 9.66,
+      "best_pitch_deg": 10.0,
+      "best_pitch_miss_mm": 1.6,
+      "reachable_at_some_pitch": true,
+      "yaw_discarded_deg": 0.2,
+      "radius_mm": 397.3,
+      "z_mm": 20.5
+     },
+     "raw_misses_all_16_mm": [
+      0.0,
+      1.1,
+      3.9,
+      5.6,
+      7.2,
+      9.7,
+      10.0,
+      10.5,
+      11.4,
+      12.3,
+      13.1,
+      13.1,
+      13.2,
+      13.2,
+      12.5,
+      13.1
+     ],
+     "raw_unreachable_of_16": 14,
+     "target_minus_ee_mm": [
+      -1.1,
+      7.5,
+      -4.7
+     ]
+    },
+    {
+     "plan": 61,
+     "t": 31.11,
+     "stage": "APPROACH_OBJECT",
+     "object_visible": true,
+     "bin_visible": false,
+     "first_due_k": 5,
+     "first_due": {
+      "miss_mm": 11.82,
+      "asked_pitch_deg": -6.95,
+      "pinned": [],
+      "past_limit_deg_if_unclipped": {},
+      "unclipped_miss_mm": 11.82,
+      "best_pitch_deg": 12.0,
+      "best_pitch_miss_mm": 3.58,
+      "reachable_at_some_pitch": false,
+      "yaw_discarded_deg": 0.3,
+      "radius_mm": 399.1,
+      "z_mm": 19.4
+     },
+     "raw_misses_all_16_mm": [
+      0.0,
+      1.4,
+      4.6,
+      6.9,
+      9.0,
+      11.8,
+      12.3,
+      13.1,
+      14.0,
+      14.8,
+      15.6,
+      15.6,
+      15.8,
+      15.9,
+      15.4,
+      16.3
+     ],
+     "raw_unreachable_of_16": 14,
+     "target_minus_ee_mm": [
+      -1.1,
+      9.3,
+      -5.8
+     ]
+    },
+    {
+     "plan": 62,
+     "t": 31.51,
+     "stage": "APPROACH_OBJECT",
+     "object_visible": true,
+     "bin_visible": false,
+     "first_due_k": 5,
+     "first_due": {
+      "miss_mm": 12.49,
+      "asked_pitch_deg": -7.15,
+      "pinned": [],
+      "past_limit_deg_if_unclipped": {},
+      "unclipped_miss_mm": 12.49,
+      "best_pitch_deg": 12.0,
+      "best_pitch_miss_mm": 4.1,
+      "reachable_at_some_pitch": false,
+      "yaw_discarded_deg": 0.2,
+      "radius_mm": 399.7,
+      "z_mm": 19.5
+     },
+     "raw_misses_all_16_mm": [
+      0.0,
+      1.5,
+      4.7,
+      7.1,
+      9.4,
+      12.5,
+      13.5,
+      14.7,
+      16.0,
+      17.3,
+      19.0,
+      19.6,
+      20.3,
+      21.0,
+      21.0,
+      22.5
+     ],
+     "raw_unreachable_of_16": 14,
+     "target_minus_ee_mm": [
+      -1.1,
+      9.9,
+      -5.7
+     ]
+    },
+    {
+     "plan": 63,
+     "t": 31.91,
+     "stage": "APPROACH_OBJECT",
+     "object_visible": true,
+     "bin_visible": false,
+     "first_due_k": 5,
+     "first_due": {
+      "miss_mm": 11.14,
+      "asked_pitch_deg": -7.25,
+      "pinned": [],
+      "past_limit_deg_if_unclipped": {},
+      "unclipped_miss_mm": 11.14,
+      "best_pitch_deg": 10.0,
+      "best_pitch_miss_mm": 2.75,
+      "reachable_at_some_pitch": false,
+      "yaw_discarded_deg": 0.2,
+      "radius_mm": 398.5,
+      "z_mm": 20.6
+     },
+     "raw_misses_all_16_mm": [
+      0.0,
+      1.1,
+      3.9,
+      5.9,
+      8.1,
+      11.1,
+      12.4,
+      14.0,
+      15.8,
+      18.0,
+      20.3,
+      21.6,
+      23.0,
+      24.3,
+      24.8,
+      26.7
+     ],
+     "raw_unreachable_of_16": 14,
+     "target_minus_ee_mm": [
+      -0.8,
+      8.8,
+      -4.6
+     ]
+    },
+    {
+     "plan": 64,
+     "t": 32.31,
+     "stage": "APPROACH_OBJECT",
+     "object_visible": true,
+     "bin_visible": false,
+     "first_due_k": 5,
+     "first_due": {
+      "miss_mm": 11.97,
+      "asked_pitch_deg": -7.52,
+      "pinned": [],
+      "past_limit_deg_if_unclipped": {},
+      "unclipped_miss_mm": 11.97,
+      "best_pitch_deg": 10.0,
+      "best_pitch_miss_mm": 3.4,
+      "reachable_at_some_pitch": false,
+      "yaw_discarded_deg": 0.2,
+      "radius_mm": 399.2,
+      "z_mm": 20.8
+     },
+     "raw_misses_all_16_mm": [
+      0.1,
+      1.4,
+      4.3,
+      6.5,
+      8.8,
+      12.0,
+      13.6,
+      15.5,
+      17.6,
+      20.8,
+      23.3,
+      25.1,
+      26.8,
+      28.4,
+      29.3,
+      31.4
+     ],
+     "raw_unreachable_of_16": 14,
+     "target_minus_ee_mm": [
+      -0.9,
+      9.5,
+      -4.4
+     ]
+    },
+    {
+     "plan": 65,
+     "t": 32.66,
+     "stage": "APPROACH_OBJECT",
+     "object_visible": true,
+     "bin_visible": false,
+     "first_due_k": 5,
+     "first_due": {
+      "miss_mm": 10.93,
+      "asked_pitch_deg": -7.45,
+      "pinned": [],
+      "past_limit_deg_if_unclipped": {},
+      "unclipped_miss_mm": 10.93,
+      "best_pitch_deg": 10.0,
+      "best_pitch_miss_mm": 2.44,
+      "reachable_at_some_pitch": false,
+      "yaw_discarded_deg": 0.2,
+      "radius_mm": 398.3,
+      "z_mm": 21.3
+     },
+     "raw_misses_all_16_mm": [
+      0.1,
+      1.1,
+      3.7,
+      5.7,
+      7.9,
+      10.9,
+      12.5,
+      14.4,
+      16.5,
+      19.5,
+      22.1,
+      24.0,
+      25.8,
+      27.4,
+      28.4,
+      30.5
+     ],
+     "raw_unreachable_of_16": 14,
+     "target_minus_ee_mm": [
+      -0.0,
+      8.7,
+      -3.9
+     ]
+    }
+   ]
+  }
+ }
+]
