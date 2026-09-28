@@ -63,7 +63,7 @@ def generate_launch_description():
              parameters=[limits], output='screen'),
 
         Node(package='omx_policy', executable='dummy_policy_node', name='policy_node',
-             parameters=[{'auto_start': False}], output='screen',
+             parameters=[limits, {'auto_start': False}], output='screen',
              condition=IfCondition(dummy_policy)),
 
         Node(package='omx_task_control', executable='action_chunk_executor',

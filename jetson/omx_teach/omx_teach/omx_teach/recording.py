@@ -9,7 +9,7 @@
 
 t is seconds from the first sample (header stamp of /joint_states), positions in
 radians.  A sibling <name>_ee.csv (t,x,y,z,qx,qy,qz,qw,gripper_width) is written
-when the omx_control kinematics are importable.
+when the omx_control kinematics are importable (position and jaw width in metres).
 """
 
 import csv

@@ -23,7 +23,8 @@ from std_msgs.msg import Float32
 from omx_msgs.msg import EETarget
 
 from . import action_format as af
-from .kinematics import BASE_X, DEFAULT_LOWER, DEFAULT_UPPER, JOINT_NAMES, Kinematics, wrap
+from .kinematics import (BASE_X, DEFAULT_GRIPPER_OPEN_WIDTH_M, DEFAULT_LOWER, DEFAULT_UPPER,
+                         JOINT_NAMES, Kinematics, wrap)
 
 
 class IkNode(Node):
@@ -35,6 +36,7 @@ class IkNode(Node):
         self.declare_parameter('upper_limits_rad', DEFAULT_UPPER)
         self.declare_parameter('gripper_open_rad', 1.745)
         self.declare_parameter('gripper_closed_rad', 0.0)
+        self.declare_parameter('gripper_open_width_m', DEFAULT_GRIPPER_OPEN_WIDTH_M)
         self.declare_parameter('max_joint_step_rad', 0.06)     # per /ee_target message
         self.declare_parameter('seed_timeout_s', 0.5)          # reuse last command as seed if newer
         self.declare_parameter('workspace_min', [-0.45, -0.45, -0.05])
@@ -50,7 +52,8 @@ class IkNode(Node):
             lower=list(p('lower_limits_rad').value),
             upper=list(p('upper_limits_rad').value),
             gripper_open_rad=float(p('gripper_open_rad').value),
-            gripper_closed_rad=float(p('gripper_closed_rad').value))
+            gripper_closed_rad=float(p('gripper_closed_rad').value),
+            gripper_open_width_m=float(p('gripper_open_width_m').value))
         self.max_step = float(p('max_joint_step_rad').value)
         self.seed_timeout = float(p('seed_timeout_s').value)
         self.ws_min = [float(v) for v in p('workspace_min').value]

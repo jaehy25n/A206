@@ -1,18 +1,28 @@
-"""UMI-style action chunk format and the pose maths shared by the stack.
+"""Policy action contract and the pose maths shared by the stack.
 
-One action step is 10 numbers (the array form a policy network emits):
+The contract is the one the GPU server fixes for the Jetson
+(gpu_server/omx-umi-sim/README_JETSON_HANDOFF.md, sections 3 and 4).  One
+policy output is an [H, 10] array, H = 16:
 
-    [0:3]   delta position   (x, y, z) in metres, RELATIVE to the anchor pose
-    [3:9]   delta rotation   6D representation (Zhou et al. 2019), RELATIVE
-    [9]     gripper width    normalised 0 (closed) .. 1 (open), ABSOLUTE
+    [0:3]   position   RELATIVE to the base pose T0, expressed in the T0 frame:
+                       p_rel = R0^T (p_abs - p0)
+    [3:9]   rotation   rot6d of R_rel = R0^T R_abs: the first two ROWS of the
+                       matrix, row-major [R00, R01, R02, R10, R11, R12]
+    [9]     gripper    ABSOLUTE target jaw width in metres (not normalised)
 
-Note the mixed frames: pose is relative, gripper width is absolute.  Width has
-a physical meaning (the object's size), so a relative encoding would be
-meaningless.  This is the easiest place in the pipeline to make a silent
-mistake.
+    decode:  T_abs[k] = T0 @ T_rel[k]      (base on the LEFT)
+
+T0 is the end-effector pose at the last observation, whose time is t0.  Step k
+is meant for t0 + k * 0.1 s, so action[0] is the pose the arm is already in: it
+aligns the chunk, it is not a motion to execute.  By the time a chunk arrives
+some leading steps are already in the past; the executor drops that stale
+prefix (see schedule()).
+
+Note the mixed frames: pose is relative, gripper width is absolute.  This is
+the easiest place in the pipeline to make a silent mistake.
 
 On the wire the same content travels as omx_msgs/EEActionChunk, where every
-relative pose is a geometry_msgs/Pose (quaternion) and the anchor pose is
+relative pose is a geometry_msgs/Pose (quaternion) and the anchor pose T0 is
 carried explicitly so the executor never has to time-match /ee_state.
 """
 
@@ -21,22 +31,29 @@ import math
 import numpy as np
 
 ACTION_DIM = 10
+ACTION_HORIZON = 16
+ACTION_DT_S = 0.1
 
 
 # --- 6D rotation representation ------------------------------------------------
 def rot_to_6d(rot):
-    """3x3 rotation matrix -> 6 numbers (first two columns)."""
-    return np.concatenate([rot[:, 0], rot[:, 1]])
+    """3x3 rotation matrix -> 6 numbers: the first two rows, row-major."""
+    rot = np.asarray(rot, float)
+    return np.concatenate([rot[0, :], rot[1, :]])
 
 
 def rot_from_6d(v):
-    """6 numbers -> 3x3 rotation matrix via Gram-Schmidt."""
+    """6 numbers (two rows) -> 3x3 rotation matrix via Gram-Schmidt.
+
+    Same construction as umi/common/pose_util.py rot6d_to_mat on the GPU side:
+    the orthonormalised vectors become the ROWS of the matrix.
+    """
     a1, a2 = np.asarray(v[0:3], float), np.asarray(v[3:6], float)
     b1 = a1 / np.linalg.norm(a1)
     a2 = a2 - np.dot(b1, a2) * b1
     b2 = a2 / np.linalg.norm(a2)
     b3 = np.cross(b1, b2)
-    return np.stack([b1, b2, b3], axis=1)
+    return np.stack([b1, b2, b3], axis=0)
 
 
 # --- quaternion <-> matrix (x, y, z, w) -----------------------------------------
@@ -135,6 +152,44 @@ def interp_t(ta, tb, s):
     return make_t(p, rot)
 
 
+# --- action contract ------------------------------------------------------------
+def pose9_to_t(a9):
+    """action[k, 0:9] (position + rot6d) -> relative 4x4 T_rel."""
+    return make_t(a9[0:3], rot_from_6d(a9[3:9]))
+
+
+def t_to_pose9(t_rel):
+    """Relative 4x4 T_rel -> action[k, 0:9]."""
+    return np.concatenate([t_rel[:3, 3], rot_to_6d(t_rel[:3, :3])])
+
+
+def encode_action(t_base, t_abs, widths):
+    """Absolute poses [H] + widths [H] (m) -> [H, 10] relative to t_base."""
+    inv_base = inv_t(t_base)
+    out = np.zeros((len(t_abs), ACTION_DIM))
+    for k, (t_k, w_k) in enumerate(zip(t_abs, widths)):
+        out[k, 0:9] = t_to_pose9(inv_base @ t_k)
+        out[k, 9] = float(w_k)
+    return out
+
+
+def decode_action(action, t_base):
+    """[H, 10] -> (T_abs [H, 4, 4], widths [H] in metres).  T_abs = T0 @ T_rel."""
+    action = np.asarray(action, float)
+    assert action.ndim == 2 and action.shape[1] == ACTION_DIM, action.shape
+    t_abs = np.stack([t_base @ pose9_to_t(a) for a in action])
+    return t_abs, action[:, 9].copy()
+
+
+def schedule(t0, dt, n, now):
+    """Steps of a chunk that are still in the future: [(k, t0 + k*dt), ...].
+
+    Step k is meant for t0 + k*dt; everything at or before `now` is the stale
+    prefix (always including step 0, the pose the arm was in at t0).
+    """
+    return [(k, t0 + k * dt) for k in range(n) if t0 + k * dt > now]
+
+
 # --- ROS message conversions ----------------------------------------------------
 def t_from_pose(pose):
     """geometry_msgs/Pose -> 4x4."""
@@ -155,7 +210,7 @@ def pose_from_t(t):
 
 
 def chunk_to_msg(chunk, t_anchor, dt, stamp, frame_id='base_link', confidence=0.0):
-    """[H, 10] relative actions + anchor -> omx_msgs/EEActionChunk."""
+    """[H, 10] policy output + base pose T0 (at stamp = t0) -> omx_msgs/EEActionChunk."""
     from omx_msgs.msg import EEActionChunk
     chunk = np.asarray(chunk, float)
     assert chunk.ndim == 2 and chunk.shape[1] == ACTION_DIM, chunk.shape
@@ -166,16 +221,19 @@ def chunk_to_msg(chunk, t_anchor, dt, stamp, frame_id='base_link', confidence=0.
     msg.dt = float(dt)
     msg.confidence = float(confidence)
     for a in chunk:
-        msg.deltas.append(pose_from_t(make_t(a[0:3], rot_from_6d(a[3:9]))))
+        msg.deltas.append(pose_from_t(pose9_to_t(a)))
         msg.gripper_width.append(float(a[9]))
     return msg
 
 
 def msg_to_targets(msg):
-    """omx_msgs/EEActionChunk -> (t_anchor, [(T_target_k, width_k), ...])."""
+    """omx_msgs/EEActionChunk -> (t_anchor, [(T_target_k, width_k or None), ...]).
+
+    A missing width comes back as None: the executor keeps the gripper where it is.
+    """
     t_anchor = t_from_pose(msg.anchor_pose)
-    widths = list(msg.gripper_width)
+    widths = [float(w) for w in msg.gripper_width]
     if len(widths) < len(msg.deltas):
-        widths += [widths[-1] if widths else 1.0] * (len(msg.deltas) - len(widths))
-    targets = [(t_anchor @ t_from_pose(d), float(w)) for d, w in zip(msg.deltas, widths)]
+        widths += [widths[-1] if widths else None] * (len(msg.deltas) - len(widths))
+    targets = [(t_anchor @ t_from_pose(d), w) for d, w in zip(msg.deltas, widths)]
     return t_anchor, targets

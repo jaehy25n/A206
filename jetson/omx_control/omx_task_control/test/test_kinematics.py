@@ -104,9 +104,13 @@ def test_unreachable_raises(kin):
 
 
 def test_gripper_width_mapping(kin):
+    # widths are metres, the unit of the policy's action[9]
+    w_open = kin.gripper_open_width
     assert kin.width_to_gripper(0.0) == pytest.approx(kin.gripper_closed)
-    assert kin.width_to_gripper(1.0) == pytest.approx(kin.gripper_open)
-    assert kin.gripper_to_width(kin.width_to_gripper(0.37)) == pytest.approx(0.37)
+    assert kin.width_to_gripper(w_open) == pytest.approx(kin.gripper_open)
+    assert kin.width_to_gripper(2 * w_open) == pytest.approx(kin.gripper_open)   # clamped
+    assert kin.gripper_to_width(kin.gripper_open) == pytest.approx(w_open)
+    assert kin.gripper_to_width(kin.width_to_gripper(0.02)) == pytest.approx(0.02)
 
 
 def test_joint_names():

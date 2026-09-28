@@ -50,6 +50,11 @@ JOINT_NAMES = ARM_JOINTS + [GRIPPER_JOINT]
 DEFAULT_LOWER = [-3.1416, -1.868, -1.571, -1.745, -3.1416, 0.0]
 DEFAULT_UPPER = [3.1416, 1.658, 1.675, 1.745, 3.1416, 1.745]
 
+# Jaw width at gripper_open_rad [m].  NOT MEASURED on this arm: 51.63 mm is the
+# fully-open width of the GPU simulator's gripper (gpu_server/omx-umi-sim,
+# scripts/check_gripper.py), used so both sides at least share one scale.
+DEFAULT_GRIPPER_OPEN_WIDTH_M = 0.0516
+
 
 class IKError(Exception):
     """Target is unreachable with the requested approach pitch."""
@@ -75,7 +80,8 @@ class Kinematics:
     """FK / IK / 5-DOF projection for one TCP definition and one set of limits."""
 
     def __init__(self, tcp_offset_x=0.0, lower=None, upper=None,
-                 gripper_open_rad=1.745, gripper_closed_rad=0.0):
+                 gripper_open_rad=1.745, gripper_closed_rad=0.0,
+                 gripper_open_width_m=DEFAULT_GRIPPER_OPEN_WIDTH_M):
         self.tcp_offset_x = float(tcp_offset_x)
         self.l45 = L4 + L5_EE + self.tcp_offset_x   # joint5 rotates about x: collinear
         self.lower = [float(v) for v in (lower if lower is not None else DEFAULT_LOWER)]
@@ -84,6 +90,7 @@ class Kinematics:
             raise ValueError('limits must have 6 entries (5 arm joints + gripper)')
         self.gripper_open = float(gripper_open_rad)
         self.gripper_closed = float(gripper_closed_rad)
+        self.gripper_open_width = float(gripper_open_width_m)
 
     # --- reach -----------------------------------------------------------------
     @property
@@ -216,13 +223,20 @@ class Kinematics:
         return q, info
 
     # --- gripper ---------------------------------------------------------------
-    def width_to_gripper(self, width):
-        """Normalised width 0 (closed) .. 1 (open) -> gripper_joint_1 angle [rad]."""
-        w = min(1.0, max(0.0, float(width)))
-        return self.gripper_closed + (self.gripper_open - self.gripper_closed) * w
+    # Jaw width is in metres, the unit of the policy's action[9] (GPU handoff
+    # contract).  The angle <-> width map is linear between the closed and the
+    # open angle until the real jaw is measured (see DEFAULT_GRIPPER_OPEN_WIDTH_M).
+    def width_to_gripper(self, width_m):
+        """Jaw width [m] -> gripper_joint_1 angle [rad]; clamped to [0, open width]."""
+        if self.gripper_open_width <= 0.0:
+            return self.gripper_closed
+        s = min(1.0, max(0.0, float(width_m) / self.gripper_open_width))
+        return self.gripper_closed + (self.gripper_open - self.gripper_closed) * s
 
     def gripper_to_width(self, angle):
+        """gripper_joint_1 angle [rad] -> jaw width [m]."""
         span = self.gripper_open - self.gripper_closed
         if abs(span) < 1e-9:
             return 0.0
-        return min(1.0, max(0.0, (float(angle) - self.gripper_closed) / span))
+        s = min(1.0, max(0.0, (float(angle) - self.gripper_closed) / span))
+        return s * self.gripper_open_width

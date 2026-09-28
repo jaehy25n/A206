@@ -57,7 +57,7 @@ def generate_launch_description():
 
         # C. policy
         Node(package='omx_policy', executable='dummy_policy_node', name='policy_node',
-             parameters=[{'auto_start': True}], output='screen',
+             parameters=[limits, {'auto_start': True}], output='screen',
              condition=IfCondition(dummy_policy)),
 
         # D. task space -> joint space

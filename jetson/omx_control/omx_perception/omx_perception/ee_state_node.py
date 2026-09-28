@@ -1,4 +1,4 @@
-"""ee_state_node: /joint_states -> /ee_state (T_base_tcp + normalised gripper width).
+"""ee_state_node: /joint_states -> /ee_state (T_base_tcp + gripper jaw width [m]).
 
 Uses the same analytic kinematics as ik_node so the policy's notion of "where
 the TCP is" and the IK's notion agree exactly.  Publishes at most rate_hz.
@@ -11,8 +11,8 @@ from sensor_msgs.msg import JointState
 
 from omx_msgs.msg import EEState
 from omx_task_control import action_format as af
-from omx_task_control.kinematics import (DEFAULT_LOWER, DEFAULT_UPPER, JOINT_NAMES,
-                                         Kinematics)
+from omx_task_control.kinematics import (DEFAULT_GRIPPER_OPEN_WIDTH_M, DEFAULT_LOWER,
+                                         DEFAULT_UPPER, JOINT_NAMES, Kinematics)
 
 
 class EEStateNode(Node):
@@ -25,6 +25,7 @@ class EEStateNode(Node):
         self.declare_parameter('upper_limits_rad', DEFAULT_UPPER)
         self.declare_parameter('gripper_open_rad', 1.745)
         self.declare_parameter('gripper_closed_rad', 0.0)
+        self.declare_parameter('gripper_open_width_m', DEFAULT_GRIPPER_OPEN_WIDTH_M)
         self.declare_parameter('base_frame', 'base_link')
 
         p = self.get_parameter
@@ -33,7 +34,8 @@ class EEStateNode(Node):
             lower=list(p('lower_limits_rad').value),
             upper=list(p('upper_limits_rad').value),
             gripper_open_rad=float(p('gripper_open_rad').value),
-            gripper_closed_rad=float(p('gripper_closed_rad').value))
+            gripper_closed_rad=float(p('gripper_closed_rad').value),
+            gripper_open_width_m=float(p('gripper_open_width_m').value))
         self.min_period = 1.0 / float(p('rate_hz').value)
         self.frame = str(p('base_frame').value)
         self.last_pub = None
