@@ -1,0 +1,20 @@
+# usb_cam parameters for the wrist webcam: LUAZ WC1080, the robot-side camera
+# fixed by camera_matching/ (1920x1080, 16:9).
+#
+# The frame published here is the policy's RAW input.  Crop and resize to the
+# network resolution happen in the policy process, exactly as the GPU side
+# defines them (gpu_server/omx-umi-sim/README_JETSON_HANDOFF.md section 5); the
+# source resolution a checkpoint expects is model_manifest.json
+# rgb_preprocess.source_resolution -- keep image_width/height equal to it.
+# TODO: camera_info_url from the camera_matching LUAZ calibration.
+/wrist_camera/wrist_camera:
+  ros__parameters:
+    video_device: /dev/video0
+    framerate: 30.0
+    image_width: 1920
+    image_height: 1080
+    pixel_format: mjpeg2rgb
+    camera_name: wrist_camera
+    camera_frame_id: wrist_camera_optical_frame
+    io_method: mmap
+    camera_info_url: ""

@@ -1,0 +1,7 @@
+# Replay a recording (mode TELEOP, streamed on /teleop/joint_command)
+string name                # file stem, path, or empty -> newest recording
+float32 speed              # 1.0 = recorded speed; 0 -> 1.0 (clamped to 0.1 .. 2.0)
+float32 approach_duration  # seconds to move from the current pose to the first sample; 0 -> default
+---
+bool success
+string message

@@ -1,0 +1,54 @@
+# OMX-F stack on the Jetson, isolated in containers.
+#
+#   ./omx.sh init      # write .env (UID/GID), create ~/omx_recordings, build the image
+#   ./omx.sh up        # start the idle control container
+#   ./omx.sh build     # colcon build inside the container (artefacts land in ./build ./install)
+#   ./omx.sh shell     # a terminal inside the container (open as many as you need)
+#
+# This file lives at the workspace root (~/omx_ws on the Jetson) next to src/.
+services:
+  control:
+    build:
+      context: ./docker
+      args:
+        UID: "${UID:-1000}"
+        GID: "${GID:-1000}"
+    image: omx/control:humble
+    container_name: omx_control
+    # host networking + host IPC: DDS works with other containers and with LAN peers
+    network_mode: host
+    ipc: host
+    devices:
+      - /dev/ttyACM0:/dev/ttyACM0          # OMX-F (must exist when the container starts)
+      # - /dev/video0:/dev/video0          # wrist webcam
+    group_add:
+      - dialout
+      - video
+    volumes:
+      - .:/ws                              # the whole workspace, built inside the container
+      - ${HOME}/omx_recordings:/home/omx/omx_recordings
+      # RViz on a monitor attached to the Jetson: run `xhost +local:` on the host first
+      # - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    environment:
+      - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+      - ROS_LOCALHOST_ONLY=0
+      # - DISPLAY=${DISPLAY}
+    command: sleep infinity
+    tty: true
+    stdin_open: true
+
+  # Early idea, not validated: the trained policy in a GPU container sharing the
+  # same ROS graph.  The GPU side ran inference on this Jetson in a separate
+  # Python env outside ROS instead (docs/jetson_runbook.md section 10).
+  # Pick the tag matching `cat /etc/nv_tegra_release` (r36.4.x = JetPack 6.1/6.2).
+  # policy:
+  #   image: dustynv/ros:humble-pytorch-l4t-r36.4.0
+  #   container_name: omx_policy
+  #   runtime: nvidia
+  #   network_mode: host
+  #   ipc: host
+  #   volumes:
+  #     - .:/ws
+  #   environment:
+  #     - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+  #   command: bash -lc "source /ws/install/setup.bash && ros2 run omx_policy policy_node"
