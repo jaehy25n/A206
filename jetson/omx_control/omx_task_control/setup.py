@@ -16,7 +16,7 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='J',
+    maintainer='jK',
     maintainer_email='wogus061@gmail.com',
     description='Action chunk executor and analytic 5-DOF IK for the OMX-F arm.',
     license='Apache-2.0',

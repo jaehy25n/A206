@@ -17,7 +17,7 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='J',
+    maintainer='jK',
     maintainer_email='wogus061@gmail.com',
     description='EE state publisher and camera launch for the OMX stack.',
     license='Apache-2.0',

@@ -12,7 +12,7 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='J',
+    maintainer='jK',
     maintainer_email='wogus061@gmail.com',
     description='Mode manager / safety supervisor for the OMX stack.',
     license='Apache-2.0',

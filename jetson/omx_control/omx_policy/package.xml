@@ -4,7 +4,7 @@
   <name>omx_policy</name>
   <version>0.1.0</version>
   <description>Policy node interface for the OMX stack. Ships a scripted dummy policy with the same topics as the trained model will have.</description>
-  <maintainer email="wogus061@gmail.com">J</maintainer>
+  <maintainer email="wogus061@gmail.com">jK</maintainer>
   <license>Apache-2.0</license>
 
   <depend>rclpy</depend>

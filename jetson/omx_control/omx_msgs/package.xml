@@ -4,7 +4,7 @@
   <name>omx_msgs</name>
   <version>0.1.0</version>
   <description>Message definitions shared by the OMX policy-control stack (EE state, action chunks, targets, mode).</description>
-  <maintainer email="wogus061@gmail.com">J</maintainer>
+  <maintainer email="wogus061@gmail.com">jK</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>

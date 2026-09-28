@@ -4,7 +4,7 @@
   <name>omx_driver</name>
   <version>0.1.0</version>
   <description>Minimal Dynamixel driver node for the OMX-F arm: 100 Hz SyncRead/SyncWrite, command timeout hold, joint limit clamping, mock mode.</description>
-  <maintainer email="wogus061@gmail.com">J</maintainer>
+  <maintainer email="wogus061@gmail.com">jK</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>

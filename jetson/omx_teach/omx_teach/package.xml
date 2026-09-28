@@ -4,7 +4,7 @@
   <name>omx_teach</name>
   <version>0.1.0</version>
   <description>Kinesthetic teach and replay for the OMX-F follower: record /joint_states while moving the arm by hand, replay through the omx_control mode_manager (TELEOP).</description>
-  <maintainer email="wogus061@gmail.com">J</maintainer>
+  <maintainer email="wogus061@gmail.com">jK</maintainer>
   <license>Apache-2.0</license>
 
   <depend>rclpy</depend>

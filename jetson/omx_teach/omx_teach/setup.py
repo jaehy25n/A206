@@ -16,7 +16,7 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='J',
+    maintainer='jK',
     maintainer_email='wogus061@gmail.com',
     description='Kinesthetic teach and replay for the OMX-F arm.',
     license='Apache-2.0',

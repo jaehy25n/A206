@@ -4,7 +4,7 @@
   <name>omx_perception</name>
   <version>0.1.0</version>
   <description>Perception side of the OMX stack: end-effector state publisher (T_base_tcp + gripper width) and camera launch.</description>
-  <maintainer email="wogus061@gmail.com">J</maintainer>
+  <maintainer email="wogus061@gmail.com">jK</maintainer>
   <license>Apache-2.0</license>
 
   <depend>rclpy</depend>

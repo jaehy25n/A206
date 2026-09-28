@@ -4,7 +4,7 @@
   <name>omx_description</name>
   <version>0.1.0</version>
   <description>Robot description for the OMX-F follower arm with TCP and wrist camera frames. Link geometry and meshes follow ROBOTIS open_manipulator (Apache-2.0).</description>
-  <maintainer email="wogus061@gmail.com">J</maintainer>
+  <maintainer email="wogus061@gmail.com">jK</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
