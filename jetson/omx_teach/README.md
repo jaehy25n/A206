@@ -15,10 +15,10 @@ omx_teach        teach_node, teach(CLI), recording.py(CSV 포맷), teach.launch.
 
 ## 빌드
 
-`~/omx/omx_ws/src/omx_teach`가 이 저장소를 가리킨다(심볼릭 링크).
+워크스페이스의 `src/omx_teach`가 `jetson/omx_teach`를 가리키게 둔다(심볼릭 링크, [`omx_control` 빌드](../omx_control/README.md#빌드)와 같은 워크스페이스).
 
 ```bash
-cd ~/omx/omx_ws && source /opt/ros/humble/setup.bash
+cd ~/omx_ws && source /opt/ros/humble/setup.bash
 colcon build --symlink-install --packages-select omx_teach_msgs omx_teach
 source install/setup.bash
 ```

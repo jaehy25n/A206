@@ -1,7 +1,7 @@
 # Jetson 실물 실행 런북 — Docker 격리 (OMX-F, 2026-09-23)
 
 대상: Jetson Orin Nano `<jetson-ip>` (ssh, 비밀번호). OMX-F가 USB로 연결됨.
-코드: WSL `~/omx/omx_control`(브랜치 `omx-stack-v1`), `~/omx/omx_teach`, 배포 파일 `~/omx/omx_deploy`.
+코드: 팀 저장소 `S15P21A206`의 `jetson/` — `omx_control`, `omx_teach`, 배포 파일 `omx_deploy`. WSL 명령은 저장소 루트에서 실행한다.
 젯슨 호스트에는 **Docker만** 필요하다. ROS 2 Humble과 모든 의존성은 컨테이너 안에 있고, 워크스페이스는 컨테이너에 마운트되어 그 안에서 빌드된다.
 
 > 실행 위치 (프롬프트로 구분)
@@ -35,16 +35,22 @@ ls -l /dev/ttyACM* /dev/video* 2>/dev/null; lsusb; docker ps
 - OMX-F가 `/dev/ttyACM0`으로 보여야 한다. 안 보이면 케이블·전원 확인, `dmesg | tail`.
 - `docker ps`에 ROBOTIS 컨테이너가 떠 있으면 포트를 점유한다. `docker stop <이름>`.
 
-## 2. 코드 전송 (WSL 터미널에서)
+## 2. 코드 전송 (WSL 터미널, 팀 저장소 루트에서)
 
+DynamixelSDK는 저장소에 없다. 처음 한 번 humble 브랜치를 받아 둔다(이미 있으면 생략).
+
+```bash
+git clone -b humble https://github.com/ROBOTIS-GIT/DynamixelSDK.git ~/omx_thirdparty/DynamixelSDK
+```
 ```bash
 ssh <user>@<jetson-ip> "mkdir -p ~/omx_ws/src"
 ```
 ```bash
-rsync -av ~/omx/omx_deploy/ <user>@<jetson-ip>:~/omx_ws/
+rsync -av jetson/omx_deploy/ <user>@<jetson-ip>:~/omx_ws/
 ```
 ```bash
-rsync -av --exclude __pycache__ ~/omx/omx_control ~/omx/omx_teach ~/omx/omx_ws/src/thirdparty <user>@<jetson-ip>:~/omx_ws/src/
+rsync -av --exclude __pycache__ jetson/omx_control jetson/omx_teach <user>@<jetson-ip>:~/omx_ws/src/
+rsync -av ~/omx_thirdparty/ <user>@<jetson-ip>:~/omx_ws/src/thirdparty/
 ```
 결과 레이아웃(Jetson): `~/omx_ws/{docker-compose.yml, omx.sh, docker/, src/{omx_control, omx_teach, thirdparty}}`.
 rsync가 없으면 `scp -r`로 같은 경로에.
@@ -118,7 +124,7 @@ ros2 topic echo /joint_states --field position
 - 어긋나는 것을 호스트의 `~/omx_ws/src/omx_control/omx_driver/config/omx_f_driver.yaml`에 반영한다(컨테이너에 바로 보인다, 재빌드 불필요, 런치만 재시작).
   - 부호 반대: `direction`의 해당 항목을 `-1`.
   - 영점 오차 e[rad]: `zero_ticks`의 해당 항목에 `e × 652`(= 4096/2π) 만큼 더하거나 뺀다. 수정 후 다시 확인해 0이 되는지 본다.
-  - 그리퍼 완전 개방값이 1.745와 다르면 `omx_bringup/config/joint_limits.yaml`의 `gripper_open_rad` 수정.
+  - 그리퍼 완전 개방값이 1.745와 다르면 `omx_bringup/config/joint_limits.yaml`의 `gripper_open_rad`를 고친다. 그 자세에서 턱 사이를 자로 재 `gripper_open_width_m`[m]에 넣는다(지금 값 0.0516은 GPU 시뮬레이터 값이라 실측으로 바꿔야 정책의 그리퍼 폭과 맞는다).
 - 각 관절을 기계적 끝까지 살짝 밀어 값을 기록하고, 여유를 두고 `joint_limits.yaml`의 `lower/upper_limits_rad`를 갱신한다(URDF와 같은 값으로).
 
 ```bash
@@ -236,9 +242,9 @@ ros2 run omx_driver fit_sag.py --duration 90 --csv /home/omx/omx_recordings/sag_
 
 **0. 코드 반영**
 - 젯슨의 드라이버 yaml을 직접 고친 게 있으면(zero_ticks, direction, 리밋) 먼저 백업: 젯슨 호스트에서 `cp ~/omx_ws/src/omx_control/omx_driver/config/omx_f_driver.yaml ~/omx_f_driver.backup.yaml`. rsync가 덮어쓴다.
-- WSL:
+- WSL(저장소 루트):
 ```bash
-rsync -av ~/omx/omx_deploy/ <user>@<jetson-ip>:~/omx_ws/ && rsync -av --exclude __pycache__ ~/omx/omx_control <user>@<jetson-ip>:~/omx_ws/src/
+rsync -av jetson/omx_deploy/ <user>@<jetson-ip>:~/omx_ws/ && rsync -av --exclude __pycache__ jetson/omx_control <user>@<jetson-ip>:~/omx_ws/src/
 ```
 - 젯슨 호스트(메시지가 바뀌어 전체 빌드, 2~4분):
 ```bash
@@ -423,6 +429,14 @@ sudo apt clean; sudo journalctl --vacuum-size=200M; rm -rf ~/.cache/pip
 ```
 - ROBOTIS 이미지가 필요 없으면 `docker images`에서 확인 후 `docker rmi <이미지>`.
 
-## 10. 나중: policy GPU 컨테이너
+## 10. 나중: 학습된 정책 연결
 
-`docker-compose.yml`의 `policy` 서비스 주석을 풀고 `dustynv/ros:humble-pytorch-l4t-<r36.x>` 태그를 `cat /etc/nv_tegra_release`에 맞춘다. `runtime: nvidia`, 같은 `/ws` 마운트, `network_mode: host`라 control 컨테이너와 같은 ROS 그래프를 공유한다.
+정책 추론은 ROS 컨테이너 밖, 별도 파이썬 환경에서 돌린다. GPU 쪽이 이 젯슨에서 checkpoint load, `predict_action()`, 지연 측정까지 확인한 방식이다([`README_JETSON_SETUP.md`](../../gpu_server/omx-umi-sim/README_JETSON_SETUP.md) 2절: ROS 컨테이너에 torch를 넣지 않고 JetPack 대응 PyTorch를 쓴다).
+
+- 규약: [`README_JETSON_HANDOFF.md`](../../gpu_server/omx-umi-sim/README_JETSON_HANDOFF.md) — `[16, 10]` 액션, 0.1 s 간격, `action[0]` = t0 자세, 그리퍼 폭 [m]. `omx_task_control/action_format.py`가 같은 해석을 구현하고 `test_action_contract.py`가 검사한다.
+- 전달 번들을 받으면 해석이 GPU와 같은지 먼저 확인한다(`decoder_reference.npz` 비교).
+  ```bash
+  OMX_HANDOFF_DIR=~/omx_policy/jetson_handoff PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q omx_task_control/test
+  ```
+- 연결(구현 전): 정책 프로세스와 ROS 쪽 `policy_node`를 로컬 소켓으로 잇는다. GPU 시뮬레이터의 `sim_umi/ros/policy_server.py`와 같은 구조다. `policy_node`는 `/wrist_camera/image_raw`와 `/ee_state`를 관측으로 넘기고, 받은 `[16, 10]`을 `EEActionChunk`(stamp = 마지막 관측 시각 t0)로 낸다. 영상 전처리(가운데 자르기, 224 축소)는 정책 프로세스에서 GPU 정의대로 한다.
+- `docker-compose.yml`의 `policy` 서비스 주석(`dustynv/ros:humble-pytorch-l4t`)은 초기 안이다. 위 방식으로 바꿀 예정이고 검증하지 않았다.

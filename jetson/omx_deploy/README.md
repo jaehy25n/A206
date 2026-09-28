@@ -25,12 +25,15 @@ docker --version && docker compose version
 - sudo 없이 쓰려면 `sudo usermod -aG docker $USER` 후 재접속.
 - ROBOTIS 컨테이너가 자동 실행 중이면 포트를 점유한다: `docker ps`로 확인 후 `docker stop`.
 
-## 전송 (WSL에서)
+## 전송 (WSL, 팀 저장소 루트에서)
+
+DynamixelSDK(humble 브랜치)는 저장소에 없어서 따로 받아 둔다. 절차는 [런북](../docs/jetson_runbook.md) 2절.
 
 ```bash
 ssh <user>@<jetson-ip> "mkdir -p ~/omx_ws/src"
-rsync -av ~/omx/omx_deploy/ <user>@<jetson-ip>:~/omx_ws/
-rsync -av --exclude __pycache__ ~/omx/omx_control ~/omx/omx_teach ~/omx/omx_ws/src/thirdparty <user>@<jetson-ip>:~/omx_ws/src/
+rsync -av jetson/omx_deploy/ <user>@<jetson-ip>:~/omx_ws/
+rsync -av --exclude __pycache__ jetson/omx_control jetson/omx_teach <user>@<jetson-ip>:~/omx_ws/src/
+rsync -av ~/omx_thirdparty/ <user>@<jetson-ip>:~/omx_ws/src/thirdparty/
 ```
 
 ## 빌드·실행 (Jetson)
@@ -60,4 +63,4 @@ ros2 launch omx_teach teach.launch.py
 - **소스 수정**: 호스트의 `~/omx_ws/src`를 고치면 컨테이너에 바로 보인다. Python·launch·yaml은 재빌드 없이, C++는 `./omx.sh build omx_driver`.
 - **기록 파일**: `~/omx_recordings`(호스트) = `/home/omx/omx_recordings`(컨테이너).
 - **노트북에서 토픽 보기**: `network_mode: host`라 호스트와 같은 조건. [런북](../docs/jetson_runbook.md) 9절.
-- **GPU policy 컨테이너**: `docker-compose.yml`의 `policy` 서비스 주석을 풀고 `dustynv/ros:humble-pytorch-l4t-<r36.x>` 태그를 JetPack 버전에 맞춘다. `runtime: nvidia`. 같은 `/ws`를 마운트하므로 `omx_msgs`를 그대로 import한다.
+- **학습된 정책**: 추론은 ROS 컨테이너 밖 별도 파이썬 환경에서 돌린다(GPU 쪽이 젯슨에서 검증한 방식). 절차는 [런북](../docs/jetson_runbook.md) 10절. `docker-compose.yml`의 `policy` 서비스 주석은 초기 안이며 검증하지 않았다.

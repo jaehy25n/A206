@@ -260,6 +260,10 @@ omx_bringup       robot.launch.py, mock.launch.py, discovery_server 설정
 - v1 구조를 ROS 2 Humble 패키지로 구현. 기존 `dummy_exec` 프로토타입의 규약([H,10] 액션, 6D 회전, 절대 그리퍼 폭, 해석적 IK, 5-DOF 투영)을 그대로 승격.
 - 자세한 내용은 9절.
 
+### 2026-09-28 5차 — 팀 저장소 통합
+- 세 저장소(`omx_control`, `omx_teach`, `omx_deploy`)를 팀 저장소 `S15P21A206`의 `jetson/`으로 옮김.
+- GPU 전달 규약과 어긋나던 액션 해석(회전 6D, 시간 기준, 그리퍼 단위)과 카메라 해상도를 맞춤. ROS 배포판은 Humble 유지. 자세한 내용은 12절.
+
 ---
 
 ## 9. 구현 상태 (2026-09-23)
@@ -327,8 +331,37 @@ omx_bringup       robot.launch.py, mock.launch.py, discovery_server 설정
 - 배포 파일: WSL `~/omx/omx_deploy` → 젯슨 `~/omx_ws/` (`docker-compose.yml`, `omx.sh`, `docker/Dockerfile`). 두 코드 저장소는 건드리지 않음.
 - 구성: `ros:humble-ros-base`(멀티아치) + colcon, numpy, robot_state_publisher, usb_cam. 컨테이너 사용자 = 호스트 UID/GID. 워크스페이스 `~/omx_ws`를 `/ws`로 바인드 마운트해 컨테이너 안에서 빌드. `network_mode: host`, `ipc: host`, `/dev/ttyACM0` 장치 전달, `dialout` 그룹.
 - DynamixelSDK는 `src/thirdparty` 소스 빌드(apt 패키지 가용성 변수 제거).
-- policy는 나중에 `dustynv/ros:humble-pytorch-l4t-r36.x` GPU 컨테이너를 같은 호스트 네트워크에 추가(compose에 주석으로 준비).
+- policy는 나중에 `dustynv/ros:humble-pytorch-l4t-r36.x` GPU 컨테이너를 같은 호스트 네트워크에 추가(compose에 주석으로 준비). → 12절에서 별도 파이썬 환경으로 바꿈.
 - 절차: [`docs/jetson_runbook.md`](../jetson_runbook.md) (Docker 기준으로 개정).
+
+## 12. 팀 저장소 통합과 GPU 전달 규약 (2026-09-28)
+
+팀 저장소에서 이 스택은 **Tiger 앱 → CPU 서버 → GPU 서버 → Jetson** 흐름의 마지막 단계다. 정책의 출력 의미는 GPU 쪽이 [`README_JETSON_HANDOFF.md`](../../../gpu_server/omx-umi-sim/README_JETSON_HANDOFF.md)로 확정하고, Jetson은 그 해석과 동기화, 재계획, 안전, 5DoF 투영과 IK를 맡는다(같은 문서 2절).
+
+### 맞춘 것
+
+| 항목 | 이전 (9/23) | 지금 (GPU 규약) |
+|---|---|---|
+| 회전 6D | 첫 두 **열** | 첫 두 **행**, row-major |
+| 시간 기준 | step k = 수신 시각 + (k+1)·dt | step k = 관측 시각 t0 + k·dt, `action[0]` = t0 자세, 지난 앞부분은 버림 |
+| 간격·길이 | dt 0.04 s, 0.25 s마다 재계획 | dt 0.1 s, H 16, 7스텝(0.7 s)마다 재계획 |
+| 그리퍼 | 0~1 정규화 | 절대 폭 [m] |
+| 카메라 | 640×480 임시값 | LUAZ WC1080 1920×1080 (`camera_matching/`) |
+| 정책 실행 위치 | policy GPU 컨테이너(ROS + torch) | ROS 밖 별도 파이썬 환경. GPU 쪽이 젯슨에서 검증한 방식 |
+
+- 재계획이 0.7 s로 길어지면서 더미 정책의 heartbeat를 10 Hz 별도 타이머로 분리했다(10절의 미수정 항목 해결).
+- 해석은 `omx_task_control/action_format.py` 한 곳에 두고, 규약 확인 항목을 `test_action_contract.py`로 검사한다. 전달 번들의 `decoder_reference.npz`가 있으면 GPU 결과와 직접 비교한다.
+
+### Humble 유지
+
+GPU 시뮬레이터는 Jazzy지만 Jetson은 Humble로 둔다. GPU → Jetson 경계는 ROS 메시지가 아니라 파일(체크포인트, manifest)과 숫자 규약이고, 시뮬레이터는 GPU 서버에서만 돈다. 정책도 ROS와 분리된 파이썬 환경에서 도므로 배포판이 경계를 넘지 않는다. GPU 쪽이 젯슨에서 추론을 확인한 환경(Python 3.10, Ubuntu 22.04)도 Humble과 같은 기반이다.
+
+### 아직 합의·실측이 필요한 것
+
+- **TCP 정의**: GPU 시뮬레이터의 `tcp`(`sim_umi/mjcf/collector_scene.xml`, link5 기준 0.09193 m)와 이 스택의 `end_effector_link`(`tcp_offset_x` = 0)는 같은 점이다. 남은 것은 실데이터 쪽이다. 폰 카메라 → EE 변환 `T_camera_EE`가 아직 identity placeholder(`cpu_server` 설정)라서, 실데이터로 학습한 모델의 EE가 이 점과 같다는 보장이 아직 없다.
+- **그리퍼 폭**: 각도↔폭 환산의 개방 폭 0.0516 m는 GPU 시뮬레이터 값이다. 실제 턱을 재서 바꾼다.
+- **카메라 장착**: 손목 카메라의 위치·자세(`wrist_camera_joint`)와 마운트 무게(`payload_mass_kg`). Jira S15P21A206-47의 진동 감쇠 현수 장치가 장착 조건을 바꾼다.
+- **정책 연결 노드**: 정책 프로세스와 ROS를 잇는 `policy_node`는 아직 없다(런북 10절).
 
 ## 참고 링크
 - open_manipulator GitHub: https://github.com/ROBOTIS-GIT/open_manipulator

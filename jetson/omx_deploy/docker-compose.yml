@@ -37,7 +37,9 @@ services:
     tty: true
     stdin_open: true
 
-  # Later: the trained policy in a GPU container sharing the same ROS graph.
+  # Early idea, not validated: the trained policy in a GPU container sharing the
+  # same ROS graph.  The GPU side ran inference on this Jetson in a separate
+  # Python env outside ROS instead (docs/jetson_runbook.md section 10).
   # Pick the tag matching `cat /etc/nv_tegra_release` (r36.4.x = JetPack 6.1/6.2).
   # policy:
   #   image: dustynv/ros:humble-pytorch-l4t-r36.4.0
