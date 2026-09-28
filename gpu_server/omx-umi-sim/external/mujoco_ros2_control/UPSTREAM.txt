@@ -1,0 +1,7 @@
+upstream: https://github.com/ros-controls/mujoco_ros2_control
+upstream commit: 58f465b1b4634a6f366e71919189574f5d95c1e8 Add FTS Gravity Compensation Plugin (#308)
+patch 01 = git diff of that checkout (camera plugin: sim_state trigger, capture-time kinematics, joint snapshot)
+patch 02 = the free-joint snapshot extension (built separately into ~/omx_overlay_masks)
+
+58f465b1b4634a6f366e71919189574f5d95c1e8 2026-09-15
+source: https://github.com/ros-controls/mujoco_ros2_control (overlay build; the conda ros2-mujoco-ros2-control 0.0.3 install is untouched and is the rollback)

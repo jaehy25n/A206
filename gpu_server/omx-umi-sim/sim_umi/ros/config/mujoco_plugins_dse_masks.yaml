@@ -1,0 +1,38 @@
+# DSE + ORACLE-MASK variant: identical to mujoco_plugins_dse.yaml except that the joint
+# snapshot also carries every free joint (object, bin) of the SAME snapshot
+# (joint_snapshot_free_joints, overlay_patches/camera_snapshot_free_joints.patch, built into
+# ~/omx_overlay_masks). Selected with OMX_MUJOCO_PLUGINS=<this file> + env_overlay_masks.sh.
+# Original header: DSE variant of mujoco_plugins.yaml: identical except the camera trigger and the joint
+# snapshot. Selected with OMX_MUJOCO_PLUGINS=<this file> when launching mujoco_bringup.
+# Plugins loaded into the MuJoCo plant itself.
+#
+# The camera is the point of the overlay build: it renders from the SAME
+# mjModel/mjData the controllers act on, so the ball, the contacts and
+# everything else that moves appear in the image with no second simulation to
+# keep in step. Before this, the observation was rendered from a mirror posed
+# by /joint_states, and the ball in it never moved.
+/**:
+  ros__parameters:
+    mujoco_plugins:
+      mujoco_camera_plugin:
+        type: "mujoco_ros2_control_plugins/CameraPlugin"
+        camera_publish_rate: 20.0
+        # DSE: capture on the physics thread every 25 physics steps from the last world
+        # reset (patched plugin, overlay_patches/camera_sim_state_trigger.patch), and publish
+        # the joint state of the SAME snapshot with the SAME stamp
+        trigger: "sim_state"
+        joint_snapshot_topic: "/wrist_camera/joint_snapshot"
+        joint_snapshot_free_joints: true
+        # the key is the MJCF camera's name
+        wrist:
+          policy: streaming
+          frame_name: wrist_camera_frame
+          info_topic: /wrist_camera/camera_info
+          image_topic: /wrist_camera/image_raw
+          depth_topic: /wrist_camera/depth
+      # The ball is a free body, so its pose is not in /joint_states. Published
+      # for VERIFICATION only -- the policy never reads it.
+      free_joint_state_publisher:
+        type: "mujoco_ros2_control_plugins/FreeJointStatePublisherPlugin"
+        frame_id: ""
+        publish_rate: 20.0

@@ -1,0 +1,6 @@
+< exp_name: amp_clean_definitive
+> exp_name: amp_v2_definitive
+< max_opt_steps: 5986
+> max_opt_steps: 11400
+< dataset_path: /home/j-j15a206/universal_manipulation_interface/sim_umi/data/omx_sim_train.zarr.zip
+> dataset_path: /home/j-j15a206/universal_manipulation_interface/sim_umi/data/omx_sim_train_v2.zarr.zip

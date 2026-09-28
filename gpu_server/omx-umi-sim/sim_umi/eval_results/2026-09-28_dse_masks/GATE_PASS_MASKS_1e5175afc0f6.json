@@ -1,0 +1,67 @@
+{
+ "code_hash": "1e5175afc0f6",
+ "code_files": [
+  "sim_umi/ros/dse_rollout.py",
+  "sim_umi/ros/policy_bridge.py",
+  "sim_umi/ros/rolling_executor.py",
+  "sim_umi/ros/policy_rollout.py",
+  "sim_umi/ros/policy_server.py",
+  "sim_umi/src/rgb_geometry.py",
+  "sim_umi/ros/dse_rollout_masks.py",
+  "sim_umi/src/oracle_render.py",
+  "sim_umi/src/oracle_masks.py",
+  "sim_umi/src/oracle_state.py",
+  "sim_umi/ros/env_overlay_masks.sh",
+  "sim_umi/ros/config/mujoco_plugins_dse_masks.yaml",
+  "sim_umi/ros/overlay_patches/camera_snapshot_free_joints.patch"
+ ],
+ "git_at_mark": "e5a10d4",
+ "files": [
+  "sim_umi/eval_results/2026-09-28_dse_masks/m1_regate_g0/nominal_G0.json",
+  "sim_umi/eval_results/2026-09-28_dse_masks/m1_regate_b/nominal_B.json"
+ ],
+ "gates": {
+  "nominal_G0.json:ep0:dse": {
+   "timeline_invariants": true,
+   "arm_continuity": true,
+   "jaw_continuity": true,
+   "exact_observation_ticks": true,
+   "jtc_takeover_step": true,
+   "no_anomalies": true,
+   "all": true
+  },
+  "nominal_G0.json:masks": {
+   "frames": 86,
+   "not_exact": 0,
+   "stamp_mismatch": 0,
+   "invalid": 0,
+   "finger_px_off_box": 0,
+   "no_gripper_or_tip": 0,
+   "mirror_mad_median": 0.0,
+   "mirror_mad_max": 0.0011,
+   "render_wall_s_median": 0.0092,
+   "ok": true
+  },
+  "nominal_B.json:ep0:dse": {
+   "timeline_invariants": true,
+   "arm_continuity": true,
+   "jaw_continuity": true,
+   "exact_observation_ticks": true,
+   "jtc_takeover_step": true,
+   "no_anomalies": true,
+   "all": true
+  },
+  "nominal_B.json:masks": {
+   "frames": 62,
+   "not_exact": 0,
+   "stamp_mismatch": 0,
+   "invalid": 0,
+   "finger_px_off_box": 0,
+   "no_gripper_or_tip": 0,
+   "mirror_mad_median": 0.0,
+   "mirror_mad_max": 0.0007,
+   "render_wall_s_median": 0.009,
+   "ok": true
+  }
+ }
+}

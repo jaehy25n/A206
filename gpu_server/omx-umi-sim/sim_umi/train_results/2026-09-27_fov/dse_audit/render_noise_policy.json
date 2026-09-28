@@ -1,0 +1,122 @@
+[
+ {
+  "pair_ticks": [
+   0,
+   50
+  ],
+  "rgb_input_changed_values": 1,
+  "rgb_input_max_abs": 0.003921568393707275,
+  "raw_action_max_abs_diff": 1.0442454367876053e-07,
+  "decoded_position_max_diff_mm": 2.1e-05,
+  "decoded_rotation_max_diff_deg": 8e-06,
+  "decoded_gripper_max_diff_mm": 0.0,
+  "ik_reachability_same_all_16": true,
+  "jaw_diff_vs_3mm_threshold": 0.0,
+  "camera_width_mm_rep0_rep1": [
+   [
+    52.01,
+    52.01
+   ],
+   [
+    52.01,
+    52.01
+   ]
+  ]
+ },
+ {
+  "pair_ticks": [
+   25,
+   75
+  ],
+  "rgb_input_changed_values": 0,
+  "rgb_input_max_abs": 0.0,
+  "raw_action_max_abs_diff": 0.0,
+  "decoded_position_max_diff_mm": 0.0,
+  "decoded_rotation_max_diff_deg": 4e-06,
+  "decoded_gripper_max_diff_mm": 0.0,
+  "ik_reachability_same_all_16": true,
+  "jaw_diff_vs_3mm_threshold": 0.0,
+  "camera_width_mm_rep0_rep1": [
+   [
+    52.01,
+    52.01
+   ],
+   [
+    52.01,
+    52.01
+   ]
+  ]
+ },
+ {
+  "pair_ticks": [
+   100,
+   150
+  ],
+  "rgb_input_changed_values": 15,
+  "rgb_input_max_abs": 0.00784313678741455,
+  "raw_action_max_abs_diff": 1.1920928955078125e-07,
+  "decoded_position_max_diff_mm": 7.4e-05,
+  "decoded_rotation_max_diff_deg": 8e-06,
+  "decoded_gripper_max_diff_mm": 7e-06,
+  "ik_reachability_same_all_16": true,
+  "jaw_diff_vs_3mm_threshold": 2e-06,
+  "camera_width_mm_rep0_rep1": [
+   [
+    52.01,
+    52.01
+   ],
+   [
+    52.01,
+    52.01
+   ]
+  ]
+ },
+ {
+  "pair_ticks": [
+   125,
+   175
+  ],
+  "rgb_input_changed_values": 0,
+  "rgb_input_max_abs": 0.0,
+  "raw_action_max_abs_diff": 0.0,
+  "decoded_position_max_diff_mm": 0.0,
+  "decoded_rotation_max_diff_deg": 4e-06,
+  "decoded_gripper_max_diff_mm": 0.0,
+  "ik_reachability_same_all_16": true,
+  "jaw_diff_vs_3mm_threshold": 0.0,
+  "camera_width_mm_rep0_rep1": [
+   [
+    52.01,
+    52.01
+   ],
+   [
+    52.01,
+    52.01
+   ]
+  ]
+ },
+ {
+  "pair_ticks": [
+   250,
+   300
+  ],
+  "rgb_input_changed_values": 0,
+  "rgb_input_max_abs": 0.0,
+  "raw_action_max_abs_diff": 0.0,
+  "decoded_position_max_diff_mm": 0.0,
+  "decoded_rotation_max_diff_deg": 4e-06,
+  "decoded_gripper_max_diff_mm": 0.0,
+  "ik_reachability_same_all_16": true,
+  "jaw_diff_vs_3mm_threshold": 0.0,
+  "camera_width_mm_rep0_rep1": [
+   [
+    52.01,
+    52.01
+   ],
+   [
+    52.01,
+    52.01
+   ]
+  ]
+ }
+]

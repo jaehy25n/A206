@@ -1,0 +1,365 @@
+{
+ "g0_frozen": {
+  "frames": 100,
+  "max_abs_uint8_vs_center_crop_resize": 0,
+  "max_abs_float_vs_preprocess_rgb": 0.0,
+  "pass": true
+ },
+ "synthetic": {
+  "g1_letterbox224": {
+   "canvas_HxW": [
+    224,
+    224
+   ],
+   "content_box_x0y0x1y1": [
+    0,
+    49,
+    224,
+    175
+   ],
+   "content_HxW": [
+    126,
+    224
+   ],
+   "circle_box_px_WxH": [
+    55,
+    55
+   ],
+   "circle_expected_px": 56.0,
+   "circle_aspect_h_over_w": 1.0,
+   "corners_right_colour_and_place (no flip, no swap)": true,
+   "R rises with x (corr)": 1.0,
+   "G rises with y (corr)": 1.0,
+   "padding_is_128": true,
+   "frame_edges_reach_content_edges (no crop)": true
+  },
+  "g2_rect288x176": {
+   "canvas_HxW": [
+    176,
+    288
+   ],
+   "content_box_x0y0x1y1": [
+    0,
+    7,
+    288,
+    169
+   ],
+   "content_HxW": [
+    162,
+    288
+   ],
+   "circle_box_px_WxH": [
+    72,
+    72
+   ],
+   "circle_expected_px": 72.0,
+   "circle_aspect_h_over_w": 1.0,
+   "corners_right_colour_and_place (no flip, no swap)": true,
+   "R rises with x (corr)": 1.0,
+   "G rises with y (corr)": 1.0,
+   "padding_is_128": true,
+   "frame_edges_reach_content_edges (no crop)": true
+  }
+ },
+ "montage_frames": [
+  {
+   "kind": "ball_centre",
+   "src": "train/episode_0000#4",
+   "raw_ball_WxH": [
+    27,
+    28
+   ],
+   "g0_ball_WxH": [
+    33,
+    34
+   ],
+   "g1_ball_WxH": [
+    18,
+    19
+   ],
+   "g2_ball_WxH": [
+    24,
+    25
+   ]
+  },
+  {
+   "kind": "ball_centre",
+   "src": "train/episode_0000#6",
+   "raw_ball_WxH": [
+    27,
+    27
+   ],
+   "g0_ball_WxH": [
+    33,
+    34
+   ],
+   "g1_ball_WxH": [
+    18,
+    19
+   ],
+   "g2_ball_WxH": [
+    24,
+    25
+   ]
+  },
+  {
+   "kind": "ball_centre",
+   "src": "train/episode_0000#8",
+   "raw_ball_WxH": [
+    27,
+    27
+   ],
+   "g0_ball_WxH": [
+    33,
+    34
+   ],
+   "g1_ball_WxH": [
+    18,
+    19
+   ],
+   "g2_ball_WxH": [
+    24,
+    25
+   ]
+  },
+  {
+   "kind": "ball_centre",
+   "src": "train/episode_0000#10",
+   "raw_ball_WxH": [
+    27,
+    27
+   ],
+   "g0_ball_WxH": [
+    33,
+    34
+   ],
+   "g1_ball_WxH": [
+    18,
+    19
+   ],
+   "g2_ball_WxH": [
+    24,
+    25
+   ]
+  },
+  {
+   "kind": "ball_right_edge",
+   "src": "train/episode_0001#28",
+   "raw_ball_WxH": [
+    28,
+    28
+   ],
+   "g0_ball_WxH": null,
+   "g1_ball_WxH": [
+    20,
+    19
+   ],
+   "g2_ball_WxH": [
+    25,
+    25
+   ]
+  },
+  {
+   "kind": "ball_right_edge",
+   "src": "train/episode_0001#30",
+   "raw_ball_WxH": [
+    28,
+    29
+   ],
+   "g0_ball_WxH": null,
+   "g1_ball_WxH": [
+    20,
+    19
+   ],
+   "g2_ball_WxH": [
+    25,
+    25
+   ]
+  },
+  {
+   "kind": "ball_right_edge",
+   "src": "train/episode_0001#32",
+   "raw_ball_WxH": [
+    29,
+    28
+   ],
+   "g0_ball_WxH": null,
+   "g1_ball_WxH": [
+    19,
+    20
+   ],
+   "g2_ball_WxH": [
+    25,
+    25
+   ]
+  },
+  {
+   "kind": "ball_right_edge",
+   "src": "train/episode_0001#34",
+   "raw_ball_WxH": [
+    29,
+    28
+   ],
+   "g0_ball_WxH": null,
+   "g1_ball_WxH": [
+    20,
+    19
+   ],
+   "g2_ball_WxH": [
+    25,
+    25
+   ]
+  },
+  {
+   "kind": "gripper_and_ball",
+   "src": "train/episode_0000#34",
+   "raw_ball_WxH": [
+    29,
+    30
+   ],
+   "g0_ball_WxH": [
+    36,
+    37
+   ],
+   "g1_ball_WxH": [
+    20,
+    20
+   ],
+   "g2_ball_WxH": [
+    27,
+    27
+   ]
+  },
+  {
+   "kind": "gripper_and_ball",
+   "src": "train/episode_0000#36",
+   "raw_ball_WxH": [
+    31,
+    31
+   ],
+   "g0_ball_WxH": [
+    38,
+    38
+   ],
+   "g1_ball_WxH": [
+    21,
+    20
+   ],
+   "g2_ball_WxH": [
+    27,
+    27
+   ]
+  },
+  {
+   "kind": "gripper_and_ball",
+   "src": "train/episode_0000#38",
+   "raw_ball_WxH": [
+    31,
+    32
+   ],
+   "g0_ball_WxH": [
+    38,
+    39
+   ],
+   "g1_ball_WxH": [
+    21,
+    22
+   ],
+   "g2_ball_WxH": [
+    27,
+    28
+   ]
+  },
+  {
+   "kind": "gripper_and_ball",
+   "src": "train/episode_0000#40",
+   "raw_ball_WxH": [
+    31,
+    32
+   ],
+   "g0_ball_WxH": [
+    38,
+    39
+   ],
+   "g1_ball_WxH": [
+    22,
+    22
+   ],
+   "g2_ball_WxH": [
+    29,
+    28
+   ]
+  },
+  {
+   "kind": "last_before_grasp",
+   "src": "train/episode_0000#86",
+   "raw_ball_WxH": null,
+   "g0_ball_WxH": null,
+   "g1_ball_WxH": null,
+   "g2_ball_WxH": null
+  },
+  {
+   "kind": "last_before_grasp",
+   "src": "train/episode_0001#127",
+   "raw_ball_WxH": null,
+   "g0_ball_WxH": null,
+   "g1_ball_WxH": null,
+   "g2_ball_WxH": null
+  },
+  {
+   "kind": "last_before_grasp",
+   "src": "train/episode_0002#85",
+   "raw_ball_WxH": null,
+   "g0_ball_WxH": null,
+   "g1_ball_WxH": null,
+   "g2_ball_WxH": null
+  },
+  {
+   "kind": "last_before_grasp",
+   "src": "train/episode_0003#86",
+   "raw_ball_WxH": null,
+   "g0_ball_WxH": null,
+   "g1_ball_WxH": null,
+   "g2_ball_WxH": null
+  },
+  {
+   "kind": "lift",
+   "src": "train/episode_0000#130",
+   "raw_ball_WxH": null,
+   "g0_ball_WxH": null,
+   "g1_ball_WxH": null,
+   "g2_ball_WxH": null
+  },
+  {
+   "kind": "lift",
+   "src": "train/episode_0001#171",
+   "raw_ball_WxH": null,
+   "g0_ball_WxH": null,
+   "g1_ball_WxH": null,
+   "g2_ball_WxH": null
+  },
+  {
+   "kind": "lift",
+   "src": "train/episode_0002#129",
+   "raw_ball_WxH": null,
+   "g0_ball_WxH": null,
+   "g1_ball_WxH": null,
+   "g2_ball_WxH": null
+  }
+ ],
+ "ball_aspect_h_over_w": {
+  "g1": [
+   0.95,
+   1.056
+  ],
+  "g2": [
+   0.966,
+   1.042
+  ],
+  "frames_measured": [
+   12,
+   12
+  ],
+  "total_frames": 19
+ }
+}

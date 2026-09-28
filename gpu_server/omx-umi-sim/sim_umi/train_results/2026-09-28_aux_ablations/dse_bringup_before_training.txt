@@ -1,0 +1,19 @@
+# DSE bringup captured before training, 2026-09-28T00:44:58+09:00
+== pid 1070369
+/home/j-j15a206/.conda/envs/omx_ros/bin/python /home/j-j15a206/.conda/envs/omx_ros/bin/ros2 launch sim_umi/ros/launch/mujoco_bringup.launch.py 
+cwd /home/j-j15a206/universal_manipulation_interface
+OMX_MUJOCO_PLUGINS=/home/j-j15a206/universal_manipulation_interface/sim_umi/ros/config/mujoco_plugins_dse.yaml
+CUDA_VISIBLE_DEVICES=5
+MUJOCO_GL=egl
+ROS_DOMAIN_ID=77
+AMENT_PREFIX_PATH=/home/j-j15a206/omx_overlay/install/mujoco_ros2_control:/home/j-j15a206/omx_overlay/install/mujoco_ros2_control_plugins:/home/j-j15a206/omx_overlay/install/mujoco_ros2_control_msgs:/home/j-j15a206/omx_overlay/install/mujoco_3d_lidar:/home/j-j15a206/.conda/envs/omx_ros
+MUJOCO_EGL_DEVICE_ID=5
+== pid 1070373
+/home/j-j15a206/omx_overlay/install/mujoco_ros2_control/lib/mujoco_ros2_control/ros2_control_node --ros-args --params-file /tmp/launch_params_x9hicq5n --params-file /home/j-j15a206/universal_manipulation_interface/sim_umi/ros/config/controllers.yaml --params-file /home/j-j15a206/universal_manipulation_interface/sim_umi/ros/config/mujoco_plugins_dse.yaml --params-file /tmp/launch_params_lb5fdi2x 
+cwd /home/j-j15a206/universal_manipulation_interface
+OMX_MUJOCO_PLUGINS=/home/j-j15a206/universal_manipulation_interface/sim_umi/ros/config/mujoco_plugins_dse.yaml
+CUDA_VISIBLE_DEVICES=5
+MUJOCO_GL=egl
+ROS_DOMAIN_ID=77
+AMENT_PREFIX_PATH=/home/j-j15a206/omx_overlay/install/mujoco_ros2_control:/home/j-j15a206/omx_overlay/install/mujoco_ros2_control_plugins:/home/j-j15a206/omx_overlay/install/mujoco_ros2_control_msgs:/home/j-j15a206/omx_overlay/install/mujoco_3d_lidar:/home/j-j15a206/.conda/envs/omx_ros
+MUJOCO_EGL_DEVICE_ID=5

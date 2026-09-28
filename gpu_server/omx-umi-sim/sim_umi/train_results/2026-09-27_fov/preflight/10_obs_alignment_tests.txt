@@ -1,0 +1,13 @@
+PASS  exact stamp -> that message  
+PASS  between two -> linear interpolation at the stamp  10.177250 vs 10.177250
+PASS  outside the buffer -> nearest, flagged with its skew  skew -0.0522 s
+PASS  history frame picked by stamp t-0.1 exactly  stamp 21.85
+PASS  current frame picked by stamp t  
+PASS  pair dt = 0.100 s  
+PASS  states aligned to each image stamp (exact or interp)  exact, exact
+PASS  a dropped frame is not silently replaced: nearest used AND flagged  asked 21.5, used 21.45
+PASS  G0 input from observe_at == preprocess_rgb of the masked frame  
+PASS  recorder: exact stamp  
+PASS  recorder: interpolation at the stamp, bracket a few ms  bracket 2.2 ms
+PASS  recorder: beyond the buffer -> nearest, flagged  
+ALL PASS

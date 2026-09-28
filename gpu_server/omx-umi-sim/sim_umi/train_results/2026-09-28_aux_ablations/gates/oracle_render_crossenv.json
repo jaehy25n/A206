@@ -1,0 +1,21 @@
+{
+ "verdict": "PASS",
+ "python": "3.12.14",
+ "cv2": "5.0.0",
+ "mismatching_rows": {
+  "sim_umi/data/demos/train/episode_0003.npz": {
+   "target_mask": 0,
+   "ee_gripper_mask": 0,
+   "ee_tip_mask": 0,
+   "ee_finger_y_mm": 0,
+   "rows": 318
+  },
+  "sim_umi/data/demos/v2_train/episode_0020.npz": {
+   "target_mask": 0,
+   "ee_gripper_mask": 0,
+   "ee_tip_mask": 0,
+   "ee_finger_y_mm": 0,
+   "rows": 345
+  }
+ }
+}

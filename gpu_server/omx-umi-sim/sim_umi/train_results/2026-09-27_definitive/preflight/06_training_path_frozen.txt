@@ -1,0 +1,7 @@
+=== CHECK 3: files changed since the clean run started (ad87c92) ===
+ sim_umi/ros/policy_rollout.py           | 215 +++++++++++++++++++++++++++++++++++++++++++------------------------------------
+ sim_umi/scripts/definitive/aggregate.py | 303 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 420 insertions(+), 98 deletions(-)
+--- training-path files touched (must be empty) ---
+  none
+--- tracked files dirty right now ---

@@ -1,0 +1,5373 @@
+{
+ "runs": [
+  {
+   "trigger": "sim_state",
+   "steps_per_call": 1,
+   "reset_ns": 237886000000,
+   "prior_capture_rel": -7,
+   "snapshot_with_same_stamp": "10/10",
+   "snapshot_q_equals_cycle_q": "9/10",
+   "snapshot_vs_cycle_differences": [
+    {
+     "rel_tick": 0,
+     "max_abs_dq": 0.0074102704983402545
+    }
+   ],
+   "calls": [
+    {
+     "steps": 1,
+     "service_ms": 4.385,
+     "clock_wait_ms": 0.029,
+     "cycle_msgs_wait_ms": 0.046,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.773
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.77,
+     "clock_wait_ms": 0.012,
+     "cycle_msgs_wait_ms": 1.409,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.692
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.297,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.818
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.139,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 1.334,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.983
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.664,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.914,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.522
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.7,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 1.335,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.994
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.997,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 1.583,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.086
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.26,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 1.548,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.314
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.959,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.585
+    },
+    {
+     "steps": 1,
+     "service_ms": 4.084,
+     "clock_wait_ms": 0.012,
+     "cycle_msgs_wait_ms": 0.036,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.63
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.973,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 1.508,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.425
+    },
+    {
+     "steps": 1,
+     "service_ms": 4.397,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.886
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.933,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.303,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.722
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.294,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.785
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.59,
+     "clock_wait_ms": 0.006,
+     "cycle_msgs_wait_ms": 1.385,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.491
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.508,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 3.097,
+     "cycle_msgs_seen": true,
+     "total_ms": 5.667
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.146,
+     "clock_wait_ms": 0.006,
+     "cycle_msgs_wait_ms": 0.015,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.008
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.576,
+     "clock_wait_ms": 0.005,
+     "cycle_msgs_wait_ms": 0.018,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.211
+    },
+    {
+     "steps": 1,
+     "service_ms": 4.789,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 5.304
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.461,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.416,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.392
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.299,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.635,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.995
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.65,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.181
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.429,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.462,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.885
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.99,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.517,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.477
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.726,
+     "clock_wait_ms": 0.014,
+     "cycle_msgs_wait_ms": 0.033,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.283
+    },
+    {
+     "steps": 1,
+     "service_ms": 9.829,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 10.418
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.062,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 1.097,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.335
+    },
+    {
+     "steps": 1,
+     "service_ms": 7.987,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 1.228,
+     "cycle_msgs_seen": true,
+     "total_ms": 9.513
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.175,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 52.066,
+     "cycle_msgs_seen": false,
+     "total_ms": 54.477
+    },
+    {
+     "steps": 1,
+     "service_ms": 0.905,
+     "clock_wait_ms": 1.442,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.416
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.794,
+     "clock_wait_ms": 1.808,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.67
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.498,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.679
+    },
+    {
+     "steps": 1,
+     "service_ms": 255.22,
+     "clock_wait_ms": 0.005,
+     "cycle_msgs_wait_ms": 0.016,
+     "cycle_msgs_seen": true,
+     "total_ms": 255.563
+    },
+    {
+     "steps": 1,
+     "service_ms": 13.155,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.075,
+     "cycle_msgs_seen": true,
+     "total_ms": 14.292
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.286,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.067,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.415
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.701,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.896,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.661
+    },
+    {
+     "steps": 1,
+     "service_ms": 712.527,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 1.23,
+     "cycle_msgs_seen": true,
+     "total_ms": 713.918
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.648,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.766
+    },
+    {
+     "steps": 1,
+     "service_ms": 481.337,
+     "clock_wait_ms": 0.018,
+     "cycle_msgs_wait_ms": 0.042,
+     "cycle_msgs_seen": true,
+     "total_ms": 481.771
+    },
+    {
+     "steps": 1,
+     "service_ms": 100.864,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 0.032,
+     "cycle_msgs_seen": true,
+     "total_ms": 101.254
+    },
+    {
+     "steps": 1,
+     "service_ms": 413.091,
+     "clock_wait_ms": 0.005,
+     "cycle_msgs_wait_ms": 0.016,
+     "cycle_msgs_seen": true,
+     "total_ms": 413.286
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.373,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.529,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.053
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.707,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.719,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.486
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.792,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.562,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.416
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.774,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.877,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.714
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.221,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.919,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.292
+    },
+    {
+     "steps": 1,
+     "service_ms": 1024.141,
+     "clock_wait_ms": 0.024,
+     "cycle_msgs_wait_ms": 0.051,
+     "cycle_msgs_seen": true,
+     "total_ms": 1024.557
+    },
+    {
+     "steps": 1,
+     "service_ms": 999.424,
+     "clock_wait_ms": 0.013,
+     "cycle_msgs_wait_ms": 0.04,
+     "cycle_msgs_seen": true,
+     "total_ms": 999.836
+    },
+    {
+     "steps": 1,
+     "service_ms": 443.311,
+     "clock_wait_ms": 0.028,
+     "cycle_msgs_wait_ms": 1.41,
+     "cycle_msgs_seen": true,
+     "total_ms": 444.825
+    },
+    {
+     "steps": 1,
+     "service_ms": 25.038,
+     "clock_wait_ms": 0.005,
+     "cycle_msgs_wait_ms": 0.016,
+     "cycle_msgs_seen": true,
+     "total_ms": 25.137
+    },
+    {
+     "steps": 1,
+     "service_ms": 5.089,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 5.169
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.798,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.709,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.57
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.379,
+     "clock_wait_ms": 1.397,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.843
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.327,
+     "clock_wait_ms": 1.383,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.78
+    },
+    {
+     "steps": 1,
+     "service_ms": 10.686,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 10.87
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.482,
+     "clock_wait_ms": 1.251,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.896
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.554,
+     "clock_wait_ms": 1.391,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.014
+    },
+    {
+     "steps": 1,
+     "service_ms": 6.365,
+     "clock_wait_ms": 1.273,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 7.709
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.626,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.948
+    },
+    {
+     "steps": 1,
+     "service_ms": 0.822,
+     "clock_wait_ms": 2.038,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.02
+    },
+    {
+     "steps": 1,
+     "service_ms": 472.417,
+     "clock_wait_ms": 3.69,
+     "cycle_msgs_wait_ms": 0.07,
+     "cycle_msgs_seen": true,
+     "total_ms": 476.263
+    },
+    {
+     "steps": 1,
+     "service_ms": 2278.393,
+     "clock_wait_ms": 0.015,
+     "cycle_msgs_wait_ms": 0.039,
+     "cycle_msgs_seen": true,
+     "total_ms": 2278.792
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.193,
+     "clock_wait_ms": 120.472,
+     "cycle_msgs_wait_ms": 1.667,
+     "cycle_msgs_seen": true,
+     "total_ms": 124.404
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.494,
+     "clock_wait_ms": 83.835,
+     "cycle_msgs_wait_ms": 0.031,
+     "cycle_msgs_seen": true,
+     "total_ms": 85.669
+    },
+    {
+     "steps": 1,
+     "service_ms": 496.604,
+     "clock_wait_ms": 0.012,
+     "cycle_msgs_wait_ms": 0.031,
+     "cycle_msgs_seen": true,
+     "total_ms": 496.959
+    },
+    {
+     "steps": 1,
+     "service_ms": 7.688,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 8.032
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.569,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.672
+    },
+    {
+     "steps": 1,
+     "service_ms": 15.487,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 15.83
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.084,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 394.356,
+     "cycle_msgs_seen": false,
+     "total_ms": 396.906
+    },
+    {
+     "steps": 1,
+     "service_ms": 143.499,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 0.048,
+     "cycle_msgs_seen": true,
+     "total_ms": 143.869
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.681,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 424.375,
+     "cycle_msgs_seen": false,
+     "total_ms": 427.382
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.937,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 351.393,
+     "cycle_msgs_seen": false,
+     "total_ms": 354.659
+    },
+    {
+     "steps": 1,
+     "service_ms": 243.123,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 0.035,
+     "cycle_msgs_seen": true,
+     "total_ms": 243.482
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.536,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 17.464,
+     "cycle_msgs_seen": true,
+     "total_ms": 19.32
+    },
+    {
+     "steps": 1,
+     "service_ms": 283.736,
+     "clock_wait_ms": 0.012,
+     "cycle_msgs_wait_ms": 0.037,
+     "cycle_msgs_seen": true,
+     "total_ms": 284.005
+    },
+    {
+     "steps": 1,
+     "service_ms": 9.99,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 0.038,
+     "cycle_msgs_seen": true,
+     "total_ms": 10.931
+    },
+    {
+     "steps": 1,
+     "service_ms": 4.064,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.412
+    },
+    {
+     "steps": 1,
+     "service_ms": 40.499,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.029,
+     "cycle_msgs_seen": true,
+     "total_ms": 40.769
+    },
+    {
+     "steps": 1,
+     "service_ms": 41.592,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 41.951
+    },
+    {
+     "steps": 1,
+     "service_ms": 490.874,
+     "clock_wait_ms": 3.025,
+     "cycle_msgs_wait_ms": 0.09,
+     "cycle_msgs_seen": true,
+     "total_ms": 494.169
+    },
+    {
+     "steps": 1,
+     "service_ms": 500.01,
+     "clock_wait_ms": 0.011,
+     "cycle_msgs_wait_ms": 0.033,
+     "cycle_msgs_seen": true,
+     "total_ms": 500.371
+    },
+    {
+     "steps": 1,
+     "service_ms": 60.26,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.038,
+     "cycle_msgs_seen": true,
+     "total_ms": 60.618
+    },
+    {
+     "steps": 1,
+     "service_ms": 18.655,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 0.036,
+     "cycle_msgs_seen": true,
+     "total_ms": 19.009
+    },
+    {
+     "steps": 1,
+     "service_ms": 43.763,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 44.111
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.561,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 872.223,
+     "cycle_msgs_seen": false,
+     "total_ms": 874.117
+    },
+    {
+     "steps": 1,
+     "service_ms": 960.156,
+     "clock_wait_ms": 0.034,
+     "cycle_msgs_wait_ms": 0.096,
+     "cycle_msgs_seen": true,
+     "total_ms": 960.848
+    },
+    {
+     "steps": 1,
+     "service_ms": 21.241,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.031,
+     "cycle_msgs_seen": true,
+     "total_ms": 21.602
+    },
+    {
+     "steps": 1,
+     "service_ms": 19.198,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 19.543
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.023,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 36.528,
+     "cycle_msgs_seen": true,
+     "total_ms": 38.868
+    },
+    {
+     "steps": 1,
+     "service_ms": 1188.632,
+     "clock_wait_ms": 0.015,
+     "cycle_msgs_wait_ms": 1.363,
+     "cycle_msgs_seen": true,
+     "total_ms": 1190.087
+    },
+    {
+     "steps": 1,
+     "service_ms": 6.138,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.031,
+     "cycle_msgs_seen": true,
+     "total_ms": 6.301
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.496,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 142.048,
+     "cycle_msgs_seen": false,
+     "total_ms": 144.864
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.583,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 16.543,
+     "cycle_msgs_seen": true,
+     "total_ms": 19.442
+    },
+    {
+     "steps": 1,
+     "service_ms": 467.053,
+     "clock_wait_ms": 0.016,
+     "cycle_msgs_wait_ms": 1.217,
+     "cycle_msgs_seen": true,
+     "total_ms": 468.363
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.582,
+     "clock_wait_ms": 121.591,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 123.518
+    },
+    {
+     "steps": 1,
+     "service_ms": 827.169,
+     "clock_wait_ms": 0.012,
+     "cycle_msgs_wait_ms": 0.036,
+     "cycle_msgs_seen": true,
+     "total_ms": 827.534
+    },
+    {
+     "steps": 1,
+     "service_ms": 341.641,
+     "clock_wait_ms": 0.021,
+     "cycle_msgs_wait_ms": 0.077,
+     "cycle_msgs_seen": true,
+     "total_ms": 341.826
+    },
+    {
+     "steps": 1,
+     "service_ms": 731.487,
+     "clock_wait_ms": 0.013,
+     "cycle_msgs_wait_ms": 0.041,
+     "cycle_msgs_seen": true,
+     "total_ms": 731.92
+    },
+    {
+     "steps": 1,
+     "service_ms": 170.187,
+     "clock_wait_ms": 0.005,
+     "cycle_msgs_wait_ms": 0.017,
+     "cycle_msgs_seen": true,
+     "total_ms": 170.388
+    },
+    {
+     "steps": 1,
+     "service_ms": 423.411,
+     "clock_wait_ms": 0.013,
+     "cycle_msgs_wait_ms": 0.04,
+     "cycle_msgs_seen": true,
+     "total_ms": 423.826
+    },
+    {
+     "steps": 1,
+     "service_ms": 10.273,
+     "clock_wait_ms": 0.013,
+     "cycle_msgs_wait_ms": 0.034,
+     "cycle_msgs_seen": true,
+     "total_ms": 10.393
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.627,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 1206.459,
+     "cycle_msgs_seen": false,
+     "total_ms": 1209.446
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.965,
+     "clock_wait_ms": 0.012,
+     "cycle_msgs_wait_ms": 168.061,
+     "cycle_msgs_seen": false,
+     "total_ms": 170.642
+    },
+    {
+     "steps": 1,
+     "service_ms": 0.919,
+     "clock_wait_ms": 0.005,
+     "cycle_msgs_wait_ms": 1.915,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.987
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.152,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.475
+    },
+    {
+     "steps": 1,
+     "service_ms": 0.827,
+     "clock_wait_ms": 921.938,
+     "cycle_msgs_wait_ms": 0.038,
+     "cycle_msgs_seen": true,
+     "total_ms": 923.138
+    },
+    {
+     "steps": 1,
+     "service_ms": 443.877,
+     "clock_wait_ms": 0.028,
+     "cycle_msgs_wait_ms": 0.09,
+     "cycle_msgs_seen": true,
+     "total_ms": 444.459
+    },
+    {
+     "steps": 1,
+     "service_ms": 616.091,
+     "clock_wait_ms": 0.005,
+     "cycle_msgs_wait_ms": 0.017,
+     "cycle_msgs_seen": true,
+     "total_ms": 616.304
+    },
+    {
+     "steps": 1,
+     "service_ms": 1422.483,
+     "clock_wait_ms": 0.015,
+     "cycle_msgs_wait_ms": 0.043,
+     "cycle_msgs_seen": true,
+     "total_ms": 1422.872
+    },
+    {
+     "steps": 1,
+     "service_ms": 15.809,
+     "clock_wait_ms": 0.014,
+     "cycle_msgs_wait_ms": 0.037,
+     "cycle_msgs_seen": true,
+     "total_ms": 16.183
+    },
+    {
+     "steps": 1,
+     "service_ms": 22.854,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 23.24
+    },
+    {
+     "steps": 1,
+     "service_ms": 0.995,
+     "clock_wait_ms": 73.389,
+     "cycle_msgs_wait_ms": 0.013,
+     "cycle_msgs_seen": true,
+     "total_ms": 74.457
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.044,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 2.304,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.41
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.141,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.029,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.496
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.35,
+     "clock_wait_ms": 171.174,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 172.863
+    },
+    {
+     "steps": 1,
+     "service_ms": 38.431,
+     "clock_wait_ms": 0.674,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 39.177
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.108,
+     "clock_wait_ms": 1.198,
+     "cycle_msgs_wait_ms": 0.013,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.467
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.522,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.836
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.51,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.126,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.795
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.925,
+     "clock_wait_ms": 1.258,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.253
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.635,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.943,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.751
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.415,
+     "clock_wait_ms": 1.171,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.657
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.468,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.092,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.74
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.665,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.974
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.942,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.054,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.059
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.435,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.512
+    },
+    {
+     "steps": 1,
+     "service_ms": 4.116,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.298
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.885,
+     "clock_wait_ms": 41.633,
+     "cycle_msgs_wait_ms": 1.105,
+     "cycle_msgs_seen": true,
+     "total_ms": 44.799
+    },
+    {
+     "steps": 1,
+     "service_ms": 29.967,
+     "clock_wait_ms": 0.792,
+     "cycle_msgs_wait_ms": 0.013,
+     "cycle_msgs_seen": true,
+     "total_ms": 30.832
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.535,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.303,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.901
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.32,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.638
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.62,
+     "clock_wait_ms": 1.284,
+     "cycle_msgs_wait_ms": 0.013,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.065
+    },
+    {
+     "steps": 1,
+     "service_ms": 7.511,
+     "clock_wait_ms": 0.746,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 8.33
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.288,
+     "clock_wait_ms": 2.62,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.068
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.855,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 1.929
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.351,
+     "clock_wait_ms": 1.226,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.738
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.459,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.776
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.451,
+     "clock_wait_ms": 1.279,
+     "cycle_msgs_wait_ms": 0.013,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.891
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.4,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.719
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.962,
+     "clock_wait_ms": 1.231,
+     "cycle_msgs_wait_ms": 0.014,
+     "cycle_msgs_seen": true,
+     "total_ms": 5.354
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.577,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.905
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.432,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 1.946,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.44
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.864,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.349
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.468,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.847,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.377
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.237,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.311
+    },
+    {
+     "steps": 1,
+     "service_ms": 0.911,
+     "clock_wait_ms": 2.184,
+     "cycle_msgs_wait_ms": 0.013,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.166
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.057,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.375,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.493
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.73,
+     "clock_wait_ms": 1.617,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.416
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.715,
+     "clock_wait_ms": 1.541,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.325
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.844,
+     "clock_wait_ms": 1.59,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.503
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.595,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.744
+    },
+    {
+     "steps": 1,
+     "service_ms": 0.807,
+     "clock_wait_ms": 902.017,
+     "cycle_msgs_wait_ms": 0.04,
+     "cycle_msgs_seen": true,
+     "total_ms": 903.187
+    },
+    {
+     "steps": 1,
+     "service_ms": 1180.999,
+     "clock_wait_ms": 0.014,
+     "cycle_msgs_wait_ms": 0.037,
+     "cycle_msgs_seen": true,
+     "total_ms": 1181.385
+    },
+    {
+     "steps": 1,
+     "service_ms": 837.258,
+     "clock_wait_ms": 3.655,
+     "cycle_msgs_wait_ms": 0.08,
+     "cycle_msgs_seen": true,
+     "total_ms": 841.079
+    },
+    {
+     "steps": 1,
+     "service_ms": 6972.695,
+     "clock_wait_ms": 0.03,
+     "cycle_msgs_wait_ms": 0.083,
+     "cycle_msgs_seen": true,
+     "total_ms": 6973.349
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.291,
+     "clock_wait_ms": 1259.815,
+     "cycle_msgs_wait_ms": 1.826,
+     "cycle_msgs_seen": true,
+     "total_ms": 1264.009
+    },
+    {
+     "steps": 1,
+     "service_ms": 5903.796,
+     "clock_wait_ms": 0.014,
+     "cycle_msgs_wait_ms": 0.04,
+     "cycle_msgs_seen": true,
+     "total_ms": 5904.224
+    },
+    {
+     "steps": 1,
+     "service_ms": 998.6,
+     "clock_wait_ms": 0.012,
+     "cycle_msgs_wait_ms": 0.037,
+     "cycle_msgs_seen": true,
+     "total_ms": 998.967
+    },
+    {
+     "steps": 1,
+     "service_ms": 903.903,
+     "clock_wait_ms": 3.407,
+     "cycle_msgs_wait_ms": 0.076,
+     "cycle_msgs_seen": true,
+     "total_ms": 907.479
+    },
+    {
+     "steps": 1,
+     "service_ms": 5392.6,
+     "clock_wait_ms": 1.802,
+     "cycle_msgs_wait_ms": 0.041,
+     "cycle_msgs_seen": true,
+     "total_ms": 5394.522
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.094,
+     "clock_wait_ms": 130.621,
+     "cycle_msgs_wait_ms": 0.032,
+     "cycle_msgs_seen": true,
+     "total_ms": 132.063
+    },
+    {
+     "steps": 1,
+     "service_ms": 205.467,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 205.886
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.624,
+     "clock_wait_ms": 51.883,
+     "cycle_msgs_wait_ms": 0.029,
+     "cycle_msgs_seen": true,
+     "total_ms": 53.847
+    },
+    {
+     "steps": 1,
+     "service_ms": 2613.346,
+     "clock_wait_ms": 0.015,
+     "cycle_msgs_wait_ms": 0.04,
+     "cycle_msgs_seen": true,
+     "total_ms": 2613.732
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.554,
+     "clock_wait_ms": 51.545,
+     "cycle_msgs_wait_ms": 0.019,
+     "cycle_msgs_seen": true,
+     "total_ms": 53.178
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.515,
+     "clock_wait_ms": 1.833,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.509
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.179,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.49
+    },
+    {
+     "steps": 1,
+     "service_ms": 0.803,
+     "clock_wait_ms": 2897.369,
+     "cycle_msgs_wait_ms": 0.047,
+     "cycle_msgs_seen": true,
+     "total_ms": 2898.558
+    },
+    {
+     "steps": 1,
+     "service_ms": 33.874,
+     "clock_wait_ms": 0.011,
+     "cycle_msgs_wait_ms": 0.034,
+     "cycle_msgs_seen": true,
+     "total_ms": 34.232
+    },
+    {
+     "steps": 1,
+     "service_ms": 271.7,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 0.032,
+     "cycle_msgs_seen": true,
+     "total_ms": 272.083
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.546,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 139.697,
+     "cycle_msgs_seen": false,
+     "total_ms": 141.621
+    },
+    {
+     "steps": 1,
+     "service_ms": 195.763,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 0.059,
+     "cycle_msgs_seen": true,
+     "total_ms": 196.187
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.444,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 29.469,
+     "cycle_msgs_seen": true,
+     "total_ms": 32.227
+    },
+    {
+     "steps": 1,
+     "service_ms": 0.844,
+     "clock_wait_ms": 1023.295,
+     "cycle_msgs_wait_ms": 1.782,
+     "cycle_msgs_seen": true,
+     "total_ms": 1025.997
+    },
+    {
+     "steps": 1,
+     "service_ms": 273.073,
+     "clock_wait_ms": 1.688,
+     "cycle_msgs_wait_ms": 0.036,
+     "cycle_msgs_seen": true,
+     "total_ms": 274.871
+    },
+    {
+     "steps": 1,
+     "service_ms": 9.933,
+     "clock_wait_ms": 0.012,
+     "cycle_msgs_wait_ms": 0.036,
+     "cycle_msgs_seen": true,
+     "total_ms": 10.208
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.081,
+     "clock_wait_ms": 1.396,
+     "cycle_msgs_wait_ms": 0.016,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.64
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.182,
+     "clock_wait_ms": 1.48,
+     "cycle_msgs_wait_ms": 0.013,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.732
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.365,
+     "clock_wait_ms": 1.787,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.222
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.208,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.894,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.179
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.256,
+     "clock_wait_ms": 0.005,
+     "cycle_msgs_wait_ms": 1.703,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.021
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.628,
+     "clock_wait_ms": 0.005,
+     "cycle_msgs_wait_ms": 1.693,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.382
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.505,
+     "clock_wait_ms": 1.379,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.954
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.429,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.747
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.045,
+     "clock_wait_ms": 0.642,
+     "cycle_msgs_wait_ms": 1.481,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.226
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.892,
+     "clock_wait_ms": 1.486,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.448
+    },
+    {
+     "steps": 1,
+     "service_ms": 18.407,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 18.482
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.982,
+     "clock_wait_ms": 1.878,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.927
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.406,
+     "clock_wait_ms": 2.003,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.477
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.388,
+     "clock_wait_ms": 1.91,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.365
+    },
+    {
+     "steps": 1,
+     "service_ms": 7.284,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 7.377
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.528,
+     "clock_wait_ms": 0.011,
+     "cycle_msgs_wait_ms": 0.034,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.647
+    },
+    {
+     "steps": 1,
+     "service_ms": 776.028,
+     "clock_wait_ms": 1.694,
+     "cycle_msgs_wait_ms": 0.038,
+     "cycle_msgs_seen": true,
+     "total_ms": 777.838
+    },
+    {
+     "steps": 1,
+     "service_ms": 185.67,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.013,
+     "cycle_msgs_seen": true,
+     "total_ms": 185.982
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.548,
+     "clock_wait_ms": 1.317,
+     "cycle_msgs_wait_ms": 0.014,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.027
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.794,
+     "clock_wait_ms": 1.484,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.346
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.975,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 1.553,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.589
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.76,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.08
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.464,
+     "clock_wait_ms": 1.584,
+     "cycle_msgs_wait_ms": 0.018,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.215
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.903,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.203,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.167
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.358,
+     "clock_wait_ms": 0.005,
+     "cycle_msgs_wait_ms": 0.013,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.727
+    },
+    {
+     "steps": 1,
+     "service_ms": 0.825,
+     "clock_wait_ms": 1.797,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.781
+    },
+    {
+     "steps": 1,
+     "service_ms": 4.053,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.132
+    },
+    {
+     "steps": 1,
+     "service_ms": 22.166,
+     "clock_wait_ms": 1.363,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 23.599
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.541,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.863
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.844,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.788,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.695
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.257,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.546,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.954
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.634,
+     "clock_wait_ms": 1.916,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.619
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.522,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.229,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.814
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.38,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.699
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.165,
+     "clock_wait_ms": 1.11,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.345
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.109,
+     "clock_wait_ms": 1.296,
+     "cycle_msgs_wait_ms": 0.013,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.564
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.165,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 2.207,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.432
+    },
+    {
+     "steps": 1,
+     "service_ms": 0.689,
+     "clock_wait_ms": 1.861,
+     "cycle_msgs_wait_ms": 0.013,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.62
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.396,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.712
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.896,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 1.092,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.139
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.872,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.693,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.627
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.862,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.032,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.957
+    },
+    {
+     "steps": 1,
+     "service_ms": 14.634,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 14.816
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.126,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.796,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.076
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.873,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 1.213,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.147
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.277,
+     "clock_wait_ms": 1.857,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.204
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.423,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.055,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.539
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.406,
+     "clock_wait_ms": 0.97,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.47
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.342,
+     "clock_wait_ms": 11.538,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.039
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.134,
+     "clock_wait_ms": 0.011,
+     "cycle_msgs_wait_ms": 0.042,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.302
+    },
+    {
+     "steps": 1,
+     "service_ms": 45.272,
+     "clock_wait_ms": 0.012,
+     "cycle_msgs_wait_ms": 0.037,
+     "cycle_msgs_seen": true,
+     "total_ms": 45.638
+    },
+    {
+     "steps": 1,
+     "service_ms": 4.719,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 5.072
+    },
+    {
+     "steps": 1,
+     "service_ms": 30.05,
+     "clock_wait_ms": 0.005,
+     "cycle_msgs_wait_ms": 1.304,
+     "cycle_msgs_seen": true,
+     "total_ms": 31.434
+    },
+    {
+     "steps": 1,
+     "service_ms": 2299.198,
+     "clock_wait_ms": 1.742,
+     "cycle_msgs_wait_ms": 0.04,
+     "cycle_msgs_seen": true,
+     "total_ms": 2301.059
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.002,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 134.904,
+     "cycle_msgs_seen": false,
+     "total_ms": 139.277
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.379,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 554.206,
+     "cycle_msgs_seen": false,
+     "total_ms": 556.911
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.073,
+     "clock_wait_ms": 612.491,
+     "cycle_msgs_wait_ms": 0.036,
+     "cycle_msgs_seen": true,
+     "total_ms": 613.929
+    },
+    {
+     "steps": 1,
+     "service_ms": 0.956,
+     "clock_wait_ms": 520.585,
+     "cycle_msgs_wait_ms": 1.693,
+     "cycle_msgs_seen": true,
+     "total_ms": 523.307
+    },
+    {
+     "steps": 1,
+     "service_ms": 52.769,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.031,
+     "cycle_msgs_seen": true,
+     "total_ms": 53.12
+    },
+    {
+     "steps": 1,
+     "service_ms": 106.345,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 0.041,
+     "cycle_msgs_seen": true,
+     "total_ms": 106.753
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.342,
+     "clock_wait_ms": 0.012,
+     "cycle_msgs_wait_ms": 695.925,
+     "cycle_msgs_seen": false,
+     "total_ms": 699.667
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.073,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.249,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.384
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.265,
+     "clock_wait_ms": 1.401,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.736
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.009,
+     "clock_wait_ms": 0.766,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.845
+    },
+    {
+     "steps": 1,
+     "service_ms": 53.422,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.015,
+     "cycle_msgs_seen": true,
+     "total_ms": 53.536
+    },
+    {
+     "steps": 1,
+     "service_ms": 548.607,
+     "clock_wait_ms": 1.567,
+     "cycle_msgs_wait_ms": 0.021,
+     "cycle_msgs_seen": true,
+     "total_ms": 550.256
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.99,
+     "clock_wait_ms": 1.941,
+     "cycle_msgs_wait_ms": 0.017,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.005
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.309,
+     "clock_wait_ms": 1.449,
+     "cycle_msgs_wait_ms": 0.013,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.827
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.202,
+     "clock_wait_ms": 1.514,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.785
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.369,
+     "clock_wait_ms": 415.598,
+     "cycle_msgs_wait_ms": 1.547,
+     "cycle_msgs_seen": true,
+     "total_ms": 418.575
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.746,
+     "clock_wait_ms": 1.559,
+     "cycle_msgs_wait_ms": 0.015,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.377
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.124,
+     "clock_wait_ms": 0.005,
+     "cycle_msgs_wait_ms": 1.882,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.069
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.724,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.23,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.016
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.572,
+     "clock_wait_ms": 1.472,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.114
+    }
+   ],
+   "call_wall_ms": {
+    "service_ms": {
+     "median": 2.435,
+     "p90": 472.417,
+     "max": 6972.695
+    },
+    "clock_wait_ms": {
+     "median": 0.01,
+     "p90": 2.003,
+     "max": 2897.369
+    },
+    "cycle_msgs_wait_ms": {
+     "median": 0.034,
+     "p90": 1.782,
+     "max": 1206.459
+    },
+    "total_ms": {
+     "median": 4.491,
+     "p90": 713.918,
+     "max": 6973.349
+    }
+   },
+   "expected_rel": [
+    0,
+    25,
+    50,
+    75,
+    100,
+    125,
+    150,
+    175,
+    200,
+    225
+   ],
+   "actual_rel": [
+    0,
+    25,
+    50,
+    75,
+    100,
+    125,
+    150,
+    175,
+    200,
+    225
+   ],
+   "actual_equals_expected": true,
+   "mismatches": [],
+   "barrier_misses_rel": [
+    225
+   ],
+   "short_ticks_rel": [],
+   "wall_ms_per_tick_median": 4.49
+  },
+  {
+   "trigger": "sim_state",
+   "steps_per_call": 1,
+   "reset_ns": 238386000000,
+   "prior_capture_rel": -25,
+   "snapshot_with_same_stamp": "10/10",
+   "snapshot_q_equals_cycle_q": "9/10",
+   "snapshot_vs_cycle_differences": [
+    {
+     "rel_tick": 0,
+     "max_abs_dq": 0.0054381046020337
+    }
+   ],
+   "calls": [
+    {
+     "steps": 1,
+     "service_ms": 4.099,
+     "clock_wait_ms": 0.011,
+     "cycle_msgs_wait_ms": 0.039,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.791
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.859,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 1.426,
+     "cycle_msgs_seen": true,
+     "total_ms": 5.265
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.942,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.585
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.619,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 1.362,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.491
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.487,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 1.366,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.793
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.216,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 1.423,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.63
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.642,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.241
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.938,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 1.384,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.274
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.414,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 1.642,
+     "cycle_msgs_seen": true,
+     "total_ms": 5.018
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.393,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 1.533,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.455
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.002,
+     "clock_wait_ms": 1.801,
+     "cycle_msgs_wait_ms": 0.029,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.348
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.163,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 1.509,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.614
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.584,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.574
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.593,
+     "clock_wait_ms": 1.862,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.983
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.52,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 1.336,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.815
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.096,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 1.36,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.409
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.619,
+     "clock_wait_ms": 1.598,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.189
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.569,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.556
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.227,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 1.476,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.217
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.467,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.528,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.938
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.624,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.125
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.424,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.917
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.321,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.35,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.16
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.019,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.99
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.874,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.014,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.393
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.911,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.493
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.569,
+     "clock_wait_ms": 1.807,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.313
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.458,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.302,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.25
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.764,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.256
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.678,
+     "clock_wait_ms": 1.603,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.782
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.002,
+     "clock_wait_ms": 0.014,
+     "cycle_msgs_wait_ms": 0.038,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.566
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.438,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 0.032,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.042
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.073,
+     "clock_wait_ms": 1.902,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.938
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.812,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 1.564,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.906
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.505,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 0.04,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.15
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.266,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 1.518,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.293
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.976,
+     "clock_wait_ms": 1.764,
+     "cycle_msgs_wait_ms": 0.029,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.274
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.384,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 1.593,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.5
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.552,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.175
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.355,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 1.523,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.383
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.871,
+     "clock_wait_ms": 1.772,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.608
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.667,
+     "clock_wait_ms": 1.787,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.001
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.002,
+     "clock_wait_ms": 1.794,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.768
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.55,
+     "clock_wait_ms": 1.827,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.887
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.373,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.865
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.481,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.329,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.749
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.296,
+     "clock_wait_ms": 0.005,
+     "cycle_msgs_wait_ms": 1.294,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.512
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.569,
+     "clock_wait_ms": 1.508,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.58
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.809,
+     "clock_wait_ms": 1.755,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.077
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.643,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.54,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.131
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.711,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.709
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.498,
+     "clock_wait_ms": 1.783,
+     "cycle_msgs_wait_ms": 0.013,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.779
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.989,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.93
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.863,
+     "clock_wait_ms": 1.799,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.159
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.008,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.953
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.383,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.34,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.661
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.577,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.541
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.938,
+     "clock_wait_ms": 1.792,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.234
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.981,
+     "clock_wait_ms": 0.005,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.923
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.445,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.338,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.726
+    },
+    {
+     "steps": 1,
+     "service_ms": 4.036,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.528
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.416,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.326,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.676
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.797,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.013,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.321
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.662,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.34,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.963
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.512,
+     "clock_wait_ms": 0.005,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.107
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.421,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.917
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.64,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.145
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.376,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.866
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.428,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.296,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.665
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.328,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.523,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.803
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.505,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.468
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.209,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.507,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.647
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.609,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.112
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.409,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.013,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.966
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.99,
+     "clock_wait_ms": 1.544,
+     "cycle_msgs_wait_ms": 0.034,
+     "cycle_msgs_seen": true,
+     "total_ms": 5.031
+    },
+    {
+     "steps": 1,
+     "service_ms": 4.206,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.83
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.064,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.054
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.16,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 1.08,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.738
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.435,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 32.202,
+     "cycle_msgs_seen": true,
+     "total_ms": 34.957
+    },
+    {
+     "steps": 1,
+     "service_ms": 140.928,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.013,
+     "cycle_msgs_seen": true,
+     "total_ms": 141.049
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.714,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.655,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.43
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.283,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.37
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.639,
+     "clock_wait_ms": 1.344,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.051
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.1,
+     "clock_wait_ms": 1.489,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.657
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.458,
+     "clock_wait_ms": 1.81,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.336
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.012,
+     "clock_wait_ms": 1.492,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.572
+    },
+    {
+     "steps": 1,
+     "service_ms": 8.208,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 8.287
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.516,
+     "clock_wait_ms": 310.929,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 312.792
+    },
+    {
+     "steps": 1,
+     "service_ms": 19.612,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 19.762
+    },
+    {
+     "steps": 1,
+     "service_ms": 91.428,
+     "clock_wait_ms": 0.015,
+     "cycle_msgs_wait_ms": 0.038,
+     "cycle_msgs_seen": true,
+     "total_ms": 91.808
+    },
+    {
+     "steps": 1,
+     "service_ms": 8.891,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 0.033,
+     "cycle_msgs_seen": true,
+     "total_ms": 9.27
+    },
+    {
+     "steps": 1,
+     "service_ms": 88.082,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.029,
+     "cycle_msgs_seen": true,
+     "total_ms": 88.3
+    },
+    {
+     "steps": 1,
+     "service_ms": 0.956,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 273.072,
+     "cycle_msgs_seen": false,
+     "total_ms": 274.357
+    },
+    {
+     "steps": 1,
+     "service_ms": 0.96,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 49.176,
+     "cycle_msgs_seen": true,
+     "total_ms": 50.451
+    },
+    {
+     "steps": 1,
+     "service_ms": 40.914,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 0.029,
+     "cycle_msgs_seen": true,
+     "total_ms": 41.167
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.026,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.132
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.38,
+     "clock_wait_ms": 1.69,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.168
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.014,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.361
+    },
+    {
+     "steps": 1,
+     "service_ms": 4.124,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.556
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.559,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.91
+    },
+    {
+     "steps": 1,
+     "service_ms": 9.221,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 0.041,
+     "cycle_msgs_seen": true,
+     "total_ms": 54.131
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.863,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.939
+    },
+    {
+     "steps": 1,
+     "service_ms": 369.201,
+     "clock_wait_ms": 0.006,
+     "cycle_msgs_wait_ms": 0.02,
+     "cycle_msgs_seen": true,
+     "total_ms": 369.42
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.85,
+     "clock_wait_ms": 0.011,
+     "cycle_msgs_wait_ms": 456.708,
+     "cycle_msgs_seen": false,
+     "total_ms": 458.885
+    },
+    {
+     "steps": 1,
+     "service_ms": 14.034,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 0.035,
+     "cycle_msgs_seen": true,
+     "total_ms": 14.417
+    },
+    {
+     "steps": 1,
+     "service_ms": 61.16,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.031,
+     "cycle_msgs_seen": true,
+     "total_ms": 61.554
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.78,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.029,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.158
+    },
+    {
+     "steps": 1,
+     "service_ms": 33.56,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 33.818
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.245,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.625
+    },
+    {
+     "steps": 1,
+     "service_ms": 14.375,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 14.742
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.732,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.107
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.492,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 14.489,
+     "cycle_msgs_seen": true,
+     "total_ms": 16.3
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.281,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 11.954
+    },
+    {
+     "steps": 1,
+     "service_ms": 4.765,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.944
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.307,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.487
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.345,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.159,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.565
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.805,
+     "clock_wait_ms": 1.359,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.231
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.403,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 1.747
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.776,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.414,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.349
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.035,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.105
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.993,
+     "clock_wait_ms": 1.4,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.461
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.284,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.619,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.998
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.595,
+     "clock_wait_ms": 1.428,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.092
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.388,
+     "clock_wait_ms": 1.949,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.407
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.427,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.707,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.196
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.451,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.717
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.947,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.714,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.722
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.346,
+     "clock_wait_ms": 0.773,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.599
+    },
+    {
+     "steps": 1,
+     "service_ms": 0.987,
+     "clock_wait_ms": 2.173,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.229
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.776,
+     "clock_wait_ms": 1.071,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.915
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.59,
+     "clock_wait_ms": 1.608,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.268
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.285,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 0.684,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.502
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.255,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 2.031,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.346
+    },
+    {
+     "steps": 1,
+     "service_ms": 6.299,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 6.585
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.307,
+     "clock_wait_ms": 0.811,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.719
+    },
+    {
+     "steps": 1,
+     "service_ms": 0.82,
+     "clock_wait_ms": 0.841,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.267
+    },
+    {
+     "steps": 1,
+     "service_ms": 0.911,
+     "clock_wait_ms": 0.764,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 1.999
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.173,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.474
+    },
+    {
+     "steps": 1,
+     "service_ms": 0.821,
+     "clock_wait_ms": 0.951,
+     "cycle_msgs_wait_ms": 0.015,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.387
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.023,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 2.122,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.204
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.348,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 2.272,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.68
+    },
+    {
+     "steps": 1,
+     "service_ms": 0.798,
+     "clock_wait_ms": 2.397,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.263
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.925,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.484,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.47
+    },
+    {
+     "steps": 1,
+     "service_ms": 0.994,
+     "clock_wait_ms": 2.947,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.009
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.585,
+     "clock_wait_ms": 2.393,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.047
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.267,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 2.15,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.478
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.424,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 2.159,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.645
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.037,
+     "clock_wait_ms": 2.392,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.497
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.439,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.12,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.148
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.803,
+     "clock_wait_ms": 0.004,
+     "cycle_msgs_wait_ms": 1.113,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.504
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.249,
+     "clock_wait_ms": 0.003,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.907
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.146,
+     "clock_wait_ms": 1.524,
+     "cycle_msgs_wait_ms": 0.036,
+     "cycle_msgs_seen": true,
+     "total_ms": 5.104
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.344,
+     "clock_wait_ms": 3.025,
+     "cycle_msgs_wait_ms": 0.031,
+     "cycle_msgs_seen": true,
+     "total_ms": 5.471
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.764,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 1.341,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.584
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.322,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 1.405,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.676
+    },
+    {
+     "steps": 1,
+     "service_ms": 4.206,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 5.216
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.419,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 0.029,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.43
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.555,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 1.171,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.68
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.238,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 1.4,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.596
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.231,
+     "clock_wait_ms": 1.884,
+     "cycle_msgs_wait_ms": 0.029,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.079
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.825,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.467
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.343,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.888
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.396,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 1.189,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.091
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.198,
+     "clock_wait_ms": 1.366,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.096
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.448,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 1.035,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.999
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.389,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.916
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.601,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.122
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.818,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.787
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.94,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 1.352,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.22
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.079,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.708
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.504,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.07
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.405,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.371
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.854,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 1.334,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.12
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.537,
+     "clock_wait_ms": 1.809,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.316
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.699,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 1.327,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.534
+    },
+    {
+     "steps": 1,
+     "service_ms": 4.079,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.673
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.815,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.792
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.139,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 1.611,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.712
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.761,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 1.34,
+     "cycle_msgs_seen": true,
+     "total_ms": 5.035
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.448,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.981
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.016,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.977
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.091,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 1.323,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.367
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.022,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.611
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.475,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.458
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.162,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 1.376,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.478
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.9,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.485
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.564,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.547
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.903,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 1.549,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.391
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.567,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.096
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.9,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.869
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.245,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 1.371,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.557
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.382,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.923
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.355,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.884
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.505,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.034
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.962,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.936
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.126,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 1.336,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.403
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.58,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.106
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.295,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.433
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.745,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.707
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.198,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.158
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.213,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.862
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.288,
+     "clock_wait_ms": 1.855,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 5.096
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.766,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.737
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.871,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.995,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.821
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.759,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.747
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.161,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.147
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.666,
+     "clock_wait_ms": 1.974,
+     "cycle_msgs_wait_ms": 0.035,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.742
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.245,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.786
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.375,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 0.917,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.802
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.777,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.905
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.373,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.932
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.813,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.428
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.697,
+     "clock_wait_ms": 1.813,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.498
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.602,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.128
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.753,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.726
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.636,
+     "clock_wait_ms": 1.99,
+     "cycle_msgs_wait_ms": 0.031,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.603
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.29,
+     "clock_wait_ms": 1.753,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 5.01
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.523,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.492
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.115,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.996,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.092
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.333,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 1.16,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.436
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.653,
+     "clock_wait_ms": 1.798,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.43
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.476,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.023,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.016
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.321,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 2.842
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.977,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.957
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.474,
+     "clock_wait_ms": 1.757,
+     "cycle_msgs_wait_ms": 0.029,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.211
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.27,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 0.029,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.901
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.394,
+     "clock_wait_ms": 1.7,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 5.059
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.14,
+     "clock_wait_ms": 1.783,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.892
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.127,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.149
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.937,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.08
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.207,
+     "clock_wait_ms": 1.754,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.942
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.662,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.185
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.375,
+     "clock_wait_ms": 1.544,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.404
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.354,
+     "clock_wait_ms": 2.989,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 5.437
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.99,
+     "clock_wait_ms": 1.805,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.757
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.018,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.98
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.509,
+     "clock_wait_ms": 1.556,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.561
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.16,
+     "clock_wait_ms": 3.192,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 5.445
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.631,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.23
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.446,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.069
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.524,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.541
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.997,
+     "clock_wait_ms": 0.007,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.007
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.462,
+     "clock_wait_ms": 1.773,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.177
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.858,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.377
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.979,
+     "clock_wait_ms": 1.82,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.772
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.85,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 1.379,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.703
+    },
+    {
+     "steps": 1,
+     "service_ms": 3.647,
+     "clock_wait_ms": 0.01,
+     "cycle_msgs_wait_ms": 0.029,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.257
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.304,
+     "clock_wait_ms": 0.009,
+     "cycle_msgs_wait_ms": 1.308,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.131
+    },
+    {
+     "steps": 1,
+     "service_ms": 1.564,
+     "clock_wait_ms": 1.792,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 4.354
+    },
+    {
+     "steps": 1,
+     "service_ms": 2.964,
+     "clock_wait_ms": 0.008,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 3.587
+    }
+   ],
+   "call_wall_ms": {
+    "service_ms": {
+     "median": 2.428,
+     "p90": 3.764,
+     "max": 369.201
+    },
+    "clock_wait_ms": {
+     "median": 0.008,
+     "p90": 1.798,
+     "max": 310.929
+    },
+    "cycle_msgs_wait_ms": {
+     "median": 0.027,
+     "p90": 1.509,
+     "max": 456.708
+    },
+    "total_ms": {
+     "median": 4.159,
+     "p90": 5.216,
+     "max": 458.885
+    }
+   },
+   "expected_rel": [
+    0,
+    25,
+    50,
+    75,
+    100,
+    125,
+    150,
+    175,
+    200,
+    225
+   ],
+   "actual_rel": [
+    0,
+    25,
+    50,
+    75,
+    100,
+    125,
+    150,
+    175,
+    200,
+    225
+   ],
+   "actual_equals_expected": true,
+   "mismatches": [],
+   "barrier_misses_rel": [],
+   "short_ticks_rel": [],
+   "wall_ms_per_tick_median": 4.16
+  },
+  {
+   "trigger": "sim_state",
+   "steps_per_call": 5,
+   "reset_ns": 238886000000,
+   "prior_capture_rel": -25,
+   "snapshot_with_same_stamp": "10/10",
+   "snapshot_q_equals_cycle_q": "9/10",
+   "snapshot_vs_cycle_differences": [
+    {
+     "rel_tick": 0,
+     "max_abs_dq": 0.0054381046020337
+    }
+   ],
+   "calls": [
+    {
+     "steps": 5,
+     "service_ms": 7.864,
+     "clock_wait_ms": 4.843,
+     "cycle_msgs_wait_ms": 0.036,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.221
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.814,
+     "clock_wait_ms": 4.692,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 14.003
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.987,
+     "clock_wait_ms": 4.119,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.633
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.705,
+     "clock_wait_ms": 3.64,
+     "cycle_msgs_wait_ms": 0.034,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.884
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.596,
+     "clock_wait_ms": 4.194,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.328
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.377,
+     "clock_wait_ms": 5.687,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 14.17
+    },
+    {
+     "steps": 5,
+     "service_ms": 9.085,
+     "clock_wait_ms": 4.812,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 14.483
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.756,
+     "clock_wait_ms": 4.198,
+     "cycle_msgs_wait_ms": 0.033,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.486
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.81,
+     "clock_wait_ms": 4.275,
+     "cycle_msgs_wait_ms": 0.033,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.651
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.662,
+     "clock_wait_ms": 3.61,
+     "cycle_msgs_wait_ms": 0.032,
+     "cycle_msgs_seen": true,
+     "total_ms": 11.798
+    },
+    {
+     "steps": 5,
+     "service_ms": 10.123,
+     "clock_wait_ms": 4.183,
+     "cycle_msgs_wait_ms": 0.034,
+     "cycle_msgs_seen": true,
+     "total_ms": 14.835
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.797,
+     "clock_wait_ms": 3.105,
+     "cycle_msgs_wait_ms": 0.032,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.681
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.948,
+     "clock_wait_ms": 3.556,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.029
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.892,
+     "clock_wait_ms": 3.409,
+     "cycle_msgs_wait_ms": 0.032,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.117
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.768,
+     "clock_wait_ms": 0.987,
+     "cycle_msgs_wait_ms": 0.032,
+     "cycle_msgs_seen": true,
+     "total_ms": 10.28
+    },
+    {
+     "steps": 5,
+     "service_ms": 9.05,
+     "clock_wait_ms": 4.068,
+     "cycle_msgs_wait_ms": 0.033,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.61
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.666,
+     "clock_wait_ms": 3.023,
+     "cycle_msgs_wait_ms": 0.032,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.216
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.27,
+     "clock_wait_ms": 3.64,
+     "cycle_msgs_wait_ms": 0.033,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.439
+    },
+    {
+     "steps": 5,
+     "service_ms": 10.261,
+     "clock_wait_ms": 1.583,
+     "cycle_msgs_wait_ms": 1.649,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.566
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.337,
+     "clock_wait_ms": 4.169,
+     "cycle_msgs_wait_ms": 0.031,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.04
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.404,
+     "clock_wait_ms": 5.712,
+     "cycle_msgs_wait_ms": 0.033,
+     "cycle_msgs_seen": true,
+     "total_ms": 14.225
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.183,
+     "clock_wait_ms": 3.598,
+     "cycle_msgs_wait_ms": 0.033,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.305
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.864,
+     "clock_wait_ms": 4.239,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.631
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.14,
+     "clock_wait_ms": 3.016,
+     "cycle_msgs_wait_ms": 1.549,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.19
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.373,
+     "clock_wait_ms": 3.654,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.552
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.734,
+     "clock_wait_ms": 5.748,
+     "cycle_msgs_wait_ms": 0.032,
+     "cycle_msgs_seen": true,
+     "total_ms": 14.59
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.593,
+     "clock_wait_ms": 4.782,
+     "cycle_msgs_wait_ms": 0.031,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.88
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.938,
+     "clock_wait_ms": 4.241,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.727
+    },
+    {
+     "steps": 5,
+     "service_ms": 9.049,
+     "clock_wait_ms": 3.621,
+     "cycle_msgs_wait_ms": 0.032,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.197
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.802,
+     "clock_wait_ms": 4.265,
+     "cycle_msgs_wait_ms": 0.031,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.563
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.579,
+     "clock_wait_ms": 5.139,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 14.211
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.95,
+     "clock_wait_ms": 3.0,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.477
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.962,
+     "clock_wait_ms": 2.934,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 11.417
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.628,
+     "clock_wait_ms": 4.377,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.53
+    },
+    {
+     "steps": 5,
+     "service_ms": 9.189,
+     "clock_wait_ms": 2.617,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.284
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.399,
+     "clock_wait_ms": 4.216,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.106
+    },
+    {
+     "steps": 5,
+     "service_ms": 9.163,
+     "clock_wait_ms": 3.535,
+     "cycle_msgs_wait_ms": 0.023,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.22
+    },
+    {
+     "steps": 5,
+     "service_ms": 6.77,
+     "clock_wait_ms": 4.27,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 11.521
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.73,
+     "clock_wait_ms": 4.15,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.398
+    },
+    {
+     "steps": 5,
+     "service_ms": 10.579,
+     "clock_wait_ms": 1.539,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.65
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.225,
+     "clock_wait_ms": 5.8,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.509
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.224,
+     "clock_wait_ms": 4.053,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.858
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.775,
+     "clock_wait_ms": 4.171,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.466
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.289,
+     "clock_wait_ms": 4.229,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.03
+    },
+    {
+     "steps": 5,
+     "service_ms": 10.404,
+     "clock_wait_ms": 1.429,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.405
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.244,
+     "clock_wait_ms": 2.721,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 10.91
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.109,
+     "clock_wait_ms": 2.846,
+     "cycle_msgs_wait_ms": 1.236,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.109
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.172,
+     "clock_wait_ms": 4.118,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.819
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.781,
+     "clock_wait_ms": 4.241,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.531
+    },
+    {
+     "steps": 5,
+     "service_ms": 9.088,
+     "clock_wait_ms": 4.118,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.708
+    }
+   ],
+   "call_wall_ms": {
+    "service_ms": {
+     "median": 8.628,
+     "p90": 9.163,
+     "max": 10.579
+    },
+    "clock_wait_ms": {
+     "median": 4.119,
+     "p90": 4.843,
+     "max": 5.8
+    },
+    "cycle_msgs_wait_ms": {
+     "median": 0.03,
+     "p90": 0.034,
+     "max": 1.649
+    },
+    "total_ms": {
+     "median": 13.109,
+     "p90": 14.17,
+     "max": 14.835
+    }
+   },
+   "expected_rel": [
+    0,
+    25,
+    50,
+    75,
+    100,
+    125,
+    150,
+    175,
+    200,
+    225
+   ],
+   "actual_rel": [
+    0,
+    25,
+    50,
+    75,
+    100,
+    125,
+    150,
+    175,
+    200,
+    225
+   ],
+   "actual_equals_expected": true,
+   "mismatches": [],
+   "barrier_misses_rel": [],
+   "short_ticks_rel": [],
+   "wall_ms_per_tick_median": 2.62
+  },
+  {
+   "trigger": "sim_state",
+   "steps_per_call": 5,
+   "reset_ns": 239386000000,
+   "prior_capture_rel": -25,
+   "snapshot_with_same_stamp": "10/10",
+   "snapshot_q_equals_cycle_q": "9/10",
+   "snapshot_vs_cycle_differences": [
+    {
+     "rel_tick": 0,
+     "max_abs_dq": 0.0054381046020337
+    }
+   ],
+   "calls": [
+    {
+     "steps": 5,
+     "service_ms": 8.729,
+     "clock_wait_ms": 4.332,
+     "cycle_msgs_wait_ms": 0.039,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.595
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.604,
+     "clock_wait_ms": 1.843,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 10.969
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.987,
+     "clock_wait_ms": 3.024,
+     "cycle_msgs_wait_ms": 0.029,
+     "cycle_msgs_seen": true,
+     "total_ms": 11.52
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.481,
+     "clock_wait_ms": 4.211,
+     "cycle_msgs_wait_ms": 0.033,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.38
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.204,
+     "clock_wait_ms": 3.667,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 11.404
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.562,
+     "clock_wait_ms": 5.215,
+     "cycle_msgs_wait_ms": 0.029,
+     "cycle_msgs_seen": true,
+     "total_ms": 14.268
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.638,
+     "clock_wait_ms": 4.12,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.266
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.45,
+     "clock_wait_ms": 4.534,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.519
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.826,
+     "clock_wait_ms": 3.763,
+     "cycle_msgs_wait_ms": 0.036,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.415
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.337,
+     "clock_wait_ms": 3.175,
+     "cycle_msgs_wait_ms": 0.031,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.178
+    },
+    {
+     "steps": 5,
+     "service_ms": 9.832,
+     "clock_wait_ms": 2.105,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.88
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.809,
+     "clock_wait_ms": 3.018,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 11.338
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.993,
+     "clock_wait_ms": 2.007,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 10.674
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.208,
+     "clock_wait_ms": 1.632,
+     "cycle_msgs_wait_ms": 0.9,
+     "cycle_msgs_seen": true,
+     "total_ms": 11.224
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.011,
+     "clock_wait_ms": 1.991,
+     "cycle_msgs_wait_ms": 1.193,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.111
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.931,
+     "clock_wait_ms": 3.785,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.221
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.556,
+     "clock_wait_ms": 1.534,
+     "cycle_msgs_wait_ms": 0.022,
+     "cycle_msgs_seen": true,
+     "total_ms": 9.601
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.394,
+     "clock_wait_ms": 3.325,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.376
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.976,
+     "clock_wait_ms": 1.592,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 10.535
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.572,
+     "clock_wait_ms": 4.085,
+     "cycle_msgs_wait_ms": 0.023,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.164
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.829,
+     "clock_wait_ms": 3.328,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 11.668
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.04,
+     "clock_wait_ms": 1.02,
+     "cycle_msgs_wait_ms": 0.023,
+     "cycle_msgs_seen": true,
+     "total_ms": 9.579
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.241,
+     "clock_wait_ms": 1.601,
+     "cycle_msgs_wait_ms": 0.023,
+     "cycle_msgs_seen": true,
+     "total_ms": 9.801
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.515,
+     "clock_wait_ms": 2.993,
+     "cycle_msgs_wait_ms": 0.026,
+     "cycle_msgs_seen": true,
+     "total_ms": 11.021
+    },
+    {
+     "steps": 5,
+     "service_ms": 9.063,
+     "clock_wait_ms": 1.037,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 10.621
+    },
+    {
+     "steps": 5,
+     "service_ms": 9.661,
+     "clock_wait_ms": 1.318,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 11.925
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.884,
+     "clock_wait_ms": 2.07,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 11.612
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.834,
+     "clock_wait_ms": 2.12,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 10.463
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.743,
+     "clock_wait_ms": 2.902,
+     "cycle_msgs_wait_ms": 0.769,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.899
+    },
+    {
+     "steps": 5,
+     "service_ms": 6.903,
+     "clock_wait_ms": 2.053,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 9.602
+    },
+    {
+     "steps": 5,
+     "service_ms": 9.437,
+     "clock_wait_ms": 2.122,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.498
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.002,
+     "clock_wait_ms": 4.091,
+     "cycle_msgs_wait_ms": 0.023,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.609
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.594,
+     "clock_wait_ms": 4.088,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.187
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.808,
+     "clock_wait_ms": 3.373,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 11.826
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.566,
+     "clock_wait_ms": 2.011,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 11.227
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.691,
+     "clock_wait_ms": 1.586,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 9.928
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.983,
+     "clock_wait_ms": 4.1,
+     "cycle_msgs_wait_ms": 0.039,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.604
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.55,
+     "clock_wait_ms": 4.086,
+     "cycle_msgs_wait_ms": 0.024,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.152
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.926,
+     "clock_wait_ms": 3.41,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 11.992
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.504,
+     "clock_wait_ms": 1.533,
+     "cycle_msgs_wait_ms": 0.023,
+     "cycle_msgs_seen": true,
+     "total_ms": 9.544
+    },
+    {
+     "steps": 5,
+     "service_ms": 10.227,
+     "clock_wait_ms": 1.499,
+     "cycle_msgs_wait_ms": 0.023,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.68
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.654,
+     "clock_wait_ms": 1.009,
+     "cycle_msgs_wait_ms": 0.022,
+     "cycle_msgs_seen": true,
+     "total_ms": 9.625
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.746,
+     "clock_wait_ms": 1.518,
+     "cycle_msgs_wait_ms": 0.025,
+     "cycle_msgs_seen": true,
+     "total_ms": 9.77
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.074,
+     "clock_wait_ms": 1.632,
+     "cycle_msgs_wait_ms": 0.037,
+     "cycle_msgs_seen": true,
+     "total_ms": 10.696
+    },
+    {
+     "steps": 5,
+     "service_ms": 9.983,
+     "clock_wait_ms": 1.583,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.059
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.101,
+     "clock_wait_ms": 4.239,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.272
+    },
+    {
+     "steps": 5,
+     "service_ms": 7.691,
+     "clock_wait_ms": 3.644,
+     "cycle_msgs_wait_ms": 0.012,
+     "cycle_msgs_seen": true,
+     "total_ms": 11.798
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.782,
+     "clock_wait_ms": 4.148,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.448
+    },
+    {
+     "steps": 5,
+     "service_ms": 8.698,
+     "clock_wait_ms": 3.969,
+     "cycle_msgs_wait_ms": 0.01,
+     "cycle_msgs_seen": true,
+     "total_ms": 13.21
+    },
+    {
+     "steps": 5,
+     "service_ms": 9.55,
+     "clock_wait_ms": 2.025,
+     "cycle_msgs_wait_ms": 0.011,
+     "cycle_msgs_seen": true,
+     "total_ms": 12.067
+    }
+   ],
+   "call_wall_ms": {
+    "service_ms": {
+     "median": 8.002,
+     "p90": 9.437,
+     "max": 10.227
+    },
+    "clock_wait_ms": {
+     "median": 2.993,
+     "p90": 4.148,
+     "max": 5.215
+    },
+    "cycle_msgs_wait_ms": {
+     "median": 0.025,
+     "p90": 0.037,
+     "max": 1.193
+    },
+    "total_ms": {
+     "median": 11.992,
+     "p90": 13.272,
+     "max": 14.268
+    }
+   },
+   "expected_rel": [
+    0,
+    25,
+    50,
+    75,
+    100,
+    125,
+    150,
+    175,
+    200,
+    225
+   ],
+   "actual_rel": [
+    0,
+    25,
+    50,
+    75,
+    100,
+    125,
+    150,
+    175,
+    200,
+    225
+   ],
+   "actual_equals_expected": true,
+   "mismatches": [],
+   "barrier_misses_rel": [],
+   "short_ticks_rel": [],
+   "wall_ms_per_tick_median": 2.4
+  },
+  {
+   "trigger": "sim_state",
+   "steps_per_call": 25,
+   "reset_ns": 239886000000,
+   "prior_capture_rel": -25,
+   "snapshot_with_same_stamp": "10/10",
+   "snapshot_q_equals_cycle_q": "9/10",
+   "snapshot_vs_cycle_differences": [
+    {
+     "rel_tick": 0,
+     "max_abs_dq": 0.0054381046020337
+    }
+   ],
+   "calls": [
+    {
+     "steps": 25,
+     "service_ms": 34.184,
+     "clock_wait_ms": 26.185,
+     "cycle_msgs_wait_ms": 0.038,
+     "cycle_msgs_seen": true,
+     "total_ms": 60.916
+    },
+    {
+     "steps": 25,
+     "service_ms": 33.736,
+     "clock_wait_ms": 24.459,
+     "cycle_msgs_wait_ms": 0.032,
+     "cycle_msgs_seen": true,
+     "total_ms": 58.732
+    },
+    {
+     "steps": 25,
+     "service_ms": 34.98,
+     "clock_wait_ms": 20.133,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 55.633
+    },
+    {
+     "steps": 25,
+     "service_ms": 35.157,
+     "clock_wait_ms": 21.422,
+     "cycle_msgs_wait_ms": 0.033,
+     "cycle_msgs_seen": true,
+     "total_ms": 57.102
+    },
+    {
+     "steps": 25,
+     "service_ms": 33.428,
+     "clock_wait_ms": 13.592,
+     "cycle_msgs_wait_ms": 0.029,
+     "cycle_msgs_seen": true,
+     "total_ms": 47.556
+    },
+    {
+     "steps": 25,
+     "service_ms": 33.905,
+     "clock_wait_ms": 14.194,
+     "cycle_msgs_wait_ms": 0.031,
+     "cycle_msgs_seen": true,
+     "total_ms": 48.548
+    },
+    {
+     "steps": 25,
+     "service_ms": 34.02,
+     "clock_wait_ms": 17.025,
+     "cycle_msgs_wait_ms": 0.04,
+     "cycle_msgs_seen": true,
+     "total_ms": 51.531
+    },
+    {
+     "steps": 25,
+     "service_ms": 33.823,
+     "clock_wait_ms": 19.737,
+     "cycle_msgs_wait_ms": 0.029,
+     "cycle_msgs_seen": true,
+     "total_ms": 54.077
+    },
+    {
+     "steps": 25,
+     "service_ms": 34.984,
+     "clock_wait_ms": 15.283,
+     "cycle_msgs_wait_ms": 0.029,
+     "cycle_msgs_seen": true,
+     "total_ms": 50.776
+    },
+    {
+     "steps": 25,
+     "service_ms": 33.293,
+     "clock_wait_ms": 23.556,
+     "cycle_msgs_wait_ms": 0.031,
+     "cycle_msgs_seen": true,
+     "total_ms": 57.365
+    }
+   ],
+   "call_wall_ms": {
+    "service_ms": {
+     "median": 34.02,
+     "p90": 34.984,
+     "max": 35.157
+    },
+    "clock_wait_ms": {
+     "median": 20.133,
+     "p90": 24.459,
+     "max": 26.185
+    },
+    "cycle_msgs_wait_ms": {
+     "median": 0.031,
+     "p90": 0.038,
+     "max": 0.04
+    },
+    "total_ms": {
+     "median": 55.633,
+     "p90": 58.732,
+     "max": 60.916
+    }
+   },
+   "expected_rel": [
+    0,
+    25,
+    50,
+    75,
+    100,
+    125,
+    150,
+    175,
+    200,
+    225
+   ],
+   "actual_rel": [
+    0,
+    25,
+    50,
+    75,
+    100,
+    125,
+    150,
+    175,
+    200,
+    225
+   ],
+   "actual_equals_expected": true,
+   "mismatches": [],
+   "barrier_misses_rel": [],
+   "short_ticks_rel": [],
+   "wall_ms_per_tick_median": 2.23
+  },
+  {
+   "trigger": "sim_state",
+   "steps_per_call": 25,
+   "reset_ns": 240386000000,
+   "prior_capture_rel": -25,
+   "snapshot_with_same_stamp": "10/10",
+   "snapshot_q_equals_cycle_q": "9/10",
+   "snapshot_vs_cycle_differences": [
+    {
+     "rel_tick": 0,
+     "max_abs_dq": 0.0054381046020337
+    }
+   ],
+   "calls": [
+    {
+     "steps": 25,
+     "service_ms": 32.949,
+     "clock_wait_ms": 20.057,
+     "cycle_msgs_wait_ms": 0.035,
+     "cycle_msgs_seen": true,
+     "total_ms": 53.54
+    },
+    {
+     "steps": 25,
+     "service_ms": 33.094,
+     "clock_wait_ms": 21.7,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 55.323
+    },
+    {
+     "steps": 25,
+     "service_ms": 33.617,
+     "clock_wait_ms": 15.591,
+     "cycle_msgs_wait_ms": 0.029,
+     "cycle_msgs_seen": true,
+     "total_ms": 49.732
+    },
+    {
+     "steps": 25,
+     "service_ms": 33.213,
+     "clock_wait_ms": 15.166,
+     "cycle_msgs_wait_ms": 0.028,
+     "cycle_msgs_seen": true,
+     "total_ms": 48.898
+    },
+    {
+     "steps": 25,
+     "service_ms": 32.658,
+     "clock_wait_ms": 21.513,
+     "cycle_msgs_wait_ms": 0.031,
+     "cycle_msgs_seen": true,
+     "total_ms": 54.706
+    },
+    {
+     "steps": 25,
+     "service_ms": 32.587,
+     "clock_wait_ms": 24.071,
+     "cycle_msgs_wait_ms": 0.031,
+     "cycle_msgs_seen": true,
+     "total_ms": 57.18
+    },
+    {
+     "steps": 25,
+     "service_ms": 33.664,
+     "clock_wait_ms": 22.438,
+     "cycle_msgs_wait_ms": 0.029,
+     "cycle_msgs_seen": true,
+     "total_ms": 56.63
+    },
+    {
+     "steps": 25,
+     "service_ms": 35.11,
+     "clock_wait_ms": 15.342,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 50.962
+    },
+    {
+     "steps": 25,
+     "service_ms": 33.252,
+     "clock_wait_ms": 15.224,
+     "cycle_msgs_wait_ms": 0.027,
+     "cycle_msgs_seen": true,
+     "total_ms": 48.998
+    },
+    {
+     "steps": 25,
+     "service_ms": 34.095,
+     "clock_wait_ms": 20.973,
+     "cycle_msgs_wait_ms": 0.03,
+     "cycle_msgs_seen": true,
+     "total_ms": 55.581
+    }
+   ],
+   "call_wall_ms": {
+    "service_ms": {
+     "median": 33.252,
+     "p90": 34.095,
+     "max": 35.11
+    },
+    "clock_wait_ms": {
+     "median": 20.973,
+     "p90": 22.438,
+     "max": 24.071
+    },
+    "cycle_msgs_wait_ms": {
+     "median": 0.03,
+     "p90": 0.031,
+     "max": 0.035
+    },
+    "total_ms": {
+     "median": 54.706,
+     "p90": 56.63,
+     "max": 57.18
+    }
+   },
+   "expected_rel": [
+    0,
+    25,
+    50,
+    75,
+    100,
+    125,
+    150,
+    175,
+    200,
+    225
+   ],
+   "actual_rel": [
+    0,
+    25,
+    50,
+    75,
+    100,
+    125,
+    150,
+    175,
+    200,
+    225
+   ],
+   "actual_equals_expected": true,
+   "mismatches": [],
+   "barrier_misses_rel": [],
+   "short_ticks_rel": [],
+   "wall_ms_per_tick_median": 2.19
+  }
+ ],
+ "repeats_identical": {
+  "1": true,
+  "5": true,
+  "25": true
+ }
+}

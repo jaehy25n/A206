@@ -1,0 +1,16 @@
+PASS  active geometry listed first  
+PASS  g0_center224: centred disc diameter  box 54x54, expected ~52.6
+PASS  g0_center224: mask mapping agrees with the real image path  mask [87, 87, 141, 141] image [86, 86, 140, 140]
+PASS  g1_letterbox224: centred disc diameter  box 30x30, expected ~29.6
+PASS  g1_letterbox224: mask mapping agrees with the real image path  mask [98, 98, 128, 128] image [97, 97, 127, 127]
+PASS  g2_rect288x176: centred disc diameter  box 39x39, expected ~38.0
+PASS  g2_rect288x176: mask mapping agrees with the real image path  mask [125, 70, 164, 109] image [125, 70, 163, 108]
+PASS  G1 edge distances exclude the padding (content 45.4..178.6 high)  {'left': 113.0, 'right': 111.0, 'top': 67.6, 'bottom': 65.6}
+PASS  ball in the left third: invisible to G0, visible to G1 and G2  areas G0 0 G1 390 G2 634
+PASS  g0_center224: edge disc mapping agrees with the real image path  mask None image None
+PASS  g1_letterbox224: edge disc mapping agrees with the real image path  mask [6, 102, 29, 125] image [5, 101, 27, 124]
+PASS  g2_rect288x176: edge disc mapping agrees with the real image path  mask [7, 75, 36, 105] image [6, 74, 35, 104]
+PASS  patch counts grow with the object  11 -> 26
+PASS  object+gripper flag  
+eval crop boxes: {'g0_center224': (6, 6, 212, 212), 'g1_letterbox224': (6, 6, 212, 212), 'g2_rect288x176': (4, 8, 167, 273)}
+content on encoder input: {'g0_center224': (0.0, 0.0, 224.0, 224.0), 'g1_letterbox224': (0.0, 45.4, 224.0, 178.6), 'g2_rect288x176': (0.0, 3.2, 288.0, 173.9)}

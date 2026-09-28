@@ -1,0 +1,66 @@
+{
+ "tag": "step5985",
+ "checkpoint": "/home/j-j15a206/universal_manipulation_interface/sim_umi/train_results/2026-09-27_amp_v2_definitive/checkpoints/step5985.ckpt",
+ "opt_steps": 5985,
+ "global_step": 5984,
+ "epoch": 17,
+ "batch_idx_in_epoch": 255,
+ "trainable_parameters": 299,
+ "params_with_optimizer_state": 299,
+ "param_step_histogram": {
+  "5985": 299
+ },
+ "lr_group0": 0.00018550407462738337,
+ "lr_group1": 1.8550407462738338e-05,
+ "scheduler_state": {
+  "base_lrs": [
+   0.0003,
+   2.9999999999999997e-05
+  ],
+  "last_epoch": 5985,
+  "verbose": false,
+  "_step_count": 5986,
+  "_get_lr_called_within_step": false,
+  "_last_lr": [
+   0.00018550407462738337,
+   1.8550407462738338e-05
+  ],
+  "lr_lambdas": "list"
+ },
+ "ema_update_count": 5985,
+ "ema_decay": 0.9985302065374666,
+ "scaler": {
+  "scale": 262144.0,
+  "growth_factor": 2.0,
+  "backoff_factor": 0.5,
+  "growth_interval": 2000.0,
+  "_growth_tracker": 1985.0
+ },
+ "skipped_optimizer_steps": 0,
+ "nonfinite_losses": 0,
+ "evaluation_weight_source": "ema_model",
+ "git": {
+  "commit": "987ebe4622d570311893ab7e822557bd322ff3c5",
+  "dirty_tracked_files": true
+ },
+ "hostname": "jupyter02",
+ "cuda_visible_devices": "5",
+ "mixed_precision": "fp16",
+ "batch_size": 64,
+ "gradient_accumulate_every": 1,
+ "dataset": {
+  "path": "/home/j-j15a206/universal_manipulation_interface/sim_umi/data/omx_sim_train_v2.zarr.zip",
+  "bytes": 173427432,
+  "mtime": 1790428623.3120992,
+  "sha256": "905749cd56e34b2f4d9e8c3195abff119406d8226a11601bc07ca7ddc75ff24c"
+ },
+ "val_ratio": 0.0,
+ "train_samples": 21532,
+ "dataloader_len": 337,
+ "lr_scheduler_total_steps": 11400,
+ "lr_warmup_steps": 2000,
+ "init_state_source": "/home/j-j15a206/universal_manipulation_interface/sim_umi/train_results/2026-09-27_definitive/shared_init/init_state.pt",
+ "init_checksum": "a4cd264fbf9439ef9d8b3fdb4dc51e3559ec82559dbeab591faa8cce06c28076",
+ "seed_init_checksum": "a4cd264fbf9439ef9d8b3fdb4dc51e3559ec82559dbeab591faa8cce06c28076",
+ "resumed_from": null
+}

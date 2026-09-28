@@ -1,0 +1,30 @@
+vit will use the CLS token. feature_aggregation (attention_pool_2d) is ignored!
+rgb keys:          ['camera0_rgb']
+low_dim_keys keys: ['robot0_eef_pos', 'robot0_eef_rot_axis_angle', 'robot0_eef_rot_axis_angle_wrt_start', 'robot0_gripper_width']
+==> reduce pretrained obs_encorder's lr
+obs_encorder params: 151
+checkpoint /home/j-j15a206/universal_manipulation_interface/data/omx/train/omx_sim_visual_v1/2026.09.26/12.25.09/checkpoints/epoch=0020-train_loss=0.026.ckpt
+  weights ema   epoch 20   diffusion steps 16
+  omx_sim_val.zarr.zip: 1560 samples over 6 episodes
+  over every sample and every step of the horizon
+    position  mean  16.512  p95  48.384  max  161.059 mm
+    rotation  mean   5.378  p95  17.933  max   60.018 deg
+    width     mean   0.959  p95   3.272  max   21.832 mm
+  by step of the 16-step horizon (mean)
+    step   pos mm  rot deg  width mm
+       0    5.502    3.202     0.905
+       1    6.341    3.261     0.903
+       2    7.850    3.329     0.917
+       3    9.773    3.757     0.925
+       4   11.931    4.288     0.915
+       5   13.448    4.565     0.899
+       6   14.996    4.995     0.885
+       7   16.463    5.219     0.881
+       8   17.908    5.717     0.934
+       9   19.270    5.940     0.940
+      10   20.270    6.144     0.969
+      11   21.588    6.404     0.963
+      12   22.691    6.738     1.000
+      13   23.881    6.944     1.011
+      14   25.309    7.523     1.111
+      15   26.969    8.026     1.191

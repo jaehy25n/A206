@@ -1,0 +1,33 @@
+start: 2026-09-27T03:16:10+09:00
+host: jupyter02
+git: 00756d1cb472db80f2cd520f35f56c56db9c70a5
+--- git status ---
+?? MUJOCO_LOG.TXT
+?? conda_environment_train.yaml
+?? omx_jetson_handoff_0d9d30d_20260922.zip.sha256
+?? sim_umi/train_results/
+?? umi_working_env.yml
+--- gpu inventory ---
+index, name, uuid, memory.used [MiB], utilization.gpu [%]
+0, Tesla V100-PCIE-32GB, GPU-f71fb389-e7ff-1717-6aa5-0c4bd1095eac, 244 MiB, 10 %
+1, Tesla V100-PCIE-32GB, GPU-f664ee3c-eb10-403a-17b1-9d4d9d02e926, 1 MiB, 0 %
+2, Tesla V100-PCIE-32GB, GPU-9571f0e3-6807-d63a-3199-b29c7cf1e980, 1 MiB, 0 %
+3, Tesla V100-PCIE-32GB, GPU-7ce55d3c-da01-ad02-cd72-b02992ced88a, 1 MiB, 0 %
+4, Tesla V100-PCIE-32GB, GPU-bfea30ff-1548-2dd2-107d-f613b7da2e2d, 1 MiB, 0 %
+5, Tesla V100-PCIE-32GB, GPU-6ac93a16-5d21-4921-2db9-a9cd274aeec2, 1 MiB, 0 %
+6, Tesla V100-PCIE-32GB, GPU-f375b99b-a0ab-5ecd-36db-98a17238c7a5, 1 MiB, 0 %
+7, Tesla V100-PCIE-32GB, GPU-fbbcee4f-3f6f-b8f5-a2a4-ac75d22f9781, 1 MiB, 0 %
+8, Tesla V100-PCIE-32GB, GPU-e14701f7-447b-96fb-e7e0-4c5d76290bd7, 1 MiB, 0 %
+9, Tesla V100-PCIE-32GB, GPU-c858388b-c712-5a4d-63fc-4a140fc16813, 1 MiB, 0 %
+--- compute apps ---
+pid, gpu_uuid, used_gpu_memory [MiB]
+--- graphics on gpu0 ---
+|    0   N/A  N/A          898040      G   ...os2_control/ros2_control_node        242MiB |
+--- our processes ---
+855781 /bin/bash -c source /home/j-j15a206/.claude/shell-snapshots/snapshot-bash-1790244442730-pot0ay.sh 2>/dev/null || true && shopt -u extglob 2>/dev/null || true && { \builtin unalias -- 'unsetenv'; \builtin unset -f -- 'unsetenv'; } >/dev/null 2>&1 || true && eval 'until grep -q "attempt 3" /tmp/claude-1003/-home-j-j15a206-universal-manipulation-interface/71c73aef-33b2-49ee-bca8-821148c30e91/tasks/bqp5ou3jh.output 2>/dev/null && ! pgrep -f "policy_rollout.py --only 2" >/dev/null; do sleep 15; done; cat /tmp/claude-1003/-home-j-j15a206-universal-manipulation-interface/71c73aef-33b2-49ee-bca8-821148c30e91/tasks/bqp5ou3jh.output' < /dev/null && pwd -P >| /tmp/claude-75f5-cwd
+857843 /bin/bash -c source /home/j-j15a206/.claude/shell-snapshots/snapshot-bash-1790244442730-pot0ay.sh 2>/dev/null || true && shopt -u extglob 2>/dev/null || true && { \builtin unalias -- 'unsetenv'; \builtin unset -f -- 'unsetenv'; } >/dev/null 2>&1 || true && eval 'until grep -q "latch run 3" /tmp/claude-1003/-home-j-j15a206-universal-manipulation-interface/71c73aef-33b2-49ee-bca8-821148c30e91/tasks/bqxwymtmr.output 2>/dev/null && ! pgrep -f "policy_rollout.py --only 2" >/dev/null; do sleep 20; done; cat /tmp/claude-1003/-home-j-j15a206-universal-manipulation-interface/71c73aef-33b2-49ee-bca8-821148c30e91/tasks/bqxwymtmr.output' < /dev/null && pwd -P >| /tmp/claude-8f9e-cwd
+859821 /bin/bash -c source /home/j-j15a206/.claude/shell-snapshots/snapshot-bash-1790244442730-pot0ay.sh 2>/dev/null || true && shopt -u extglob 2>/dev/null || true && { \builtin unalias -- 'unsetenv'; \builtin unset -f -- 'unsetenv'; } >/dev/null 2>&1 || true && eval 'until grep -q "latch2 run 4" /tmp/claude-1003/-home-j-j15a206-universal-manipulation-interface/71c73aef-33b2-49ee-bca8-821148c30e91/tasks/bgf1o43ck.output 2>/dev/null && ! pgrep -f "policy_rollout.py --only 2" >/dev/null; do sleep 20; done; cat /tmp/claude-1003/-home-j-j15a206-universal-manipulation-interface/71c73aef-33b2-49ee-bca8-821148c30e91/tasks/bgf1o43ck.output' < /dev/null && pwd -P >| /tmp/claude-f30e-cwd
+862796 /bin/bash -c source /home/j-j15a206/.claude/shell-snapshots/snapshot-bash-1790244442730-pot0ay.sh 2>/dev/null || true && shopt -u extglob 2>/dev/null || true && { \builtin unalias -- 'unsetenv'; \builtin unset -f -- 'unsetenv'; } >/dev/null 2>&1 || true && eval 'until ! pgrep -f "policy_rollout.py --only 2" >/dev/null; do sleep 20; done; tail -6 /tmp/claude-1003/-home-j-j15a206-universal-manipulation-interface/71c73aef-33b2-49ee-bca8-821148c30e91/tasks/bhr0yjk6i.output; ls -la /tmp/claude-1003/-home-j-j15a206-universal-manipulation-interface/71c73aef-33b2-49ee-bca8-821148c30e91/scratchpad/vid_*/*.mp4' < /dev/null && pwd -P >| /tmp/claude-3c3c-cwd
+865673 /bin/bash -c source /home/j-j15a206/.claude/shell-snapshots/snapshot-bash-1790244442730-pot0ay.sh 2>/dev/null || true && shopt -u extglob 2>/dev/null || true && { \builtin unalias -- 'unsetenv'; \builtin unset -f -- 'unsetenv'; } >/dev/null 2>&1 || true && eval 'until grep -q "=== latch c ===" /tmp/claude-1003/-home-j-j15a206-universal-manipulation-interface/71c73aef-33b2-49ee-bca8-821148c30e91/tasks/b07mux3w8.output 2>/dev/null && ! pgrep -f "policy_rollout.py --only 2" >/dev/null; do sleep 25; done; cat /tmp/claude-1003/-home-j-j15a206-universal-manipulation-interface/71c73aef-33b2-49ee-bca8-821148c30e91/tasks/b07mux3w8.output' < /dev/null && pwd -P >| /tmp/claude-2384-cwd
+868190 /bin/bash -c source /home/j-j15a206/.claude/shell-snapshots/snapshot-bash-1790244442730-pot0ay.sh 2>/dev/null || true && shopt -u extglob 2>/dev/null || true && { \builtin unalias -- 'unsetenv'; \builtin unset -f -- 'unsetenv'; } >/dev/null 2>&1 || true && eval 'until grep -q "geom run c" /tmp/claude-1003/-home-j-j15a206-universal-manipulation-interface/71c73aef-33b2-49ee-bca8-821148c30e91/tasks/bvqng66v7.output 2>/dev/null && ! pgrep -f "policy_rollout.py --only 2" >/dev/null; do sleep 25; done; cat /tmp/claude-1003/-home-j-j15a206-universal-manipulation-interface/71c73aef-33b2-49ee-bca8-821148c30e91/tasks/bvqng66v7.output' < /dev/null && pwd -P >| /tmp/claude-8083-cwd
+880563 /bin/bash -c source /home/j-j15a206/.claude/shell-snapshots/snapshot-bash-1790244442730-pot0ay.sh 2>/dev/null || true && shopt -u extglob 2>/dev/null || true && { \builtin unalias -- 'unsetenv'; \builtin unset -f -- 'unsetenv'; } >/dev/null 2>&1 || true && eval 'until ! pgrep -f "collect_demos.py --split train --n-episodes 48" >/dev/null; do sleep 30; done; f=/tmp/claude-1003/-home-j-j15a206-universal-manipulation-interface/71c73aef-33b2-49ee-bca8-821148c30e91/tasks/b2ydx71vr.output; echo "TRAIN DONE accepted=$(grep -c ACCEPT $f) rejected=$(grep -c reject $f)"; tail -2 $f' < /dev/null && pwd -P >| /tmp/claude-7749-cwd

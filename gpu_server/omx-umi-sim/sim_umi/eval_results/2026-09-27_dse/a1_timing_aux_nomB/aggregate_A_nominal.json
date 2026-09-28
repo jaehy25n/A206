@@ -1,0 +1,463 @@
+{
+ "definitions": {
+  "trap_band_deg": [
+   25.0,
+   32.0
+  ],
+  "lifted": "ball z > radius + 20.0 mm",
+  "strict_gt_secure_grasp": "from a lift-off (ball z > radius + 20.0 mm), over that unbroken lifted stretch, the longest prefix in which the ball's tool-frame position stays within 4.0 mm of that prefix's mean lasts >= 0.5 s and the tool travels >= 30.0 mm in it; every lifted stretch is judged from its own lift-off and the best kept. (Corrected 06:50: the first version measured over every lifted sample, including the fall after release -- kept as whole_lifted_*. Corrected 08:00: judging only the first stretch caught 0.04-0.11 s grazes of the 20 mm line instead of the carry.)",
+  "close_geometry": "at the onset of closing of the first GRASP-stage attempt; N/A without one",
+  "runtime_gate": "solve_ik_best in-plane position residual > 2 mm (the only runtime gate)",
+  "invalid_start": "ball farther than 2.0 mm (from HOME) or 25.0 mm (perturbed start) from its placement at the first rollout sample, or listed with --invalid; such episodes are listed and never counted"
+ },
+ "expert": {
+  "lateral": [
+   -0.62,
+   -2.26,
+   2.2
+  ],
+  "depth": [
+   -22.62,
+   -23.66,
+   -15.86
+  ],
+  "vertical": [
+   4.3,
+   0.51,
+   8.19
+  ],
+  "pitch": [
+   12.57,
+   7.91,
+   17.4
+  ],
+  "speed": 0.15
+ },
+ "runs": {
+  "A_nominal": {
+   "n_episodes": 5,
+   "infra_failed_episodes": 0,
+   "infra_retries_total": 0,
+   "counts": {
+    "grasp_stage_reached": 5,
+    "lift_stage_reached": 3,
+    "runtime_grasped_flag": 3,
+    "object_lifted": 3,
+    "strict_gt_secure_grasp": 1,
+    "bin_success": 1,
+    "entered_corridor": 2,
+    "reached_pitch_below_20": 5,
+    "consecutive_unreachable_abort": 3
+   },
+   "total_ticks": [
+    240,
+    602,
+    248,
+    98,
+    166
+   ],
+   "stage_ticks_mean": {
+    "SEARCH_OBJECT": 5.6,
+    "APPROACH_OBJECT": 192.8,
+    "GRASP": 23.8,
+    "LIFT": 9.4,
+    "SEARCH_BIN": 0.0,
+    "TRANSPORT": 11.0,
+    "PLACE": 3.4,
+    "AFTER_RELEASE": 24.8
+   },
+   "trap_dwell_s": [
+    2.259999999999877,
+    0.5899999999999181,
+    2.2899999999999636,
+    0.599999999999909,
+    1.9800000000000182
+   ],
+   "valid_prefix_le2_ratio": [
+    0.0,
+    0.0,
+    0.11428571428571428,
+    0.2727272727272727,
+    0.21153846153846154
+   ],
+   "abort_reasons": {
+    "the ball is in the bin": 1,
+    "ran out of ticks": 1,
+    "eight plans in a row the arm could not reach": 3
+   },
+   "close_geometry": {
+    "lateral": {
+     "n": 5,
+     "mean": 0.9120914541419729,
+     "median": 0.6620837435537628,
+     "std": 1.0878423543917857,
+     "values": [
+      0.6620837435537628,
+      2.9886028099448247,
+      0.06393762752710119,
+      0.8380385609608493,
+      0.007794528723327417
+     ]
+    },
+    "depth": {
+     "n": 5,
+     "mean": -14.834667150819683,
+     "median": -12.556323389722298,
+     "std": 6.774357538295262,
+     "values": [
+      -22.675042596464987,
+      -11.169751407527023,
+      -22.475816131193447,
+      -12.556323389722298,
+      -5.296402229190663
+     ]
+    },
+    "vertical": {
+     "n": 5,
+     "mean": 4.658077561883978,
+     "median": 5.4371527866643685,
+     "std": 3.7411459430109835,
+     "values": [
+      2.1322100289313677,
+      9.71096270563001,
+      -0.9947892668739865,
+      5.4371527866643685,
+      7.00485155506813
+     ]
+    },
+    "pitch": {
+     "n": 5,
+     "mean": 2.1704,
+     "median": 4.1388,
+     "std": 8.386522041704772,
+     "values": [
+      -5.1697,
+      15.4538,
+      -8.3494,
+      4.7785,
+      4.1388
+     ]
+    },
+    "ee_speed_mm_per_tick": {
+     "n": 5,
+     "mean": 0.3005557704981191,
+     "median": 0.2167100375279606,
+     "std": 0.15403758196686576,
+     "values": [
+      0.14745535073867974,
+      0.2167100375279606,
+      0.1673349018917487,
+      0.5165296206638115,
+      0.45474894166839513
+     ]
+    }
+   },
+   "feasibility": {
+    "attempted_waypoints": 2742,
+    "rejected_waypoints": 29,
+    "rejection_causes": {
+     "joint limit": 18,
+     "position unreachable (no limit, pitch met)": 11
+    },
+    "recomputation_matches_logged_within_0.05mm": 1.0,
+    "asked_pitch_deg_accepted": 6.545345924420915,
+    "asked_pitch_deg_rejected": -7.9081763596602705,
+    "orientation_residual_deg_accepted_mean": 0.3131129746294099,
+    "orientation_residual_deg_rejected_mean": 1.4846524652384696,
+    "pitch_err_deg_rejected_mean": 1.1482489082611316,
+    "joint_at_limit_fraction_rejected": 0.6206896551724138
+   },
+   "episodes": [
+    {
+     "episode": 0,
+     "total_ticks": 240,
+     "stage_ticks": {
+      "SEARCH_OBJECT": 0,
+      "APPROACH_OBJECT": 116,
+      "GRASP": 17,
+      "LIFT": 31,
+      "SEARCH_BIN": 0,
+      "TRANSPORT": 55,
+      "PLACE": 17,
+      "AFTER_RELEASE": 4
+     },
+     "infra_retries": 0,
+     "started_perturbed": null,
+     "trap_dwell_s": 2.259999999999877,
+     "reached_pitch_below_20": true,
+     "entered_corridor": true,
+     "grasp_stage_reached": true,
+     "lift_stage_reached": true,
+     "runtime_grasped_flag": true,
+     "object_lifted": true,
+     "whole_lifted_seconds": 15.410000000000082,
+     "whole_lifted_toolframe_deviation_mm": 66.34535828390521,
+     "whole_lifted_ee_travel_mm": 220.58559762822233,
+     "lifted_stretches": 1,
+     "held_seconds": 10.520000000000095,
+     "held_toolframe_deviation_mm": 3.116216149362035,
+     "held_ee_travel_mm": 220.0150309274346,
+     "strict_gt_secure_grasp": true,
+     "bin_success": true,
+     "plans": 61,
+     "valid_prefix_le2_ratio": 0.0,
+     "consecutive_unreachable_abort": false,
+     "abort_reason": "the ball is in the bin",
+     "close": {
+      "t_onset": 748.376,
+      "t_grasp_entry": 748.9739999960001,
+      "jaw_open_mm": 51.802,
+      "jaw_at_onset_mm": 50.807,
+      "lateral": 0.6620837435537628,
+      "depth": -22.675042596464987,
+      "vertical": 2.1322100289313677,
+      "pitch": -5.1697,
+      "tool_ball_distance_mm": 22.784692915254645,
+      "ee_speed_mm_per_tick": 0.14745535073867974
+     },
+     "rejections": {},
+     "start": {
+      "perturbed": false,
+      "settled": null,
+      "realized_pitch_deg": null,
+      "ball_start_dev_mm": 0.19,
+      "bodies_after_place": null,
+      "bodies_after_perturb": null,
+      "valid": true,
+      "tolerance_mm": 2.0
+     }
+    },
+    {
+     "episode": 1,
+     "total_ticks": 602,
+     "stage_ticks": {
+      "SEARCH_OBJECT": 28,
+      "APPROACH_OBJECT": 520,
+      "GRASP": 54,
+      "LIFT": 0,
+      "SEARCH_BIN": 0,
+      "TRANSPORT": 0,
+      "PLACE": 0,
+      "AFTER_RELEASE": 0
+     },
+     "infra_retries": 0,
+     "started_perturbed": null,
+     "trap_dwell_s": 0.5899999999999181,
+     "reached_pitch_below_20": true,
+     "entered_corridor": false,
+     "grasp_stage_reached": true,
+     "lift_stage_reached": false,
+     "runtime_grasped_flag": false,
+     "object_lifted": false,
+     "strict_gt_secure_grasp": false,
+     "bin_success": false,
+     "plans": 151,
+     "valid_prefix_le2_ratio": 0.0,
+     "consecutive_unreachable_abort": false,
+     "abort_reason": "ran out of ticks",
+     "close": {
+      "t_onset": 785.368,
+      "t_grasp_entry": 785.553999995,
+      "jaw_open_mm": 51.8,
+      "jaw_at_onset_mm": 50.828,
+      "lateral": 2.9886028099448247,
+      "depth": -11.169751407527023,
+      "vertical": 9.71096270563001,
+      "pitch": 15.4538,
+      "tool_ball_distance_mm": 15.09959899903633,
+      "ee_speed_mm_per_tick": 0.2167100375279606
+     },
+     "rejections": {},
+     "start": {
+      "perturbed": false,
+      "settled": null,
+      "realized_pitch_deg": null,
+      "ball_start_dev_mm": 0.19,
+      "bodies_after_place": null,
+      "bodies_after_perturb": null,
+      "valid": true,
+      "tolerance_mm": 2.0
+     }
+    },
+    {
+     "episode": 2,
+     "total_ticks": 248,
+     "stage_ticks": {
+      "SEARCH_OBJECT": 0,
+      "APPROACH_OBJECT": 98,
+      "GRASP": 22,
+      "LIFT": 8,
+      "SEARCH_BIN": 0,
+      "TRANSPORT": 0,
+      "PLACE": 0,
+      "AFTER_RELEASE": 120
+     },
+     "infra_retries": 0,
+     "started_perturbed": null,
+     "trap_dwell_s": 2.2899999999999636,
+     "reached_pitch_below_20": true,
+     "entered_corridor": false,
+     "grasp_stage_reached": true,
+     "lift_stage_reached": true,
+     "runtime_grasped_flag": true,
+     "object_lifted": true,
+     "whole_lifted_seconds": 1.1999999999999318,
+     "whole_lifted_toolframe_deviation_mm": 5.85250504744158,
+     "whole_lifted_ee_travel_mm": 18.681881998342686,
+     "lifted_stretches": 1,
+     "held_seconds": 1.1200000000000045,
+     "held_toolframe_deviation_mm": 3.856901212190637,
+     "held_ee_travel_mm": 21.527873513192162,
+     "strict_gt_secure_grasp": false,
+     "bin_success": false,
+     "plans": 70,
+     "valid_prefix_le2_ratio": 0.11428571428571428,
+     "consecutive_unreachable_abort": true,
+     "abort_reason": "eight plans in a row the arm could not reach",
+     "close": {
+      "t_onset": 877.11,
+      "t_grasp_entry": 877.3019999930001,
+      "jaw_open_mm": 51.802,
+      "jaw_at_onset_mm": 50.963,
+      "lateral": 0.06393762752710119,
+      "depth": -22.475816131193447,
+      "vertical": -0.9947892668739865,
+      "pitch": -8.3494,
+      "tool_ball_distance_mm": 22.49791111345489,
+      "ee_speed_mm_per_tick": 0.1673349018917487
+     },
+     "rejections": {
+      "joint limit": 9
+     },
+     "start": {
+      "perturbed": false,
+      "settled": null,
+      "realized_pitch_deg": null,
+      "ball_start_dev_mm": 0.19,
+      "bodies_after_place": null,
+      "bodies_after_perturb": null,
+      "valid": true,
+      "tolerance_mm": 2.0
+     }
+    },
+    {
+     "episode": 3,
+     "total_ticks": 98,
+     "stage_ticks": {
+      "SEARCH_OBJECT": 0,
+      "APPROACH_OBJECT": 84,
+      "GRASP": 6,
+      "LIFT": 8,
+      "SEARCH_BIN": 0,
+      "TRANSPORT": 0,
+      "PLACE": 0,
+      "AFTER_RELEASE": 0
+     },
+     "infra_retries": 0,
+     "started_perturbed": null,
+     "trap_dwell_s": 0.599999999999909,
+     "reached_pitch_below_20": true,
+     "entered_corridor": true,
+     "grasp_stage_reached": true,
+     "lift_stage_reached": true,
+     "runtime_grasped_flag": true,
+     "object_lifted": true,
+     "whole_lifted_seconds": 5.530000000000086,
+     "whole_lifted_toolframe_deviation_mm": 3.3071239406298223,
+     "whole_lifted_ee_travel_mm": 26.572121142279936,
+     "lifted_stretches": 1,
+     "held_seconds": 5.530000000000086,
+     "held_toolframe_deviation_mm": 3.3071239406298223,
+     "held_ee_travel_mm": 26.572121142279936,
+     "strict_gt_secure_grasp": false,
+     "bin_success": false,
+     "plans": 33,
+     "valid_prefix_le2_ratio": 0.2727272727272727,
+     "consecutive_unreachable_abort": true,
+     "abort_reason": "eight plans in a row the arm could not reach",
+     "close": {
+      "t_onset": 918.686,
+      "t_grasp_entry": 918.8739999920001,
+      "jaw_open_mm": 51.8,
+      "jaw_at_onset_mm": 50.853,
+      "lateral": 0.8380385609608493,
+      "depth": -12.556323389722298,
+      "vertical": 5.4371527866643685,
+      "pitch": 4.7785,
+      "tool_ball_distance_mm": 13.708617586119933,
+      "ee_speed_mm_per_tick": 0.5165296206638115
+     },
+     "rejections": {
+      "joint limit": 9
+     },
+     "start": {
+      "perturbed": false,
+      "settled": null,
+      "realized_pitch_deg": null,
+      "ball_start_dev_mm": 0.19,
+      "bodies_after_place": null,
+      "bodies_after_perturb": null,
+      "valid": true,
+      "tolerance_mm": 2.0
+     }
+    },
+    {
+     "episode": 4,
+     "total_ticks": 166,
+     "stage_ticks": {
+      "SEARCH_OBJECT": 0,
+      "APPROACH_OBJECT": 146,
+      "GRASP": 20,
+      "LIFT": 0,
+      "SEARCH_BIN": 0,
+      "TRANSPORT": 0,
+      "PLACE": 0,
+      "AFTER_RELEASE": 0
+     },
+     "infra_retries": 0,
+     "started_perturbed": null,
+     "trap_dwell_s": 1.9800000000000182,
+     "reached_pitch_below_20": true,
+     "entered_corridor": false,
+     "grasp_stage_reached": true,
+     "lift_stage_reached": false,
+     "runtime_grasped_flag": false,
+     "object_lifted": false,
+     "strict_gt_secure_grasp": false,
+     "bin_success": false,
+     "plans": 52,
+     "valid_prefix_le2_ratio": 0.21153846153846154,
+     "consecutive_unreachable_abort": true,
+     "abort_reason": "eight plans in a row the arm could not reach",
+     "close": {
+      "t_onset": 939.012,
+      "t_grasp_entry": 939.387999991,
+      "jaw_open_mm": 51.802,
+      "jaw_at_onset_mm": 50.9,
+      "lateral": 0.007794528723327417,
+      "depth": -5.296402229190663,
+      "vertical": 7.00485155506813,
+      "pitch": 4.1388,
+      "tool_ball_distance_mm": 8.781792677841707,
+      "ee_speed_mm_per_tick": 0.45474894166839513
+     },
+     "rejections": {
+      "position unreachable (no limit, pitch met)": 11
+     },
+     "start": {
+      "perturbed": false,
+      "settled": null,
+      "realized_pitch_deg": null,
+      "ball_start_dev_mm": 0.19,
+      "bodies_after_place": null,
+      "bodies_after_perturb": null,
+      "valid": true,
+      "tolerance_mm": 2.0
+     }
+    }
+   ],
+   "infra_failed": [],
+   "invalid_start": []
+  }
+ }
+}

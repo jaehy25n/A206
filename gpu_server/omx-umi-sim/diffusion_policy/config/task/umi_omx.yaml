@@ -1,0 +1,135 @@
+# OMX task config -- a copy of task/umi.yaml with the project-specific timing and
+# dataset knobs.  Kept as a separate file so upstream task/umi.yaml stays pristine
+# and the two can be diffed at any time.
+#
+# What differs from upstream task/umi.yaml
+# ---------------------------------------
+#   name / task_name      umi -> umi_omx
+#   dataset_path          example path -> required (??? , supplied by the CLI)
+#   obs_down_sample_steps 3 -> 1
+#       The converter already decimates 30 Hz -> 10 Hz while writing the zarr
+#       (input contract s11), so the sampler must NOT stride again.  The invariant
+#       is  converter_stride * obs_down_sample_steps == source_fps / policy_hz.
+#       Build with timing.downsample_stage=dataset instead and set this back to 3.
+#       `omx.cli` reads umi_task_requirements out of the zarr metadata and
+#       refuses to launch on a mismatch.
+#   dataset_frequeny      unchanged at 0
+#       All latency_steps therefore evaluate to 0, which is correct here: the CPU
+#       layer already timestamp-aligned RGB, pose and gripper onto one timeline,
+#       so there is no residual sensor latency for the GPU side to compensate.
+#
+# Unchanged and load-bearing:
+#   action_horizon 16, img/low_dim obs horizon 2, rgb [3,224,224],
+#   rotation_rep rotation_6d -> 10D action, repeat_frame_prob 0.0.
+#
+# repeat_frame_prob stays 0.0 on purpose: SequenceSampler's `gripper_width < 0.08`
+# heuristic is calibrated for the upstream UMI gripper, not ours.  Our widths are
+# real metres (closed ~0.025, open ~0.105) so the unit is right, but 0.08 is not
+# our grasp threshold.  Measure the width distribution first (inspect_umi_zarr.py
+# prints it) before ever raising repeat_frame_prob.
+
+name: umi_omx
+
+camera_obs_latency: 0.125
+robot_obs_latency: 0.0001
+gripper_obs_latency: 0.02
+dataset_frequeny: 0 # keep 0: every stream is already timestamp-aligned upstream
+obs_down_sample_steps: 1 # see header: converter already decimated to 10 Hz
+
+low_dim_obs_horizon: 2
+img_obs_horizon: 2
+action_horizon: 16
+ignore_proprioception: False
+
+shape_meta: &shape_meta
+  # acceptable types: rgb, low_dim
+  obs:
+    camera0_rgb:
+      shape: [3, 224, 224]
+      horizon: ${task.img_obs_horizon} # int
+      latency_steps: 0 # float
+      down_sample_steps: ${task.obs_down_sample_steps} # int
+      type: rgb
+      ignore_by_policy: False
+    robot0_eef_pos:
+      shape: [3]
+      horizon: ${task.low_dim_obs_horizon} # int
+      latency_steps: ${eval:'(${task.camera_obs_latency} - ${task.robot_obs_latency}) * ${task.dataset_frequeny}'} # float
+      down_sample_steps: ${task.obs_down_sample_steps} # float
+      type: low_dim
+      ignore_by_policy: ${task.ignore_proprioception}
+    # robot0_eef_pos_abs:
+    #   shape: [1]
+    #   axis: [2] # 2 means z-axis
+    #   horizon: ${task.low_dim_obs_horizon} # int
+    #   latency_steps: ${eval:'(${task.camera_obs_latency} - ${task.robot_obs_latency}) * ${task.dataset_frequeny}'} # float
+    #   down_sample_steps: ${task.obs_down_sample_steps} # float
+    #   type: low_dim
+    # robot0_eef_rot_axis_angle_abs:
+    #   shape: [2]
+    #   axis: [0, 1] # yaw and pitch
+    #   horizon: ${task.low_dim_obs_horizon} # int
+    #   latency_steps: ${eval:'(${task.camera_obs_latency} - ${task.robot_obs_latency}) * ${task.dataset_frequeny}'} # float
+    #   down_sample_steps: ${task.obs_down_sample_steps} # float
+    #   type: low_dim
+    robot0_eef_rot_axis_angle:
+      raw_shape: [3]
+      shape: [6]
+      horizon: ${task.low_dim_obs_horizon} # int
+      latency_steps: ${eval:'(${task.camera_obs_latency} - ${task.robot_obs_latency}) * ${task.dataset_frequeny}'} # float
+      down_sample_steps: ${task.obs_down_sample_steps} # float
+      type: low_dim
+      rotation_rep: rotation_6d
+      ignore_by_policy: ${task.ignore_proprioception}
+    robot0_gripper_width:
+      shape: [1]
+      horizon: ${task.low_dim_obs_horizon} # int
+      latency_steps: ${eval:'(${task.camera_obs_latency} - ${task.gripper_obs_latency}) * ${task.dataset_frequeny}'} # float
+      down_sample_steps: ${task.obs_down_sample_steps} # float
+      type: low_dim
+      ignore_by_policy: ${task.ignore_proprioception}
+
+    # pose with respect to episode start
+    # robot0_eef_pos_wrt_start:
+    #   shape: [3]
+    #   horizon: ${task.low_dim_obs_horizon} # int
+    #   latency_steps: ${eval:'(${task.camera_obs_latency} - ${task.robot_obs_latency}) * ${task.dataset_frequeny}'} # float
+    #   down_sample_steps: ${task.obs_down_sample_steps} # float
+    #   type: low_dim
+    #   ignore_by_policy: ${task.ignore_proprioception}
+    robot0_eef_rot_axis_angle_wrt_start:
+      raw_shape: [3]
+      shape: [6]
+      horizon: ${task.low_dim_obs_horizon} # int
+      latency_steps: ${eval:'(${task.camera_obs_latency} - ${task.robot_obs_latency}) * ${task.dataset_frequeny}'} # float
+      down_sample_steps: ${task.obs_down_sample_steps} # float
+      type: low_dim
+      ignore_by_policy: ${task.ignore_proprioception}
+  action: 
+    shape: [10]
+    horizon: ${task.action_horizon}
+    latency_steps: 0 # float
+    down_sample_steps: ${task.obs_down_sample_steps} # int
+    rotation_rep: rotation_6d
+
+task_name: &task_name umi_omx
+dataset_path: ???
+pose_repr: &pose_repr
+  obs_pose_repr: relative # abs or rel
+  action_pose_repr: relative # abs or rel or delta
+
+env_runner:
+  _target_: diffusion_policy.env_runner.real_pusht_image_runner.RealPushTImageRunner
+
+dataset:
+  _target_: diffusion_policy.dataset.umi_dataset.UmiDataset
+  shape_meta: *shape_meta
+  dataset_path: ${task.dataset_path}
+  cache_dir: null
+  pose_repr: *pose_repr
+  action_padding: False
+  temporally_independent_normalization: False
+  repeat_frame_prob: 0.0
+  max_duration: null
+  seed: 42        # fixed so the train/val episode split is identical across variants
+  val_ratio: 0.05

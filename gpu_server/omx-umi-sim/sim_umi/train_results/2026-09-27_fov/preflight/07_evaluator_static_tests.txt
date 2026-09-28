@@ -1,0 +1,16 @@
+PASS  G0 policy_image == preprocess_rgb (bitwise)  (3, 224, 224)
+PASS  g1_letterbox224 policy_image == rgb_geometry  (3, 224, 224)
+PASS  g2_rect288x176 policy_image == rgb_geometry  (3, 176, 288)
+PASS  G0 policy_image == preprocess_rgb (bitwise)  (3, 224, 224)
+PASS  g1_letterbox224 policy_image == rgb_geometry  (3, 224, 224)
+PASS  g2_rect288x176 policy_image == rgb_geometry  (3, 176, 288)
+PASS  G0 policy_image == preprocess_rgb (bitwise)  (3, 224, 224)
+PASS  g1_letterbox224 policy_image == rgb_geometry  (3, 224, 224)
+PASS  g2_rect288x176 policy_image == rgb_geometry  (3, 176, 288)
+PASS  sidecar: G0 geometry, EMA weights, 224x224, the checkpoint  {"rgb_geometry": "g0_center224", "weights": "ema", "input_hw": [224, 224]}
+PASS  answer with _req_id: (1, 16, 10), finite  (1, 16, 10)
+PASS  answer without _req_id (old bridge): (1, 16, 10), same action  
+PASS  dumped encoder input == CenterCrop(212)+Resize(224) of what was sent  max |d| 0.00e+00
+PASS  dump links to the sent image by sha1  
+PASS  no dump for the request without an id  
+ALL PASS

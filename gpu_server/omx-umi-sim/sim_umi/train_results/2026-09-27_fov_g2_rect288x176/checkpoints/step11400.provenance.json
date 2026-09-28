@@ -1,0 +1,66 @@
+{
+ "tag": "step11400",
+ "checkpoint": "/home/j-j15a206/universal_manipulation_interface/sim_umi/train_results/2026-09-27_fov_g2_rect288x176/checkpoints/step11400.ckpt",
+ "opt_steps": 11400,
+ "global_step": 11399,
+ "epoch": 33,
+ "batch_idx_in_epoch": 278,
+ "trainable_parameters": 299,
+ "params_with_optimizer_state": 299,
+ "param_step_histogram": {
+  "11400": 299
+ },
+ "lr_group0": 0.0,
+ "lr_group1": 0.0,
+ "scheduler_state": {
+  "base_lrs": [
+   0.0003,
+   2.9999999999999997e-05
+  ],
+  "last_epoch": 11400,
+  "verbose": false,
+  "_step_count": 11401,
+  "_get_lr_called_within_step": false,
+  "_last_lr": [
+   0.0,
+   0.0
+  ],
+  "lr_lambdas": "list"
+ },
+ "ema_update_count": 11400,
+ "ema_decay": 0.9990935373068365,
+ "scaler": {
+  "scale": 2097152.0,
+  "growth_factor": 2.0,
+  "backoff_factor": 0.5,
+  "growth_interval": 2000.0,
+  "_growth_tracker": 1400.0
+ },
+ "skipped_optimizer_steps": 0,
+ "nonfinite_losses": 0,
+ "evaluation_weight_source": "ema_model",
+ "git": {
+  "commit": "0352476c45572eb303fae414a21b072a34a9441f",
+  "dirty_tracked_files": false
+ },
+ "hostname": "jupyter02",
+ "cuda_visible_devices": "5",
+ "mixed_precision": "fp16",
+ "batch_size": 64,
+ "gradient_accumulate_every": 1,
+ "dataset": {
+  "path": "/home/j-j15a206/universal_manipulation_interface/sim_umi/data/omx_sim_train_v2_g2_rect288x176.zarr.zip",
+  "bytes": 175427743,
+  "mtime": 1790471717.1801748,
+  "sha256": "f1d8853dbfbb3ac3db9796e8dd83acf393c93f9f096a4535700b6a9819d8e024"
+ },
+ "val_ratio": 0.0,
+ "train_samples": 21532,
+ "dataloader_len": 337,
+ "lr_scheduler_total_steps": 11400,
+ "lr_warmup_steps": 2000,
+ "init_state_source": "/home/j-j15a206/universal_manipulation_interface/sim_umi/train_results/2026-09-27_fov/shared_init/init_state_g2.pt",
+ "init_checksum": "ab5362b5495519ed45fe225c975b254021c177525faa6a18c34538aa52c01081",
+ "seed_init_checksum": "88800d20f2ab6d9a497b9ea43bed5072e22c1485e1f7d1877611415eb64bb934",
+ "resumed_from": null
+}

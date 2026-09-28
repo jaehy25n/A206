@@ -1,0 +1,162 @@
+# DSE repeat comparison: G0c1 vs G0c2
+
+## episode 0
+- reset_state_equal: True
+- capture_ticks_equal: True
+- plans: (42, 41)
+- obs_frame_ticks_first_diff_plan: 0
+- obs_dt_first_diff_plan: 41
+- alignment_all_rgb_snapshot: True
+- policy_input_first_diff_plan: 2
+- policy_output_first_diff_plan: 3
+- policy_output_max_abs_diff: 0.2873029112815857
+- policy_lowdim_max_abs_diff: 255.0
+- policy_rgb_first_diff_plan: 2
+- action_age_first_diff_plan: 41
+- action_age_values: [(0.216, 0.218, 0.29)]
+- kstar_first_diff_plan: 41
+- sent_waypoints_first_diff_plan: 3
+- jaw_first_diff: 0
+- commanded_max_abs_diff: 0.35316501949142065
+- commanded_first_diff_tick: 1309
+- commanded_ticks_compared: 13210
+- state_max_abs_diff: 0.302232838815891
+- state_first_diff_tick: 1310
+- state_ticks_compared: 13210
+- first_command_equal: True
+- ee_first_diff_tick: None
+- ee_max_abs_diff_mm: None
+- ee_ticks_compared: 0
+- skips_rel: ([], [])
+- outcome: ({'success': True, 'grasped': True, 'stopped_because': 'the ball is in the bin', 'steps': 164, 'furthest_stage': 'AFTER_RELEASE'}, {'success': True, 'grasped': True, 'stopped_because': 'the ball is in the bin', 'steps': 160, 'furthest_stage': 'AFTER_RELEASE'})
+- outcome_equal: False
+- gates: (True, True)
+
+## episode 1
+- reset_state_equal: True
+- capture_ticks_equal: True
+- plans: (97, 52)
+- obs_frame_ticks_first_diff_plan: 0
+- obs_dt_first_diff_plan: 52
+- alignment_all_rgb_snapshot: True
+- policy_input_first_diff_plan: 2
+- policy_output_first_diff_plan: 2
+- policy_output_max_abs_diff: 0.3392210006713867
+- policy_lowdim_max_abs_diff: 255.0
+- policy_rgb_first_diff_plan: 2
+- action_age_first_diff_plan: 29
+- action_age_values: [(0.216, 0.218, 0.29), (0.216, None, None)]
+- kstar_first_diff_plan: 29
+- sent_waypoints_first_diff_plan: 2
+- jaw_first_diff: 0
+- commanded_max_abs_diff: 3.336494766337771
+- commanded_first_diff_tick: 1009
+- commanded_ticks_compared: 16457
+- state_max_abs_diff: 3.3259655879912815
+- state_first_diff_tick: 1010
+- state_ticks_compared: 16457
+- first_command_equal: True
+- ee_first_diff_tick: None
+- ee_max_abs_diff_mm: None
+- ee_ticks_compared: 0
+- skips_rel: ([], [11028])
+- outcome: ({'success': False, 'grasped': False, 'stopped_because': 'eight plans in a row the arm could not reach', 'steps': 355, 'furthest_stage': 'GRASP'}, {'success': False, 'grasped': True, 'stopped_because': 'eight plans in a row the arm could not reach', 'steps': 136, 'furthest_stage': 'AFTER_RELEASE'})
+- outcome_equal: False
+- gates: (True, True)
+
+## episode 2
+- reset_state_equal: True
+- capture_ticks_equal: True
+- plans: (139, 60)
+- obs_frame_ticks_first_diff_plan: 0
+- obs_dt_first_diff_plan: 60
+- alignment_all_rgb_snapshot: True
+- policy_input_first_diff_plan: 7
+- policy_output_first_diff_plan: 7
+- policy_output_max_abs_diff: 0.12944690883159637
+- policy_lowdim_max_abs_diff: 255.0
+- policy_rgb_first_diff_plan: 7
+- action_age_first_diff_plan: 52
+- action_age_values: [(0.216, 0.218, 0.29), (0.216, None, None)]
+- kstar_first_diff_plan: 52
+- sent_waypoints_first_diff_plan: 7
+- jaw_first_diff: 0
+- commanded_max_abs_diff: 1.877397582193272
+- commanded_first_diff_tick: 2509
+- commanded_ticks_compared: 18856
+- state_max_abs_diff: 1.8857615348488874
+- state_first_diff_tick: 2510
+- state_ticks_compared: 18857
+- first_command_equal: True
+- ee_first_diff_tick: -29011
+- ee_max_abs_diff_mm: 250.96200000000002
+- ee_ticks_compared: 3621
+- skips_rel: ([], [15714])
+- outcome: ({'success': False, 'grasped': True, 'stopped_because': 'eight plans in a row the arm could not reach', 'steps': 524, 'furthest_stage': 'AFTER_RELEASE'}, {'success': False, 'grasped': True, 'stopped_because': 'eight plans in a row the arm could not reach', 'steps': 207, 'furthest_stage': 'AFTER_RELEASE'})
+- outcome_equal: False
+- gates: (True, True)
+
+## episode 3
+- reset_state_equal: False
+- capture_ticks_equal: True
+- plans: (31, 31)
+- obs_frame_ticks_first_diff_plan: None
+- obs_dt_first_diff_plan: None
+- alignment_all_rgb_snapshot: True
+- policy_input_first_diff_plan: 7
+- policy_output_first_diff_plan: 7
+- policy_output_max_abs_diff: 0.01073262095451355
+- policy_lowdim_max_abs_diff: 255.0
+- policy_rgb_first_diff_plan: 7
+- action_age_first_diff_plan: None
+- action_age_values: [(0.216, 0.218, 0.29), (0.216, None, None)]
+- kstar_first_diff_plan: None
+- sent_waypoints_first_diff_plan: 7
+- jaw_first_diff: 105
+- commanded_max_abs_diff: 0.14791783528103408
+- commanded_first_diff_tick: 2509
+- commanded_ticks_compared: 10158
+- state_max_abs_diff: 0.10506495132327423
+- state_first_diff_tick: 2510
+- state_ticks_compared: 10158
+- first_command_equal: True
+- ee_first_diff_tick: -7608
+- ee_max_abs_diff_mm: 4.8919999999999995
+- ee_ticks_compared: 1881
+- skips_rel: ([], [])
+- outcome: ({'success': False, 'grasped': True, 'stopped_because': 'eight plans in a row the arm could not reach', 'steps': 91, 'furthest_stage': 'LIFT'}, {'success': False, 'grasped': True, 'stopped_because': 'eight plans in a row the arm could not reach', 'steps': 90, 'furthest_stage': 'LIFT'})
+- outcome_equal: False
+- gates: (True, True)
+
+## episode 4
+- reset_state_equal: True
+- capture_ticks_equal: True
+- plans: (77, 74)
+- obs_frame_ticks_first_diff_plan: 74
+- obs_dt_first_diff_plan: 74
+- alignment_all_rgb_snapshot: True
+- policy_input_first_diff_plan: 5
+- policy_output_first_diff_plan: 5
+- policy_output_max_abs_diff: 0.09495216608047485
+- policy_lowdim_max_abs_diff: 255.0
+- policy_rgb_first_diff_plan: 5
+- action_age_first_diff_plan: 66
+- action_age_values: [(0.216, 0.218, 0.29), (0.216, None, None)]
+- kstar_first_diff_plan: 66
+- sent_waypoints_first_diff_plan: 5
+- jaw_first_diff: 79
+- commanded_max_abs_diff: 0.672025245661955
+- commanded_first_diff_tick: 1909
+- commanded_ticks_compared: 23057
+- state_max_abs_diff: 0.4385941168415908
+- state_first_diff_tick: 1910
+- state_ticks_compared: 23057
+- first_command_equal: True
+- ee_first_diff_tick: 1950
+- ee_max_abs_diff_mm: 9.617999999999999
+- ee_ticks_compared: 4461
+- skips_rel: ([], [7843])
+- outcome: ({'success': False, 'grasped': False, 'stopped_because': 'eight plans in a row the arm could not reach', 'steps': 273, 'furthest_stage': 'GRASP'}, {'success': False, 'grasped': False, 'stopped_because': 'eight plans in a row the arm could not reach', 'steps': 264, 'furthest_stage': 'GRASP'})
+- outcome_equal: False
+- gates: (True, True)
+

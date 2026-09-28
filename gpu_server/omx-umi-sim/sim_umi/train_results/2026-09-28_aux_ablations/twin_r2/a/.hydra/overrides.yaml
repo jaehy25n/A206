@@ -1,0 +1,16 @@
+- task.dataset.val_ratio=0.0
+- training.seed=42
+- training.device=cuda:0
+- training.num_epochs=100
+- training.checkpoint_every=10
+- training.sample_every=5
+- training.resume=True
+- +training.mixed_precision=fp16
+- +training.lr_scheduler_total_steps=11400
+- +training.checkpoint_at_steps=[]
+- +training.init_state_path=/home/j-j15a206/universal_manipulation_interface/sim_umi/train_results/2026-09-27_definitive/shared_init/init_state.pt
+- task.dataset_path=/home/j-j15a206/universal_manipulation_interface/sim_umi/data/omx_sim_train_v2.zarr.zip
+- +training.max_opt_steps=20
+- +training.twin_probe_steps=20
+- exp_name=twin_a
+- +training.twin_probe_path=/home/j-j15a206/universal_manipulation_interface/sim_umi/train_results/2026-09-28_aux_ablations/twin_r2/a/probe

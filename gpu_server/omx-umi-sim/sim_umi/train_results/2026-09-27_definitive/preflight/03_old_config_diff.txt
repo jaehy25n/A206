@@ -1,0 +1,70 @@
+1c1
+< name: train_diffusion_unet_timm_omx
+---
+> name: train_diffusion_unet_timm
+5c5
+< exp_name: omx_sim_visual_v1
+---
+> exp_name: omx_sim_v2_clean_plus_corrective
+84c84
+< resume: true
+---
+> resume: false
+87c87
+< num_epochs: 120
+---
+> num_epochs: 34
+92c92
+< checkpoint_every: 10
+---
+> checkpoint_every: 4
+97a98,101
+> lr_scheduler_total_steps: 11400
+> checkpoint_at_steps:
+> - 5985
+> - 5986
+99c103
+< project: omx-umi
+---
+> project: umi
+102c106
+< name: ${now:%Y.%m.%d-%H.%M.%S}_${exp_name}
+---
+> name: ${now:%Y.%m.%d-%H.%M.%S}_${name}_${task_name}
+118,119c122,123
+< run_dir: data/omx/train/${exp_name}/${now:%Y.%m.%d}/${now:%H.%M.%S}
+< wandb_name_base: ${now:%Y.%m.%d-%H.%M.%S}_${exp_name}
+---
+> run_dir: data/outputs/${now:%Y.%m.%d}/${now:%H.%M.%S}_${name}_${task_name}
+> wandb_name_base: ${now:%Y.%m.%d-%H.%M.%S}_${name}_${task_name}
+192c196
+< dataset_path: /home/j-j15a206/universal_manipulation_interface/sim_umi/data/omx_sim_train.zarr.zip
+---
+> dataset_path: /home/j-j15a206/universal_manipulation_interface/sim_umi/data/omx_sim_train_v2.zarr.zip
+270,293c274
+< val_ratio: 0.0
+< meta:
+< experiment: unset
+< dataset_name: unset
+< dataset_zarr: unset
+< dataset_sha256: unset
+< dataset_n_episodes: -1
+< dataset_n_frames: -1
+< dataset_stored_fps: -1.0
+< dataset_synthetic: false
+< rgb_mode: unset
+< rgb_out_res: unset
+< camera_to_ee_calibration_version: unset
+< camera_to_ee_status: unset
+< gripper_status: unset
+< gripper_representation: unset
+< collector_calibration_version: unset
+< policy_hz: -1.0
+< obs_down_sample_steps: -1
+< git_commit: unset
+< git_branch: unset
+< git_dirty: false
+< cuda_visible_devices: unset
+< train_profile: unset
+---
+> val_ratio: 0.05

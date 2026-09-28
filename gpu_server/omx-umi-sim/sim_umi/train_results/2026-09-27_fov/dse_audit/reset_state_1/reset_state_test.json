@@ -1,0 +1,83 @@
+{
+ "capture_ticks": [
+  [
+   0,
+   25,
+   50
+  ],
+  [
+   0,
+   25,
+   50
+  ]
+ ],
+ "rgb_tick_0": {
+  "changed_px": 0,
+  "max_abs": 0,
+  "bbox": null
+ },
+ "rgb_tick_25": {
+  "changed_px": 1,
+  "max_abs": 1,
+  "bbox": [
+   82,
+   82,
+   276,
+   276
+  ]
+ },
+ "rgb_tick_50": {
+  "changed_px": 0,
+  "max_abs": 0,
+  "bbox": null
+ },
+ "joints_tick_0": {
+  "names": [
+   "joint1",
+   "joint2",
+   "joint3",
+   "joint4",
+   "joint5",
+   "gripper_joint_1",
+   "gripper_joint_2"
+  ],
+  "q_equal": true,
+  "qd_equal": true,
+  "max_abs_dq": 0.0,
+  "max_abs_dqd": 0.0,
+  "finger2_minus_finger1": 0.0
+ },
+ "joints_tick_25": {
+  "names": [
+   "joint1",
+   "joint2",
+   "joint3",
+   "joint4",
+   "joint5",
+   "gripper_joint_1",
+   "gripper_joint_2"
+  ],
+  "q_equal": true,
+  "qd_equal": true,
+  "max_abs_dq": 0.0,
+  "max_abs_dqd": 0.0,
+  "finger2_minus_finger1": -7.258502576767967e-09
+ },
+ "joints_tick_50": {
+  "names": [
+   "joint1",
+   "joint2",
+   "joint3",
+   "joint4",
+   "joint5",
+   "gripper_joint_1",
+   "gripper_joint_2"
+  ],
+  "q_equal": true,
+  "qd_equal": true,
+  "max_abs_dq": 0.0,
+  "max_abs_dqd": 0.0,
+  "finger2_minus_finger1": -8.756823044464568e-11
+ },
+ "free_body_ticks_common": []
+}

@@ -1,0 +1,75 @@
+{
+ "checkpoint": "sim_umi/train_results/2026-09-28_g0_oracle_tip_relation_film_v1/checkpoints/step10000.ckpt",
+ "expected_opt_steps": 10000,
+ "bytes": 2759980131,
+ "state_dicts": [
+  "ema_model",
+  "model",
+  "optimizer"
+ ],
+ "pickles": {
+  "init_checksum": "954f2db431f05d4367ee9355b7df92bd1fa2d66a0e48eeb39bde294713d4c52d",
+  "global_step": 9999,
+  "opt_steps": 10000,
+  "epoch": 29,
+  "skipped_optimizer_steps": 0,
+  "nonfinite_losses": 0
+ },
+ "opt_steps_pickle": 10000,
+ "opt_steps_extra": 10000,
+ "ema_update_count": 10000,
+ "ema_decay": 0.9989999249934369,
+ "scheduler_last_epoch": 10000,
+ "scheduler_step_count": 10001,
+ "scheduler_last_lr": [
+  1.612217462101783e-05,
+  1.612217462101783e-06,
+  1.612217462101783e-05
+ ],
+ "optimizer_lr": [
+  1.612217462101783e-05,
+  1.612217462101783e-06,
+  1.612217462101783e-05
+ ],
+ "optimizer_initial_lr": [
+  0.0003,
+  2.9999999999999997e-05,
+  0.0003
+ ],
+ "param_step_histogram": {
+  "10000": 305
+ },
+ "scaler": {
+  "scale": 2097152.0,
+  "growth_factor": 2.0,
+  "backoff_factor": 0.5,
+  "growth_interval": 2000,
+  "_growth_tracker": 0
+ },
+ "skipped_optimizer_steps": 0,
+ "nonfinite_losses": 0,
+ "epoch": 29,
+ "global_step": 9999,
+ "batch_idx_in_epoch": 226,
+ "rng_present": [
+  "numpy",
+  "python",
+  "torch_cpu",
+  "torch_cuda"
+ ],
+ "init_checksum": "954f2db431f05d4367ee9355b7df92bd1fa2d66a0e48eeb39bde294713d4c52d",
+ "shared_init_checksum": "a4cd264fbf9439ef9d8b3fdb4dc51e3559ec82559dbeab591faa8cce06c28076",
+ "new_module_prefixes": [
+  "obs_encoder.relation_film."
+ ],
+ "mixed_precision": "fp16",
+ "dataset_sha256": "905749cd56e34b2f4d9e8c3195abff119406d8226a11601bc07ca7ddc75ff24c",
+ "val_ratio": 0.0,
+ "expected_lr": [
+  1.612217462101783e-05,
+  1.612217462101783e-06,
+  1.612217462101783e-05
+ ],
+ "fail": [],
+ "pass": true
+}

@@ -1,0 +1,10 @@
+{
+ "created": "2026-09-27T03:24:17+0900",
+ "file": "/home/j-j15a206/universal_manipulation_interface/sim_umi/train_results/2026-09-27_definitive/shared_init/init_state.pt",
+ "tensors": 301,
+ "trainable_params": 171273610,
+ "checksum_excluding_normalizer": "a4cd264fbf9439ef9d8b3fdb4dc51e3559ec82559dbeab591faa8cce06c28076",
+ "normalizer_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+ "second_seeded_construction_checksum": "a4cd264fbf9439ef9d8b3fdb4dc51e3559ec82559dbeab591faa8cce06c28076",
+ "seed_alone_reproduces": true
+}

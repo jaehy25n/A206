@@ -1,0 +1,620 @@
+{
+ "git": {
+  "commit": "b670f8b85374e40230550112c487ccc531cbc1ff",
+  "dirty_tracked_files": true
+ },
+ "hostname": "jupyter02",
+ "cuda_visible_devices": "5",
+ "mixed_precision": "fp16",
+ "batch_size": 64,
+ "gradient_accumulate_every": 1,
+ "dataset": {
+  "path": "/home/j-j15a206/universal_manipulation_interface/sim_umi/data/omx_sim_train_v2_g2_rect288x176.zarr.zip",
+  "bytes": 175427743,
+  "mtime": 1790471717.1801748,
+  "sha256": "f1d8853dbfbb3ac3db9796e8dd83acf393c93f9f096a4535700b6a9819d8e024"
+ },
+ "val_ratio": 0.0,
+ "train_samples": 21532,
+ "dataloader_len": 337,
+ "lr_scheduler_total_steps": 11400,
+ "lr_warmup_steps": 2000,
+ "init_state_source": "/home/j-j15a206/universal_manipulation_interface/sim_umi/train_results/2026-09-27_fov/shared_init/init_state_g2.pt",
+ "init_checksum": "ab5362b5495519ed45fe225c975b254021c177525faa6a18c34538aa52c01081",
+ "seed_init_checksum": "88800d20f2ab6d9a497b9ea43bed5072e22c1485e1f7d1877611415eb64bb934",
+ "resumed_from": null,
+ "config": {
+  "name": "train_diffusion_unet_timm_omx",
+  "_target_": "diffusion_policy.workspace.train_diffusion_unet_image_workspace.TrainDiffusionUnetImageWorkspace",
+  "task_name": "umi_omx",
+  "shape_meta": {
+   "obs": {
+    "camera0_rgb": {
+     "shape": [
+      3,
+      176,
+      288
+     ],
+     "horizon": 2,
+     "latency_steps": 0,
+     "down_sample_steps": 1,
+     "type": "rgb",
+     "ignore_by_policy": false
+    },
+    "robot0_eef_pos": {
+     "shape": [
+      3
+     ],
+     "horizon": 2,
+     "latency_steps": 0.0,
+     "down_sample_steps": 1,
+     "type": "low_dim",
+     "ignore_by_policy": false
+    },
+    "robot0_eef_rot_axis_angle": {
+     "raw_shape": [
+      3
+     ],
+     "shape": [
+      6
+     ],
+     "horizon": 2,
+     "latency_steps": 0.0,
+     "down_sample_steps": 1,
+     "type": "low_dim",
+     "rotation_rep": "rotation_6d",
+     "ignore_by_policy": false
+    },
+    "robot0_gripper_width": {
+     "shape": [
+      1
+     ],
+     "horizon": 2,
+     "latency_steps": 0.0,
+     "down_sample_steps": 1,
+     "type": "low_dim",
+     "ignore_by_policy": false
+    },
+    "robot0_eef_rot_axis_angle_wrt_start": {
+     "raw_shape": [
+      3
+     ],
+     "shape": [
+      6
+     ],
+     "horizon": 2,
+     "latency_steps": 0.0,
+     "down_sample_steps": 1,
+     "type": "low_dim",
+     "ignore_by_policy": false
+    }
+   },
+   "action": {
+    "shape": [
+     10
+    ],
+    "horizon": 16,
+    "latency_steps": 0,
+    "down_sample_steps": 1,
+    "rotation_rep": "rotation_6d"
+   }
+  },
+  "exp_name": "fov_smoke_g2_rect288x176",
+  "n_action_steps": 8,
+  "policy": {
+   "_target_": "diffusion_policy.policy.diffusion_unet_timm_policy.DiffusionUnetTimmPolicy",
+   "shape_meta": {
+    "obs": {
+     "camera0_rgb": {
+      "shape": [
+       3,
+       176,
+       288
+      ],
+      "horizon": 2,
+      "latency_steps": 0,
+      "down_sample_steps": 1,
+      "type": "rgb",
+      "ignore_by_policy": false
+     },
+     "robot0_eef_pos": {
+      "shape": [
+       3
+      ],
+      "horizon": 2,
+      "latency_steps": 0.0,
+      "down_sample_steps": 1,
+      "type": "low_dim",
+      "ignore_by_policy": false
+     },
+     "robot0_eef_rot_axis_angle": {
+      "raw_shape": [
+       3
+      ],
+      "shape": [
+       6
+      ],
+      "horizon": 2,
+      "latency_steps": 0.0,
+      "down_sample_steps": 1,
+      "type": "low_dim",
+      "rotation_rep": "rotation_6d",
+      "ignore_by_policy": false
+     },
+     "robot0_gripper_width": {
+      "shape": [
+       1
+      ],
+      "horizon": 2,
+      "latency_steps": 0.0,
+      "down_sample_steps": 1,
+      "type": "low_dim",
+      "ignore_by_policy": false
+     },
+     "robot0_eef_rot_axis_angle_wrt_start": {
+      "raw_shape": [
+       3
+      ],
+      "shape": [
+       6
+      ],
+      "horizon": 2,
+      "latency_steps": 0.0,
+      "down_sample_steps": 1,
+      "type": "low_dim",
+      "ignore_by_policy": false
+     }
+    },
+    "action": {
+     "shape": [
+      10
+     ],
+     "horizon": 16,
+     "latency_steps": 0,
+     "down_sample_steps": 1,
+     "rotation_rep": "rotation_6d"
+    }
+   },
+   "noise_scheduler": {
+    "_target_": "diffusers.DDIMScheduler",
+    "num_train_timesteps": 50,
+    "beta_start": 0.0001,
+    "beta_end": 0.02,
+    "beta_schedule": "squaredcos_cap_v2",
+    "clip_sample": true,
+    "set_alpha_to_one": true,
+    "steps_offset": 0,
+    "prediction_type": "epsilon"
+   },
+   "obs_encoder": {
+    "_target_": "diffusion_policy.model.vision.timm_obs_encoder.TimmObsEncoder",
+    "shape_meta": {
+     "obs": {
+      "camera0_rgb": {
+       "shape": [
+        3,
+        176,
+        288
+       ],
+       "horizon": 2,
+       "latency_steps": 0,
+       "down_sample_steps": 1,
+       "type": "rgb",
+       "ignore_by_policy": false
+      },
+      "robot0_eef_pos": {
+       "shape": [
+        3
+       ],
+       "horizon": 2,
+       "latency_steps": 0.0,
+       "down_sample_steps": 1,
+       "type": "low_dim",
+       "ignore_by_policy": false
+      },
+      "robot0_eef_rot_axis_angle": {
+       "raw_shape": [
+        3
+       ],
+       "shape": [
+        6
+       ],
+       "horizon": 2,
+       "latency_steps": 0.0,
+       "down_sample_steps": 1,
+       "type": "low_dim",
+       "rotation_rep": "rotation_6d",
+       "ignore_by_policy": false
+      },
+      "robot0_gripper_width": {
+       "shape": [
+        1
+       ],
+       "horizon": 2,
+       "latency_steps": 0.0,
+       "down_sample_steps": 1,
+       "type": "low_dim",
+       "ignore_by_policy": false
+      },
+      "robot0_eef_rot_axis_angle_wrt_start": {
+       "raw_shape": [
+        3
+       ],
+       "shape": [
+        6
+       ],
+       "horizon": 2,
+       "latency_steps": 0.0,
+       "down_sample_steps": 1,
+       "type": "low_dim",
+       "ignore_by_policy": false
+      }
+     },
+     "action": {
+      "shape": [
+       10
+      ],
+      "horizon": 16,
+      "latency_steps": 0,
+      "down_sample_steps": 1,
+      "rotation_rep": "rotation_6d"
+     }
+    },
+    "model_name": "vit_base_patch16_clip_224.openai",
+    "pretrained": true,
+    "frozen": false,
+    "global_pool": "",
+    "feature_aggregation": "attention_pool_2d",
+    "position_encording": "sinusoidal",
+    "downsample_ratio": 32,
+    "transforms": [
+     {
+      "type": "RandomCrop",
+      "ratio": 0.95
+     },
+     {
+      "_target_": "torchvision.transforms.ColorJitter",
+      "brightness": 0.3,
+      "contrast": 0.4,
+      "saturation": 0.5,
+      "hue": 0.08
+     }
+    ],
+    "use_group_norm": true,
+    "share_rgb_model": false,
+    "imagenet_norm": true
+   },
+   "num_inference_steps": 16,
+   "obs_as_global_cond": true,
+   "diffusion_step_embed_dim": 128,
+   "down_dims": [
+    256,
+    512,
+    1024
+   ],
+   "kernel_size": 5,
+   "n_groups": 8,
+   "cond_predict_scale": true,
+   "input_pertub": 0.1,
+   "train_diffusion_n_samples": 1
+  },
+  "ema": {
+   "_target_": "diffusion_policy.model.diffusion.ema_model.EMAModel",
+   "update_after_step": 0,
+   "inv_gamma": 1.0,
+   "power": 0.75,
+   "min_value": 0.0,
+   "max_value": 0.9999
+  },
+  "dataloader": {
+   "batch_size": 64,
+   "num_workers": 8,
+   "shuffle": true,
+   "pin_memory": true,
+   "persistent_workers": true
+  },
+  "val_dataloader": {
+   "batch_size": 64,
+   "num_workers": 8,
+   "shuffle": false,
+   "pin_memory": true,
+   "persistent_workers": true
+  },
+  "optimizer": {
+   "_target_": "torch.optim.AdamW",
+   "lr": 0.0003,
+   "betas": [
+    0.95,
+    0.999
+   ],
+   "eps": 1e-08,
+   "weight_decay": 1e-06
+  },
+  "training": {
+   "device": "cuda:0",
+   "seed": 42,
+   "debug": false,
+   "resume": false,
+   "lr_scheduler": "cosine",
+   "lr_warmup_steps": 2000,
+   "num_epochs": 100,
+   "gradient_accumulate_every": 1,
+   "use_ema": true,
+   "freeze_encoder": false,
+   "rollout_every": 10,
+   "checkpoint_every": 10,
+   "val_every": 1,
+   "sample_every": 5,
+   "max_train_steps": null,
+   "max_val_steps": null,
+   "tqdm_interval_sec": 1.0,
+   "mixed_precision": "fp16",
+   "lr_scheduler_total_steps": 11400,
+   "dataloader_seed": 42,
+   "init_state_path": "/home/j-j15a206/universal_manipulation_interface/sim_umi/train_results/2026-09-27_fov/shared_init/init_state_g2.pt",
+   "max_opt_steps": 100,
+   "checkpoint_at_steps": [
+    100
+   ],
+   "log_batch_fingerprints": 100
+  },
+  "logging": {
+   "project": "omx-umi",
+   "resume": false,
+   "mode": "online",
+   "name": "2026.09.27-10.30.05_fov_smoke_g2_rect288x176",
+   "tags": [
+    "train_diffusion_unet_timm_omx",
+    "umi_omx",
+    "fov_smoke_g2_rect288x176"
+   ],
+   "id": null,
+   "group": null
+  },
+  "checkpoint": {
+   "topk": {
+    "monitor_key": "train_loss",
+    "mode": "min",
+    "k": 20,
+    "format_str": "epoch={epoch:04d}-train_loss={train_loss:.3f}.ckpt"
+   },
+   "save_last_ckpt": true,
+   "save_last_snapshot": false
+  },
+  "multi_run": {
+   "run_dir": "data/omx/train/fov_smoke_g2_rect288x176/2026.09.27/10.30.05",
+   "wandb_name_base": "2026.09.27-10.30.05_fov_smoke_g2_rect288x176"
+  },
+  "task": {
+   "name": "umi_omx",
+   "camera_obs_latency": 0.125,
+   "robot_obs_latency": 0.0001,
+   "gripper_obs_latency": 0.02,
+   "dataset_frequeny": 0,
+   "obs_down_sample_steps": 1,
+   "low_dim_obs_horizon": 2,
+   "img_obs_horizon": 2,
+   "action_horizon": 16,
+   "ignore_proprioception": false,
+   "shape_meta": {
+    "obs": {
+     "camera0_rgb": {
+      "shape": [
+       3,
+       176,
+       288
+      ],
+      "horizon": 2,
+      "latency_steps": 0,
+      "down_sample_steps": 1,
+      "type": "rgb",
+      "ignore_by_policy": false
+     },
+     "robot0_eef_pos": {
+      "shape": [
+       3
+      ],
+      "horizon": 2,
+      "latency_steps": 0.0,
+      "down_sample_steps": 1,
+      "type": "low_dim",
+      "ignore_by_policy": false
+     },
+     "robot0_eef_rot_axis_angle": {
+      "raw_shape": [
+       3
+      ],
+      "shape": [
+       6
+      ],
+      "horizon": 2,
+      "latency_steps": 0.0,
+      "down_sample_steps": 1,
+      "type": "low_dim",
+      "rotation_rep": "rotation_6d",
+      "ignore_by_policy": false
+     },
+     "robot0_gripper_width": {
+      "shape": [
+       1
+      ],
+      "horizon": 2,
+      "latency_steps": 0.0,
+      "down_sample_steps": 1,
+      "type": "low_dim",
+      "ignore_by_policy": false
+     },
+     "robot0_eef_rot_axis_angle_wrt_start": {
+      "raw_shape": [
+       3
+      ],
+      "shape": [
+       6
+      ],
+      "horizon": 2,
+      "latency_steps": 0.0,
+      "down_sample_steps": 1,
+      "type": "low_dim",
+      "ignore_by_policy": false
+     }
+    },
+    "action": {
+     "shape": [
+      10
+     ],
+     "horizon": 16,
+     "latency_steps": 0,
+     "down_sample_steps": 1,
+     "rotation_rep": "rotation_6d"
+    }
+   },
+   "task_name": "umi_omx",
+   "dataset_path": "/home/j-j15a206/universal_manipulation_interface/sim_umi/data/omx_sim_train_v2_g2_rect288x176.zarr.zip",
+   "pose_repr": {
+    "obs_pose_repr": "relative",
+    "action_pose_repr": "relative"
+   },
+   "env_runner": {
+    "_target_": "diffusion_policy.env_runner.real_pusht_image_runner.RealPushTImageRunner"
+   },
+   "dataset": {
+    "_target_": "diffusion_policy.dataset.umi_dataset.UmiDataset",
+    "shape_meta": {
+     "obs": {
+      "camera0_rgb": {
+       "shape": [
+        3,
+        176,
+        288
+       ],
+       "horizon": 2,
+       "latency_steps": 0,
+       "down_sample_steps": 1,
+       "type": "rgb",
+       "ignore_by_policy": false
+      },
+      "robot0_eef_pos": {
+       "shape": [
+        3
+       ],
+       "horizon": 2,
+       "latency_steps": 0.0,
+       "down_sample_steps": 1,
+       "type": "low_dim",
+       "ignore_by_policy": false
+      },
+      "robot0_eef_rot_axis_angle": {
+       "raw_shape": [
+        3
+       ],
+       "shape": [
+        6
+       ],
+       "horizon": 2,
+       "latency_steps": 0.0,
+       "down_sample_steps": 1,
+       "type": "low_dim",
+       "rotation_rep": "rotation_6d",
+       "ignore_by_policy": false
+      },
+      "robot0_gripper_width": {
+       "shape": [
+        1
+       ],
+       "horizon": 2,
+       "latency_steps": 0.0,
+       "down_sample_steps": 1,
+       "type": "low_dim",
+       "ignore_by_policy": false
+      },
+      "robot0_eef_rot_axis_angle_wrt_start": {
+       "raw_shape": [
+        3
+       ],
+       "shape": [
+        6
+       ],
+       "horizon": 2,
+       "latency_steps": 0.0,
+       "down_sample_steps": 1,
+       "type": "low_dim",
+       "ignore_by_policy": false
+      }
+     },
+     "action": {
+      "shape": [
+       10
+      ],
+      "horizon": 16,
+      "latency_steps": 0,
+      "down_sample_steps": 1,
+      "rotation_rep": "rotation_6d"
+     }
+    },
+    "dataset_path": "/home/j-j15a206/universal_manipulation_interface/sim_umi/data/omx_sim_train_v2_g2_rect288x176.zarr.zip",
+    "cache_dir": null,
+    "pose_repr": {
+     "obs_pose_repr": "relative",
+     "action_pose_repr": "relative"
+    },
+    "action_padding": false,
+    "temporally_independent_normalization": false,
+    "repeat_frame_prob": 0.0,
+    "max_duration": null,
+    "seed": 42,
+    "val_ratio": 0.0
+   },
+   "rgb_geometry": "g2_rect288x176"
+  },
+  "meta": {
+   "experiment": "unset",
+   "dataset_name": "unset",
+   "dataset_zarr": "unset",
+   "dataset_sha256": "unset",
+   "dataset_n_episodes": -1,
+   "dataset_n_frames": -1,
+   "dataset_stored_fps": -1.0,
+   "dataset_synthetic": false,
+   "rgb_mode": "unset",
+   "rgb_out_res": "unset",
+   "camera_to_ee_calibration_version": "unset",
+   "camera_to_ee_status": "unset",
+   "gripper_status": "unset",
+   "gripper_representation": "unset",
+   "collector_calibration_version": "unset",
+   "policy_hz": -1.0,
+   "obs_down_sample_steps": -1,
+   "git_commit": "unset",
+   "git_branch": "unset",
+   "git_dirty": false,
+   "cuda_visible_devices": "unset",
+   "train_profile": "unset"
+  }
+ },
+ "started": "2026-09-27T10:30:29+0900",
+ "opt_steps_at_start": 0,
+ "ema_checksum_matches_model_at_start": true,
+ "amp_probe": {
+  "batch_camera0_rgb_shape": [
+   64,
+   2,
+   3,
+   176,
+   288
+  ],
+  "camera0_rgb_vit_tokens": [
+   128,
+   199,
+   768
+  ],
+  "global_cond_shape": [
+   64,
+   1568
+  ]
+ },
+ "finished": "2026-09-27T10:31:36+0900",
+ "opt_steps_at_end": 100,
+ "skipped_optimizer_steps": 0,
+ "nonfinite_losses": 0,
+ "stopped_by_max_opt_steps": true
+}

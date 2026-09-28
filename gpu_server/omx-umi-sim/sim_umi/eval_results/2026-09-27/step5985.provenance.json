@@ -1,0 +1,19 @@
+{
+ "tag": "step5985",
+ "optimizer_step_calls": 5985,
+ "global_step": 5984,
+ "epoch": 19,
+ "param_step_histogram": {
+  "5985": 299
+ },
+ "param_step_min": 5985,
+ "param_step_max": 5985,
+ "scheduler_last_epoch": -1,
+ "scheduler_step_count": -1,
+ "lr": [
+  0.00018550407462738337,
+  1.8550407462738338e-05
+ ],
+ "ema_step": 5984,
+ "ema_decay": 0.9985300222951019
+}

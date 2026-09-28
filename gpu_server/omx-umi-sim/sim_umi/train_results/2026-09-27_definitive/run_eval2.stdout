@@ -1,0 +1,27 @@
+[2026-09-27T06:17:25+09:00] rerun with the fixed start (rollout code 2943963); training chain already complete and audited
+[2026-09-27T06:17:25+09:00] GPU 5 now: 5, 1 MiB, 0 %
+[2026-09-27T06:17:40+09:00] clean5986/nominal: server up (pid 976182) on checkpoint sim_umi/train_results/2026-09-27_amp_clean_definitive/checkpoints/step5986.ckpt
+[2026-09-27T06:22:53+09:00] clean5986/nominal: rollout exit 0; 0/5 rollouts put the ball in the bin; 0 grasped it
+[2026-09-27T06:23:08+09:00] v2_5986/nominal: server up (pid 977136) on checkpoint sim_umi/train_results/2026-09-27_amp_v2_definitive/checkpoints/step5986.ckpt
+[2026-09-27T06:27:01+09:00] v2_5986/nominal: rollout exit 0; 0/5 rollouts put the ball in the bin; 1 grasped it
+[2026-09-27T06:27:16+09:00] v2_8000/nominal: server up (pid 977792) on checkpoint sim_umi/train_results/2026-09-27_amp_v2_definitive/checkpoints/step8000.ckpt
+[2026-09-27T06:32:17+09:00] v2_8000/nominal: rollout exit 0; 0/5 rollouts put the ball in the bin; 0 grasped it
+[2026-09-27T06:32:32+09:00] v2_10000/nominal: server up (pid 978551) on checkpoint sim_umi/train_results/2026-09-27_amp_v2_definitive/checkpoints/step10000.ckpt
+[2026-09-27T06:38:08+09:00] v2_10000/nominal: rollout exit 0; 0/5 rollouts put the ball in the bin; 1 grasped it
+[2026-09-27T06:38:23+09:00] v2_11400/nominal: server up (pid 979299) on checkpoint sim_umi/train_results/2026-09-27_amp_v2_definitive/checkpoints/step11400.ckpt
+[2026-09-27T06:43:00+09:00] v2_11400/nominal: rollout exit 0; 2/5 rollouts put the ball in the bin; 3 grasped it
+[2026-09-27T06:43:15+09:00] clean5986/val18: server up (pid 979992) on checkpoint sim_umi/train_results/2026-09-27_amp_clean_definitive/checkpoints/step5986.ckpt
+[2026-09-27T07:00:28+09:00] clean5986/val18: rollout exit 0; 0/16 rollouts put the ball in the bin; 2 grasped it
+[2026-09-27T07:00:43+09:00] v2_5986/val18: server up (pid 981424) on checkpoint sim_umi/train_results/2026-09-27_amp_v2_definitive/checkpoints/step5986.ckpt
+[2026-09-27T07:13:33+09:00] v2_5986/val18: rollout exit 0; 2/16 rollouts put the ball in the bin; 6 grasped it
+[2026-09-27T07:13:49+09:00] v2_11400/val18: server up (pid 982624) on checkpoint sim_umi/train_results/2026-09-27_amp_v2_definitive/checkpoints/step11400.ckpt
+[2026-09-27T07:33:44+09:00] v2_11400/val18: rollout exit 0; 4/16 rollouts put the ball in the bin; 10 grasped it
+[2026-09-27T07:33:59+09:00] v2_8000/val18: server up (pid 984205) on checkpoint sim_umi/train_results/2026-09-27_amp_v2_definitive/checkpoints/step8000.ckpt
+[2026-09-27T07:47:50+09:00] v2_8000/val18: rollout exit 0; 3/16 rollouts put the ball in the bin; 8 grasped it
+[2026-09-27T07:48:05+09:00] v2_10000/val18: server up (pid 985628) on checkpoint sim_umi/train_results/2026-09-27_amp_v2_definitive/checkpoints/step10000.ckpt
+[2026-09-27T08:04:00+09:00] v2_10000/val18: rollout exit 0; 3/16 rollouts put the ball in the bin; 11 grasped it
+[2026-09-27T08:04:18+09:00] clean5985/nominal: server up (pid 987269) on checkpoint sim_umi/train_results/2026-09-27_amp_clean_definitive/checkpoints/step5985.ckpt
+[2026-09-27T08:09:49+09:00] clean5985/nominal: rollout exit 0; 0/5 rollouts put the ball in the bin; 0 grasped it
+[2026-09-27T08:10:07+09:00] v2_5985/nominal: server up (pid 987982) on checkpoint sim_umi/train_results/2026-09-27_amp_v2_definitive/checkpoints/step5985.ckpt
+[2026-09-27T08:14:25+09:00] v2_5985/nominal: rollout exit 0; 0/5 rollouts put the ball in the bin; 1 grasped it
+[2026-09-27T08:14:25+09:00] EVAL CHAIN COMPLETE

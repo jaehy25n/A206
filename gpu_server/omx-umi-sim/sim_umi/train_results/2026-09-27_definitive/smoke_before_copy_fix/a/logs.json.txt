@@ -1,0 +1,6 @@
+{"train_loss": 1.0864585638046265, "global_step": 0, "epoch": 0, "lr": 1.5e-07}
+{"train_loss": 1.1334443092346191, "global_step": 1, "epoch": 0, "lr": 3e-07}
+{"train_loss": 1.1398365497589111, "global_step": 2, "epoch": 0, "lr": 4.5e-07}
+{"train_loss": 1.105389952659607, "global_step": 3, "epoch": 0, "lr": 6e-07}
+{"train_loss": 1.096677541732788, "global_step": 4, "epoch": 0, "lr": 7.499999999999999e-07}
+{"train_loss": 1.1123613834381103, "global_step": 4, "epoch": 0, "lr": 7.499999999999999e-07}

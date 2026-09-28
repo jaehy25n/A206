@@ -1,0 +1,13 @@
+python      3.9.18
+torch       2.1.0  cuda 12.1  cudnn 8902
+accelerate  0.24.1
+numpy       1.24.4
+CUDA_VISIBLE_DEVICES = 5
+torch device count   = 1
+cuda:0 name          = Tesla V100-PCIE-32GB  31.7 GB  sm70
+cuda:0 uuid (torch)  = None
+physical index match = []
+bf16 supported       = False
+AcceleratedOptimizer.step_was_skipped present: True
+DEVICE CHECK: pid 942259 allocated on physical GPU index 5 (GPU-6ac93a16-5d21-4921-2db9-a9cd274aeec2), 818 MiB
+DEVICE CHECK PASSED: cuda:0 == physical GPU 5

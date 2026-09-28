@@ -1,0 +1,2 @@
+{"train_loss": 1.1191215515136719, "global_step": 4, "epoch": 0, "lr": 9e-07}
+{"train_loss": 1.1191215515136719, "global_step": 4, "epoch": 0, "lr": 9e-07}

@@ -1,0 +1,26 @@
+{
+ "code_hash": "fab5b6780421",
+ "code_files": [
+  "sim_umi/ros/dse_rollout.py",
+  "sim_umi/ros/policy_bridge.py",
+  "sim_umi/ros/rolling_executor.py",
+  "sim_umi/ros/policy_rollout.py",
+  "sim_umi/ros/policy_server.py",
+  "sim_umi/src/rgb_geometry.py"
+ ],
+ "git_at_mark": "e793389",
+ "files": [
+  "sim_umi/eval_results/2026-09-27_dse/s3_smoke_policy_io/nominal_G0.json"
+ ],
+ "gates": {
+  "nominal_G0.json:ep0": {
+   "timeline_invariants": true,
+   "arm_continuity": true,
+   "jaw_continuity": true,
+   "exact_observation_ticks": true,
+   "jtc_takeover_step": true,
+   "no_anomalies": true,
+   "all": true
+  }
+ }
+}

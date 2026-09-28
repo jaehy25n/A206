@@ -1,0 +1,32 @@
+dataset class: diffusion_policy.dataset.umi_dataset.UmiDataset
+dataset len (sampler N): 21532
+replay_buffer camera0_rgb: {'shape': [22942, 224, 224, 3], 'dtype': 'uint8'}
+__getitem__(0) obs.camera0_rgb: {'shape': [2, 3, 224, 224], 'min': 0.02745, 'max': 1.0, 'mean': 0.47347, 'dtype': 'torch.float32'}
+__getitem__(5000) obs.camera0_rgb: {'shape': [2, 3, 224, 224], 'min': 0.0, 'max': 1.0, 'mean': 0.53481, 'dtype': 'torch.float32'}
+__getitem__(12000) obs.camera0_rgb: {'shape': [2, 3, 224, 224], 'min': 0.08235, 'max': 1.0, 'mean': 0.54772, 'dtype': 'torch.float32'}
+__getitem__(21531) obs.camera0_rgb: {'shape': [2, 3, 224, 224], 'min': 0.0549, 'max': 1.0, 'mean': 0.55345, 'dtype': 'torch.float32'}
+channel means of one sample (C axis = 1): [0.5315, 0.5315, 0.5414]
+checkpoint: sim_umi/train_results/2026-09-27_amp_v2_definitive/checkpoints/step11400.ckpt
+obs encoder model_name: vit_base_patch16_clip_224.openai
+normalizer camera0_rgb scale/offset: {'scale': [1.0], 'offset': [0.0]}
+training transform (key_transform_map): Sequential(
+  (0): RandomCrop(size=(212, 212), padding=None)
+  (1): Resize(size=224, interpolation=bilinear, max_size=None, antialias=True)
+  (2): ColorJitter(brightness=(0.7, 1.3), contrast=(0.6, 1.4), saturation=(0.5, 1.5), hue=(-0.08, 0.08))
+)
+vit patch_embed: {'img_size': [224, 224], 'patch_size': [16, 16], 'grid_size': [14, 14], 'num_patches': 196, 'strict_img_size': True, 'dynamic_img_size': False}
+vit pos_embed: {'shape': [1, 197, 768], 'num_prefix_tokens': 1, 'cls_token': True, 'reg_tokens': 0, 'no_embed_class': False, 'global_pool': ''}
+batch obs.camera0_rgb (B,T,C,H,W): {'shape': [64, 2, 3, 224, 224], 'min': 0.0, 'max': 1.0, 'mean': 0.53199}
+after normalizer (encoder normalization): {'shape': [64, 2, 3, 224, 224], 'min': 0.0, 'max': 1.0, 'mean': 0.53199}
+train transform step 0 RandomCrop: {'shape': [128, 3, 212, 212], 'min': 0.0, 'max': 1.0, 'mean': 0.52968}
+train transform step 1 Resize: {'shape': [128, 3, 224, 224], 'min': 0.00244, 'max': 1.0, 'mean': 0.52968}
+train transform step 2 ColorJitter: {'shape': [128, 3, 224, 224], 'min': 0.00534, 'max': 1.0, 'mean': 0.56554}
+eval transform (policy_server --deterministic): Sequential(
+  (0): CenterCrop(size=(212, 212))
+  (1): Resize(size=224, interpolation=bilinear, max_size=None, antialias=True)
+)
+eval: encoder input: {'shape': [128, 3, 224, 224], 'min': 0.00102, 'max': 1.0, 'mean': 0.53268}
+token sequence entering block 0 (8 images): [8, 197, 768]
+vit output (8 images): [8, 197, 768]
+CLS feature (aggregate_feature): {'shape': [8, 768], 'min': -11.70668, 'max': 7.02724, 'mean': 0.19427, 'norm_mean': 26.7622}
+obs_encoder output global_cond (B, D): [64, 1568]

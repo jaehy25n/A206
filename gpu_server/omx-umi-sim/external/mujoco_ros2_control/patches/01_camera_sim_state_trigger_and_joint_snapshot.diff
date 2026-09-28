@@ -1,0 +1,219 @@
+diff --git a/mujoco_ros2_control_plugins/src/camera_plugin.cpp b/mujoco_ros2_control_plugins/src/camera_plugin.cpp
+index 74741ff..6060f8c 100644
+--- a/mujoco_ros2_control_plugins/src/camera_plugin.cpp
++++ b/mujoco_ros2_control_plugins/src/camera_plugin.cpp
+@@ -76,8 +76,8 @@ void CameraPlugin::update(const mjModel* model_arg, mjData* data)
+   // the only place we can safely snapshot the live mjData without racing the simulation.
+   // TODO: Support per-camera publish rates?
+   const auto now = node_->get_clock()->now();
+-  const bool stream_due =
+-      has_streaming_cameras_ && (now - last_publish_time_).seconds() >= (1.0 / camera_publish_rate_);
++  const bool stream_due = !sim_state_trigger_ && has_streaming_cameras_ &&
++                          (now - last_publish_time_).seconds() >= (1.0 / camera_publish_rate_);
+   const bool poll_due = poll_pending_.exchange(false);
+ 
+   // Nothing to do this step: avoid taking the lock or copying data.
+@@ -126,6 +126,52 @@ void CameraPlugin::update(const mjModel* model_arg, mjData* data)
+   }
+ }
+ 
++void CameraPlugin::pre_step(mjData* data)
++{
++  // physics thread, immediately before mj_step, sim mutex held: `data` is the tick's state
++  if (!sim_state_trigger_ || !publish_images_ || !has_streaming_cameras_)
++  {
++    return;
++  }
++  const bool due = (steps_since_reset_ % sim_state_period_steps_) == 0;
++  ++steps_since_reset_;
++  if (!due)
++  {
++    return;
++  }
++  {
++    std::unique_lock<std::mutex> lock(data_mutex_);
++    data_consumed_cv_.wait(lock, [this] { return (!new_data_ && !render_busy_) || stop_requested_; });
++    if (stop_requested_)
++    {
++      return;
++    }
++    for (auto& camera : cameras_)
++    {
++      if (camera.policy == CameraPolicy::STREAMING)
++      {
++        camera.render_pending = true;
++      }
++    }
++    // The positions the renderer reads (body / geom / camera / light poses) are whatever the
++    // last kinematics pass left: after a step they belong to the PREVIOUS qpos unless an idle
++    // mj_forward ran in between (the paused loop does one per idle iteration; back-to-back
++    // queued steps do not). Recompute them from this tick's qpos so the image and the joint
++    // snapshot are the same tick t. The next mj_step recomputes all of it from qpos anyway.
++    mj_kinematics(mj_model_, data);
++    mj_camlight(mj_model_, data);
++    mjv_copyData(mj_camera_data_, mj_model_, data);
++    new_data_ = true;
++  }
++  data_cv_.notify_one();
++}
++
++void CameraPlugin::on_reset(mjData* /*data*/)
++{
++  // the capture schedule restarts with the world: the first step after a reset captures
++  steps_since_reset_ = 0;
++}
++
+ void CameraPlugin::cleanup()
+ {
+   close();
+@@ -162,6 +208,49 @@ bool CameraPlugin::register_cameras()
+   camera_publish_rate_ = node_->get_parameter(camera_publish_rate_param).as_double();
+   RCLCPP_INFO(node_->get_logger(), "Publishing camera data at rate %f per second.", camera_publish_rate_);
+ 
++  const std::string trigger_param = param_prefix + "trigger";
++  if (!node_->has_parameter(trigger_param))
++  {
++    node_->declare_parameter(trigger_param, "node_clock");
++  }
++  sim_state_trigger_ = node_->get_parameter(trigger_param).as_string() == "sim_state";
++  if (sim_state_trigger_)
++  {
++    sim_state_period_steps_ = static_cast<uint64_t>(
++        std::max(1.0, std::round(1.0 / (camera_publish_rate_ * mj_model_->opt.timestep))));
++    RCLCPP_INFO(node_->get_logger(),
++                "Camera trigger: sim_state -- every %lu physics steps from the last world reset, "
++                "captured on the physics thread",
++                static_cast<unsigned long>(sim_state_period_steps_));
++    const std::string snap_param = param_prefix + "joint_snapshot_topic";
++    if (!node_->has_parameter(snap_param))
++    {
++      node_->declare_parameter(snap_param, "");
++    }
++    const std::string snap_topic = node_->get_parameter(snap_param).as_string();
++    if (!snap_topic.empty())
++    {
++      for (int j = 0; j < mj_model_->njnt; ++j)
++      {
++        const int type = mj_model_->jnt_type[j];
++        if (type != mjJNT_HINGE && type != mjJNT_SLIDE)
++        {
++          continue;
++        }
++        snap_names_.emplace_back(mj_model_->names + mj_model_->name_jntadr[j]);
++        snap_qpos_adr_.push_back(mj_model_->jnt_qposadr[j]);
++        snap_dof_adr_.push_back(mj_model_->jnt_dofadr[j]);
++      }
++      joint_snapshot_pub_ = node_->create_publisher<sensor_msgs::msg::JointState>(snap_topic, 100);
++      RCLCPP_INFO(node_->get_logger(), "Joint snapshot of every capture on %s (%zu joints)",
++                  snap_topic.c_str(), snap_names_.size());
++    }
++  }
++  else
++  {
++    RCLCPP_INFO(node_->get_logger(), "Camera trigger: node_clock");
++  }
++
+   cameras_.resize(0);
+   for (auto i = 0; i < mj_model_->ncam; ++i)
+   {
+@@ -320,6 +409,7 @@ void CameraPlugin::close()
+     publish_images_ = false;
+   }
+   data_cv_.notify_one();
++  data_consumed_cv_.notify_all();
+   if (rendering_thread_.joinable())
+   {
+     rendering_thread_.join();
+@@ -520,9 +610,15 @@ void CameraPlugin::update_loop()
+       break;
+     }
+     new_data_ = false;
++    render_busy_ = true;
+     lock.unlock();
+ 
+     update_cameras();
++    {
++      std::lock_guard<std::mutex> busy_lock(data_mutex_);
++      render_busy_ = false;
++    }
++    data_consumed_cv_.notify_all();
+   }
+   publish_images_ = false;
+ 
+@@ -569,6 +665,21 @@ void CameraPlugin::update_cameras()
+   const rclcpp::Duration duration = rclcpp::Duration::from_seconds(mj_camera_data_->time);
+   rclcpp::Time stamp(duration.nanoseconds(), RCL_ROS_TIME);
+ 
++  if (joint_snapshot_pub_)
++  {
++    sensor_msgs::msg::JointState js;
++    js.header.stamp = stamp;
++    js.name = snap_names_;
++    js.position.reserve(snap_names_.size());
++    js.velocity.reserve(snap_names_.size());
++    for (size_t k = 0; k < snap_names_.size(); ++k)
++    {
++      js.position.push_back(mj_camera_data_->qpos[snap_qpos_adr_[k]]);
++      js.velocity.push_back(mj_camera_data_->qvel[snap_dof_adr_[k]]);
++    }
++    joint_snapshot_pub_->publish(js);
++  }
++
+   for (const auto idx : render_indices_)
+   {
+     render_and_publish_camera(cameras_[idx], stamp);
+diff --git a/mujoco_ros2_control_plugins/src/camera_plugin.hpp b/mujoco_ros2_control_plugins/src/camera_plugin.hpp
+index 89b4dda..40890ae 100644
+--- a/mujoco_ros2_control_plugins/src/camera_plugin.hpp
++++ b/mujoco_ros2_control_plugins/src/camera_plugin.hpp
+@@ -20,7 +20,9 @@
+ #pragma once
+ 
+ #include <algorithm>
++#include <cmath>
+ #include <atomic>
++#include <condition_variable>
+ #include <functional>
+ #include <mutex>
+ #include <queue>
+@@ -44,6 +46,7 @@
+ #include <rclcpp/rclcpp.hpp>
+ #include <sensor_msgs/msg/camera_info.hpp>
+ #include <sensor_msgs/msg/image.hpp>
++#include <sensor_msgs/msg/joint_state.hpp>
+ #include <std_srvs/srv/trigger.hpp>
+ 
+ #include <pluginlib/class_list_macros.hpp>
+@@ -160,6 +163,10 @@ public:
+    */
+   bool init(rclcpp::Node::SharedPtr node, const mjModel* model, mjData* data, GlfwInitFn glfw_init_fn);
+   void update(const mjModel* model, mjData* data) override;
++  // trigger: sim_state -- capture on the physics thread from the live data, every
++  // round(1 / (rate * timestep)) physics steps counted from the last world reset
++  void pre_step(mjData* data) override;
++  void on_reset(mjData* data) override;
+   void cleanup() override;
+ 
+   /**
+@@ -236,6 +243,21 @@ private:
+   double camera_publish_rate_{ 5.0 };
+   rclcpp::Time last_publish_time_{ 0, 0, RCL_ROS_TIME };
+ 
++  // "node_clock" (default, the original behaviour) or "sim_state"
++  bool sim_state_trigger_{ false };
++  uint64_t steps_since_reset_{ 0 };
++  uint64_t sim_state_period_steps_{ 25 };
++  // set while the render thread renders from mj_camera_data_; a sim_state capture waits for
++  // it so a snapshot is never overwritten mid-render or dropped
++  bool render_busy_{ false };
++  std::condition_variable data_consumed_cv_;
++  // optional: the joint positions / velocities of the SAME snapshot, SAME stamp, as a
++  // synchronized observation source (sim_state only; empty topic = off)
++  rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_snapshot_pub_;
++  std::vector<std::string> snap_names_;
++  std::vector<int> snap_qpos_adr_;
++  std::vector<int> snap_dof_adr_;
++
+   // Whether any streaming camera is registered. This lets the update loop skip the
+   // streaming time check entirely when only polled/disabled cameras exist.
+   bool has_streaming_cameras_{ false };

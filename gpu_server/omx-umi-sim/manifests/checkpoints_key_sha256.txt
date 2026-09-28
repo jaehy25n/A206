@@ -1,0 +1,8 @@
+# sha256  bytes  path  (the checkpoints behind the reported results)
+2a4275872d0c27e1bcb2fee7eab8c680110def47ebd8e10b5544e2f49fbb8907  685193835  sim_umi/train_results/2026-09-27_definitive/shared_init/init_state.pt
+2c3fd43c25c9559bc3c67fe4e631dcd2a4292104f9c891530feb8d47775a8b59  2740934117  sim_umi/train_results/2026-09-27_amp_v2_definitive/checkpoints/step11400.ckpt
+f02d0f86bf1b6f756e0b68dbe641f757b8e9ffc5913697a0b757de3c00d28765  2740934117  sim_umi/train_results/2026-09-27_amp_clean_definitive/checkpoints/step5986.ckpt
+82d6aa21eac70e480f9409d7d2ca4aa2128757a376f7d0abf986a749d946f412  2740934565  sim_umi/train_results/2026-09-27_fov_g1_letterbox224/checkpoints/step11400.ckpt
+096ead1674964e70ebdda8404e1c0f9ed1a337416d71e407a44e10a73c858093  2740959141  sim_umi/train_results/2026-09-27_fov_g2_rect288x176/checkpoints/step11400.ckpt
+b93f55d2fd61a04686f052226f345afbcdc0ed3635282a6a2f25c4652f2b9496  2747434887  sim_umi/train_results/2026-09-28_g0_timing_aux_v1/checkpoints/step11400.ckpt
+9852de18d31be764eb5edf6ec17407585cc3e39d3de8173587c9628efce33901  2759980131  sim_umi/train_results/2026-09-28_g0_oracle_tip_relation_film_v1/checkpoints/step11400.ckpt
