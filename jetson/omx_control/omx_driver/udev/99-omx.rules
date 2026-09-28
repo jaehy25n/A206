@@ -1,0 +1,15 @@
+# udev rules for the OMX-F arm and the wrist webcam.
+#
+# Install:
+#   sudo cp 99-omx.rules /etc/udev/rules.d/ && sudo udevadm control --reload-rules && sudo udevadm trigger
+#
+# Find the vendor/product ids of your devices first:
+#   udevadm info -a -n /dev/ttyACM0 | grep -E 'idVendor|idProduct' | head -2
+#   udevadm info -a -n /dev/video0  | grep -E 'idVendor|idProduct' | head -2
+# and replace the placeholder values below.
+
+# OMX-F (USB CDC-ACM). TODO: replace idVendor/idProduct.
+SUBSYSTEM=="tty", ATTRS{idVendor}=="XXXX", ATTRS{idProduct}=="XXXX", MODE="0666", SYMLINK+="omx_arm"
+
+# Wrist webcam. TODO: replace idVendor/idProduct. Only the capture node (index 0) gets the symlink.
+SUBSYSTEM=="video4linux", ATTRS{idVendor}=="XXXX", ATTRS{idProduct}=="XXXX", ATTR{index}=="0", MODE="0666", SYMLINK+="wrist_cam"

@@ -1,0 +1,6 @@
+# Start logging /joint_states into <recordings_dir>/<name>.csv
+string name          # file stem; empty -> timestamp
+bool torque_off      # publish /mode_cmd IDLE first. The arm goes limp: HOLD IT before calling.
+---
+bool success
+string message

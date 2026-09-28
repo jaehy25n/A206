@@ -1,0 +1,126 @@
+// rqt_graph 스타일 v1 (자체 스택) — 노드=타원, 토픽=사각형, 점선=옵션/서비스
+// 렌더: dot -Tpng rqt_graph_draft.dot -o rqt_graph_draft.png   (또는 https://dreampuf.github.io/GraphvizOnline 에 붙여넣기)
+digraph omx_policy_control_v1 {
+  rankdir=LR;
+  newrank=true;
+  fontname="Helvetica"; fontsize=11;
+  node  [fontname="Helvetica", fontsize=9];
+  edge  [fontname="Helvetica", fontsize=8, color="#555555"];
+
+  // ---------- 하드웨어 ----------
+  hw_arm [shape=box3d, style=filled, fillcolor="#eaf3de", label="OMX-F\nDynamixel x6\nUSB CDC /dev/ttyACM0, 1 Mbps"];
+  hw_cam [shape=box3d, style=filled, fillcolor="#eaf3de", label="USB webcam\n(wrist mount)"];
+
+  subgraph cluster_jetson {
+    label="Jetson Orin Nano  (ROS 2 Humble native)";
+    style="rounded"; color="#888888";
+
+    // ===== A. 드라이버 =====
+    subgraph cluster_a {
+      label="A. 드라이버"; style="rounded,dashed"; color="#999999";
+      node [shape=ellipse, style=filled, fillcolor="#cfe2ff"];
+      n_drv [label="/dxl_driver_node\nDynamixelSDK SyncRead/Write 100 Hz\ntimeout→hold, 리밋 클램프, mock 모드"];
+      node [shape=ellipse, style=filled, fillcolor="#e0e0e0"];
+      n_rsp [label="/robot_state_publisher (재사용)\n자체 URDF: tcp, wrist_camera_link 포함"];
+      node [shape=box, style=filled, fillcolor="white"];
+      t_jc  [label="/joint_command\nsensor_msgs/JointState  50 Hz"];
+      t_js  [label="/joint_states\nsensor_msgs/JointState  100 Hz"];
+      t_st  [label="/dxl_driver/status\ndiagnostic_msgs/DiagnosticArray  1 Hz"];
+      t_tf  [label="/tf  /tf_static"];
+    }
+
+    // ===== B. 인지 =====
+    subgraph cluster_b {
+      label="B. 인지"; style="rounded,dashed"; color="#999999";
+      node [shape=ellipse, style=filled, fillcolor="#e0e0e0"];
+      n_cam [label="/wrist_camera\nusb_cam (재사용)"];
+      node [shape=ellipse, style=filled, fillcolor="#cfe2ff"];
+      n_ees [label="/ee_state_node\nTF base_link→tcp @ image stamp"];
+      node [shape=box, style=filled, fillcolor="white"];
+      t_img [label="/wrist_camera/image_raw\nsensor_msgs/Image  30 Hz"];
+      t_ci  [label="/wrist_camera/camera_info"];
+      t_ee  [label="/ee_state\nomx_msgs/EEState  30 Hz"];
+    }
+
+    // ===== C. Policy (GPU) =====
+    subgraph cluster_c {
+      label="C. Policy (GPU)"; style="rounded,dashed"; color="#999999";
+      node [shape=ellipse, style=filled, fillcolor="#ffd8b1"];
+      n_pol [label="/policy_node\n모델 미정, 5~10 Hz, chunk H=16"];
+      node [shape=box, style=filled, fillcolor="white"];
+      t_chk [label="/policy/action_chunk\nomx_msgs/EEActionChunk\n(tcp_t0 기준 ΔSE(3) x H + gripper x H)"];
+      t_hb  [label="/policy/heartbeat"];
+      t_task[label="/task_cmd"];
+    }
+
+    // ===== D. 작업공간 → 관절공간 =====
+    subgraph cluster_d {
+      label="D. 작업공간 → 관절공간"; style="rounded,dashed"; color="#999999";
+      node [shape=ellipse, style=filled, fillcolor="#cfe2ff"];
+      n_exe [label="/action_chunk_executor\nΔEE→base 절대 변환\nchunk 이어붙임, 50 Hz 보간"];
+      n_ik  [label="/ik_node\n5-DOF 도달가능 자세 투영\n감쇠 의사역행렬 IK, 관절/작업공간 리밋"];
+      node [shape=box, style=filled, fillcolor="white"];
+      t_eet [label="/ee_target\nPoseStamped + gripper  50 Hz"];
+      t_ikc [label="/ik/joint_command\nsensor_msgs/JointState  50 Hz"];
+    }
+
+    // ===== E. 감독 / 안전 =====
+    subgraph cluster_e {
+      label="E. 감독 / 안전"; style="rounded,dashed"; color="#999999";
+      node [shape=ellipse, style=filled, fillcolor="#cfe2ff"];
+      n_mm  [label="/mode_manager\n유일한 /joint_command 발행자\nIDLE · HOME · POLICY · STOP\nwatchdog(heartbeat 300 ms), e_stop"];
+      node [shape=box, style=filled, fillcolor="white"];
+      t_es  [label="/e_stop\nstd_msgs/Bool"];
+      t_mode[label="/mode_cmd  /mode_state"];
+      t_tel [label="/teleop/joint_command\n(옵션: 리더 팔)", style="filled,dashed"];
+    }
+  }
+
+  // ---------- F. 개발 PC ----------
+  subgraph cluster_pc {
+    label="F. 개발 PC  (WSL2 Humble, Fast DDS Discovery Server 경유)"; style="rounded"; color="#888888";
+    node [shape=ellipse, style=filled, fillcolor="#e8f5e9"];
+    n_rviz [label="/rviz2"];
+    n_rqt  [label="/rqt_graph"];
+    n_bag  [label="/rosbag2_recorder"];
+  }
+
+  // ---------- 옵션: 리더 팔 ----------
+  n_leader [shape=ellipse, style="filled,dashed", fillcolor="#cfe2ff", label="/leader_driver_node\n(같은 dxl_driver_node, 토크 off 읽기 전용)"];
+
+  // ===== 엣지 =====
+  // 하드웨어
+  hw_arm -> n_drv [dir=both, label="SyncRead / SyncWrite"];
+  hw_cam -> n_cam;
+
+  // A
+  t_jc  -> n_drv;
+  n_drv -> t_js;  n_drv -> t_st;
+  t_js  -> n_rsp; n_rsp -> t_tf;
+
+  // B
+  n_cam -> t_img; n_cam -> t_ci;
+  t_tf  -> n_ees; t_js -> n_ees; t_img -> n_ees [style=dashed, label="stamp 동기"];
+  n_ees -> t_ee;
+
+  // C
+  t_img -> n_pol; t_ee -> n_pol; t_task -> n_pol;
+  n_pol -> t_chk; n_pol -> t_hb;
+
+  // D
+  t_chk -> n_exe; t_ee -> n_exe;
+  n_exe -> t_eet;
+  t_eet -> n_ik;  t_js -> n_ik;
+  n_ik  -> t_ikc;
+
+  // E
+  t_ikc -> n_mm;  t_tel -> n_mm [style=dashed];  n_leader -> t_tel [style=dashed];
+  t_es  -> n_mm;  t_mode -> n_mm;  t_hb -> n_mm;  t_js -> n_mm;  t_st -> n_mm;
+  n_mm  -> t_jc;
+  n_mm  -> t_mode;
+  n_mm  -> n_drv [style=dashed, label="srv /dxl_driver/set_torque"];
+
+  // F
+  t_tf  -> n_rviz; t_eet -> n_rviz; t_img -> n_rviz;
+  t_img -> n_bag;  t_js -> n_bag;  t_ee -> n_bag;  t_chk -> n_bag;  t_eet -> n_bag;  t_tf -> n_bag;  t_mode -> n_bag;
+}
