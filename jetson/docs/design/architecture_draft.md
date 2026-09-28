@@ -257,7 +257,7 @@ omx_bringup       robot.launch.py, mock.launch.py, discovery_server 설정
 - v1로 구조 개정. mode_manager를 `/joint_command`의 유일한 발행자로 두는 안전 설계 채택.
 
 ### 2026-09-23 4차 — 구현
-- v1 구조를 ROS 2 Humble 패키지로 구현. 기존 [`omx_control/dummy_exec/`](../../omx_control/dummy_exec/) 프로토타입의 규약([H,10] 액션, 6D 회전, 절대 그리퍼 폭, 해석적 IK, 5-DOF 투영)을 그대로 승격.
+- v1 구조를 ROS 2 Humble 패키지로 구현. 기존 `dummy_exec` 프로토타입의 규약([H,10] 액션, 6D 회전, 절대 그리퍼 폭, 해석적 IK, 5-DOF 투영)을 그대로 승격.
 - 자세한 내용은 9절.
 
 ---

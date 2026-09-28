@@ -12,13 +12,8 @@ ROBOTIS 패키지는 쓰지 않고 DynamixelSDK, 모터 설정값, URDF 기하�
 | [`omx_deploy/`](omx_deploy/) | 젯슨용 Docker 구성 (Dockerfile, compose, `omx.sh`) |
 | [`docs/design/`](docs/design/) | [`architecture_draft.md`](docs/design/architecture_draft.md) 설계와 논의 기록(v0 → v1, 구현 상태), `rqt_graph_draft.dot/.png` 설계 그래프 |
 | [`docs/jetson_runbook.md`](docs/jetson_runbook.md) | 젯슨 실물 실행 절차 (Docker 격리, 드라이버 검증, 처짐 보정 식별, 문제 대응) |
-| [`docs/robot_control_basics/`](docs/robot_control_basics/) | 로봇 제어 아키텍처·공정 정리와 조사 원본 (9/17) |
-| [`docs/notes/`](docs/notes/) | 초기 학습 정리 (9/1, ROBOTIS 스택 전제 — 이후 설계로 대체됨) |
-| [`prototypes/dummy_pipeline/`](prototypes/dummy_pipeline/) | ROBOTIS 스택 위에서 돌린 액션 청크 더미 파이프라인, 실물 구동 후 수정본 (참고용) |
-| [`prototypes/dxl_basics/`](prototypes/dxl_basics/) | DYNAMIXEL Protocol 2.0 직접 제어 스크립트 (참고용) |
 
 실행 가능한 코드는 `omx_control`, `omx_teach`, `omx_deploy` 세 곳이다.
-`omx_control/dummy_exec/`는 9/8 초기 프로토타입(수정본은 `prototypes/dummy_pipeline/`), `omx_control/omx_pose_follower/`는 초기 스켈레톤이다.
 
 문서의 `<jetson-ip>`, `<user>`, `<pc>`, `<jetson>`은 각자 환경의 젯슨 IP, 계정, 호스트 이름으로 바꿔 쓴다.
 

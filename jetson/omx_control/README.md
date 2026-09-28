@@ -13,8 +13,6 @@ omx_perception    ee_state_node, wrist camera launch (usb_cam)
 omx_policy        dummy_policy_node (학습 모델과 같은 토픽 인터페이스)
 omx_supervisor    mode_manager: /joint_command 유일 발행자, IDLE/HOME/POLICY/TELEOP/STOP, e_stop, watchdog
 omx_bringup       mock.launch.py, robot.launch.py, joint_limits.yaml, graph_dump.py
-dummy_exec/       (프로토타입, 참고용) 위 패키지로 승격됨
-omx_pose_follower (초기 스켈레톤, 삭제 예정)
 ```
 
 ## 데이터 흐름
