@@ -131,7 +131,7 @@
 - **FR-003**: 시스템은 수집 화면에 현재 상태를 `INITIALIZING`, `READY`, `EPISODE ACTIVE`, `FINALIZING` 중 하나로 구분해 표시해야 한다. (2026-09-21) `FINALIZING`은 상태 배지가 아니라 화면을 덮는 마감 판(`세션을 마무리하고 있습니다`)으로 표시한다.
 - **FR-004**: Episode 종료 시 시스템은 Session과 Camera / IMU / ARCore 수집을 중단하지 않고 유지해야 한다.
 - **FR-005**: 시스템은 하나의 Session 안에서 Episode 시작·종료를 횟수 제한 없이 반복할 수 있어야 한다.
-- **FR-006**: 시스템은 Episode가 진행 중일 때 Session 종료를 허용하지 않고, 진행 중인 Episode를 먼저 종료하도록 안내해야 한다. (2026-09-29 확인) 지금은 Session을 완료한다는 종료 확인을 먼저 띄운 뒤 거부한다([알려진 결함](../../KNOWN_ISSUES.md)).
+- **FR-006**: 시스템은 Episode가 진행 중일 때 Session 종료를 허용하지 않고, 진행 중인 Episode를 먼저 종료하도록 안내해야 한다. (2026-09-29 확인) 지금은 Session을 완료한다는 종료 확인을 먼저 띄운 뒤 거부한다.
 - **FR-007**: Episode 식별 정보(task, object)는 각 Episode 시작 시점의 값으로 해당 Episode에 기록되어야 한다.
 
 **Tracking 유효성 게이트**
@@ -155,7 +155,7 @@
 
 **Camera Metadata**
 
-- **FR-021**: 시스템은 Session 마감 시 `metadata.json`에 실제 촬영에 사용된 Camera의 `camera_id`, `image_width`, `image_height`, `fx`, `fy`, `cx`, `cy`를 기록해야 한다. (2026-09-29 확인) 다음 실행에서 구제된 Session에는 기록되지 않는다([알려진 결함](../../KNOWN_ISSUES.md)).
+- **FR-021**: 시스템은 Session 마감 시 `metadata.json`에 실제 촬영에 사용된 Camera의 `camera_id`, `image_width`, `image_height`, `fx`, `fy`, `cx`, `cy`를 기록해야 한다. (2026-09-29 확인) 다음 실행에서 구제된 Session에는 기록되지 않는다.
 - **FR-022**: 기록되는 Intrinsic은 기기 일반 대표값이 아니라 해당 Session의 Camera ID 및 촬영 해상도에 대응하는 값이어야 한다.
 - **FR-023**: 시스템은 기기가 제공하는 경우 `distortion_coefficients`, `focal_length_mm`, `sensor_width_mm`·`sensor_height_mm`를 함께 기록해야 한다.
 - **FR-024**: 시스템은 기기가 제공하지 않는 Camera Metadata 항목에 대해 값을 임의로 계산해 채워서는 안 되며, 값이 없음을 명시해야 한다.
@@ -215,10 +215,10 @@ Session이 Episode 여러 개를 담는 긴 단위가 되면서 중단 한 번�
 
 - **FR-027**: 수집 화면이 사용자 조작 없이 중단되어 Session이 마감되지 못한 경우, 시스템은 그때까지
   수집된 데이터를 폐기해서는 안 된다. (2026-09-29 확인) 중단 순간 진행 중이던 Episode의 기록과 촬영
-  조건·Camera 정보는 남지 않는다([알려진 결함](../../KNOWN_ISSUES.md)).
+  조건·Camera 정보는 남지 않는다.
 - **FR-028**: 시스템은 다음 실행 시 마감되지 못한 Session을 정상 Session으로 마감해 완료 목록에
   포함해야 한다.
-- **FR-029**: 마감할 수 없을 만큼 손상된 Session만 중단 상태로 남겨야 한다. (2026-09-29 확인) 손상 판정은 필수 파일이 있고 비어 있지 않은지와 CSV 헤더만 본다. 마무리되지 않은 MP4는 가려내지 못한다([알려진 결함](../../KNOWN_ISSUES.md)).
+- **FR-029**: 마감할 수 없을 만큼 손상된 Session만 중단 상태로 남겨야 한다. (2026-09-29 확인) 손상 판정은 필수 파일이 있고 비어 있지 않은지와 CSV 헤더만 본다. 마무리되지 않은 MP4는 가려내지 못한다.
 - **FR-030**: 이전 실행에서 중단으로 표시된 Session도 이후 실행의 구제 대상에 포함되어야 한다.
 
 **SC-010**: 수집 화면이 중단된 Session의 데이터 손실률이 0%다. 번들이 온전하면 완료 Session으로
@@ -264,7 +264,7 @@ frame 수의 차이가 프리뷰 없는 대조군과 같은 수준을 유지한�
 - **FR-037**: `metadata.json`의 Camera Intrinsic은 저장된 영상과 같은 기하여야 하며, 적용한 회전
   각도(`video_rotation_degrees`, 현재 항상 `0`)를 함께 기록해 수신 측이 회전 규약이 있던 시기의
   수집분과 구분할 수 있어야 한다. (2026-09-29 확인) 값이 `0`이면 직렬화가 기본값을 생략해 키가 쓰이지
-  않는다. 수신 측은 키 부재를 `0`으로 읽는다([알려진 결함](../../KNOWN_ISSUES.md)).
+  않는다. 수신 측은 키 부재를 `0`으로 읽는다.
 - **FR-038**: `arcore_poses.csv`는 ARCore 원본 기록을 유지한다.
 
 **SC-013**: 수신 측이 `metadata.json`의 `video_rotation_degrees`만으로 회전 적용 여부를 판별할 수

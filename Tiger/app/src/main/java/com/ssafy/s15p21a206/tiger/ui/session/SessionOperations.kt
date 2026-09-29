@@ -48,8 +48,7 @@ internal class SessionOperations(
      * 화면에만 쓰고 저장하지 않는다. 업로드에는 실패 사유를 담는
      * 컬럼이 없고, 무엇이 막았는지는 실패한 자리에서 보면 되는 값이다.
      *
-     * Session을 가리지 않고 마지막 실패의 사유 하나만 든다. 전송 Job도 하나뿐이다. 둘 다
-     * KNOWN_ISSUES.md에 적어 두었다.
+     * Session을 가리지 않고 마지막 실패의 사유 하나만 든다. 전송 Job도 하나뿐이다.
      */
     var uploadFailureReason by mutableStateOf<String?>(null)
         private set

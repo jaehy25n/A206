@@ -145,7 +145,7 @@ Session 번들의 `metadata.json`이 수신 측에 제공하는 형식. 기존 �
 
 `capture_settings` 키가 없는 Session은 **촬영 조건을 기기 자동에 맡긴 수집**이다. 그 Session의 노출·ISO·화이트 밸런스는 프레임마다 변했다고 보아야 하며, 다른 Session에서 구한 intrinsic이나 LUT를 그대로 적용할 근거가 없다. 수동 설정을 지원하지 않는 기기에서 찍은 Session과, 이 항목이 생기기 전에 찍은 Session이 여기 해당한다.
 
-예외가 하나 있다. 화면 중단 뒤 다음 실행에서 구제된 Session([spec.md](../spec.md) FR-027~FR-028)은 수동 설정으로 찍었어도 `capture_settings`와 `camera`가 없다. 구제는 staging에 남은 파일만 보고 metadata를 쓰기 때문이다. 이때 키 부재는 "자동으로 찍음"이 아니라 "기록되지 않음"이다. 고칠 대상이며 [알려진 결함](../../../KNOWN_ISSUES.md)에 있다.
+예외가 하나 있다. 화면 중단 뒤 다음 실행에서 구제된 Session([spec.md](../spec.md) FR-027~FR-028)은 수동 설정으로 찍었어도 `capture_settings`와 `camera`가 없다. 구제는 staging에 남은 파일만 보고 metadata를 쓰기 때문이다. 이때 키 부재는 "자동으로 찍음"이 아니라 "기록되지 않음"이다.
 
 ## 녹화 해상도 (2026-09-16 갱신)
 
@@ -162,7 +162,7 @@ Session 번들의 `metadata.json`이 수신 측에 제공하는 형식. 기존 �
 같은 가로 기준이다. `arcore_poses.csv`의 Camera 좌표계도 같은 기준이라 추가 변환 없이 함께 쓴다.
 
 `camera` 객체의 `video_rotation_degrees`(int, 기본 `0`)는 그 Session의 `main_rgb.mp4`에 적용된
-시계 방향 회전이다. 지금은 회전이 없어 키를 쓰지 않는다(없으면 `0`). 명세(FR-037)는 기록을 요구하므로 [알려진 결함](../../../KNOWN_ISSUES.md)으로 둔다. 값이 `90`인 번들은 2026-09-15~16 사이 회전 규약이 있던
+시계 방향 회전이다. 지금은 회전이 없어 키를 쓰지 않는다(없으면 `0`). 값이 `90`인 번들은 2026-09-15~16 사이 회전 규약이 있던
 시기의 수집분이다. 그 수집분만 다음이 성립한다.
 
 - `image_width`·`image_height`·`fx`·`fy`·`cx`·`cy`가 **회전 후** 기하다. 컨테이너에 저장된 track

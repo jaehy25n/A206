@@ -407,7 +407,7 @@ internal fun rememberCaptureDriver(
                 // 작업 공간에 남는 경로(마감 실패, 업로드 서버 주소 없음)를 위해 유휴 프리뷰를 다시 연다.
                 // 의도는 그 경로에서만 여는 것이지만 `state`는 마감을 시작한 시점의 값이라 늘 open이다.
                 // 상세로 넘어가는 경로에서도 Surface가 아직 남아 있어 잠깐 열렸다가, 작업 공간을 벗어날 때
-                // 닫힌다. KNOWN_ISSUES.md에 적어 두었다.
+                // 닫힌다.
                 if (state.open) restoreIdlePreview()
             }
         }
