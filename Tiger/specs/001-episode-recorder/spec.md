@@ -17,9 +17,11 @@
 
 - 사용자 스토리 3의 내보내기 부분과 그 인수 시나리오 2·3, Galaxy S10 검증 시나리오의 내보내기 절
 - Clarifications 2026-09-03의 내보내기 관련 다섯 문답
+- 예외 상황의 내보내기 네 항목(tree 선택 취소·권한 상실, tree URI 재사용, 부분 export, 임시 directory publish)
 - FR-019 ~ FR-027
 - SC-009 ~ SC-011
 - 핵심 개념의 **Session Export**
+- 가정 및 범위의 export 항목
 
 Session 완료·검증·`LOCAL_ONLY` 표시는 그대로 요구다. 철회된 것은 완료된 번들을 사용자가 고른 tree로
 복사하는 동작뿐이다.
@@ -27,6 +29,29 @@ Session 완료·검증·`LOCAL_ONLY` 표시는 그대로 요구다. 철회된 �
 구현에서도 함께 걷어 냈다. `SessionBundleExporter`, `DocumentTreeGateway`, 내보내기 화면과 문구,
 `SessionExport` 모델, 그리고 `sessions`의 `exportState`·`exportTreeUri`·`exportFailureReason`
 컬럼이 이관 5→6에서 사라졌다.
+
+## 후속 기능이 바꾼 요구 (2026-09-29 정리)
+
+아래는 철회가 아니라 [002](../002-capture-control-ux/spec.md)·[003](../003-session-episode-tracking-gate/spec.md)이
+다른 요구로 대체한 것이다. 본문은 당시 문장으로 두고, 지금의 동작은 가리키는 명세를 따른다.
+
+- **수집 제어**: `DATA COLLECTION START`·`END` 버튼은 재생(▶ `세션 시작`)과 정지(■ `세션 종료`) 아이콘으로
+  바뀌었다(002 FR-004). 본문의 두 이름은 각각 Session 시작과 Session 종료로 읽는다.
+- **중단된 Session**: `INTERRUPTED`로 남겨 completed 후보에서 빼던 것을, 다음 실행에서 staging 번들을
+  검증해 정상 Session으로 마감하도록 바꿨다. 마감할 수 없는 번들만 `INTERRUPTED`로 남는다(003 FR-027~FR-030).
+  사용자 스토리 2의 인수 시나리오 3, 예외 상황의 `onStop` 항목, FR-008, 가정 및 범위의 Session 자동 복구가
+  해당한다.
+- **녹화 해상도**: 1920×1080 고정에서, Session 전에 `1920×1080`(기본)과 `1280×720` 중 고르는 것으로
+  바뀌었다(003 FR-039).
+- **Session metadata**: 형식은 [Session `metadata.json` 계약](../003-session-episode-tracking-gate/contracts/session-metadata.md)이
+  정한다. FR-012와 핵심 엔터티의 device model, ARCore 설정, timebase 검증 결과는 기록하지 않는다. timebase는
+  Camera timestamp source가 `REALTIME`이 아니면 Session을 시작하지 않는 것으로 보장한다(FR-009).
+- **업로드**: Session을 종료하면 확정 뒤 전송이 곧바로 시작된다(002 FR-007). `duplicate` 응답은 `UPLOADED`로
+  처리하고, 전송을 마친 Session에는 재전송 행동을 두지 않는다(002 FR-014a). SC-006의 "duplicate 응답 후에도
+  다시 전송"이 해당한다.
+- **Ultra-wide**: 003이 구현 범위 밖으로 두었다. 앱은 `camera_streams.ultrawide=false`인 main-only Session만
+  만든다. 앱 안의 probe 코드는 production 경로 없이 테스트에서만 쓰여 2026-09-23에 지웠다. 사용자 스토리 4,
+  FR-018, SC-007과 **Ultra-wide Probe Result**가 해당한다.
 
 ## Clarifications
 
@@ -117,7 +142,7 @@ Session 완료·검증·`LOCAL_ONLY` 표시는 그대로 요구다. 철회된 �
 ### 예외 상황
 
 - Camera timestamp source가 Android monotonic timeline과 비교 가능하다고 사전 확인되지 않으면 Session을 시작하지 않는다.
-- ACTIVE Episode가 남아 있을 때 Session 종료는 Episode END 또는 CANCEL을 먼저 요구한다.
+- ACTIVE Episode가 남아 있을 때 Session 종료는 Episode END를 먼저 요구한다.
 - task 또는 object가 비어 있으면 Episode START는 비활성화한다.
 - `INVALID_TRACKING` Episode는 Session raw stream에는 남지만 학습 후보에서 제외한다. `CANCELLED` 상태는 사용하지 않는다.
 - `onStop`, 앱 재시작 또는 비정상 종료 뒤 staging Session은 `INTERRUPTED`로 식별되며 completed 목록에 공개되지 않는다.

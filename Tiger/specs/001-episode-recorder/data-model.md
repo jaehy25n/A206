@@ -9,7 +9,7 @@
 | `sessionId` | immutable UUID; staging/completed directory identity |
 | `recordingState` | `COMPLETED`인 경우에만 업로드 대상 |
 | `uploadState` | 번들 전송의 진행과 결과 |
-| `bundlePath` | completed source directory |
+| `bundlePath` | 수집 중과 `INTERRUPTED`에서는 staging directory, `COMPLETED`에서는 completed source directory. 다음 실행의 구제가 이 경로로 staging 번들을 찾는다 |
 
 ## SessionBundle Manifest
 
