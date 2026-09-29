@@ -30,7 +30,7 @@
 
 ### 수집 — MVI
 
-`CaptureWorkspaceControlState`의 다섯 상태가 진실이고, 그것을 만들어 내는 불리언들은 중복 표현이다. `finalizing`·`collecting`·`active`·`trackingReady` 넷이 16가지 조합을 만드는데 합법은 다섯이고, 나머지 열하나는 타입이 아니라 호출 순서로만 막혀 있다.
+`CaptureWorkspaceControlState`의 다섯 상태가 진실이고, `CaptureUiState.phase` 하나가 그것을 든다. 2026-09-22까지는 `finalizing`·`collecting`·`active`·`trackingReady` 네 불리언이 그 상태를 만들어 냈다. 넷이 16가지 조합을 만드는데 합법은 다섯이었고, 나머지 열하나는 타입이 아니라 호출 순서로만 막혀 있었다.
 
 상태 변경의 출처도 tracking 폴링·권한 콜백·lifecycle 이벤트·ARCore 실패로 흩어져 있고 서로 경합한다. 입구를 하나로 두어 순서를 한곳에서 정한다.
 
@@ -102,7 +102,7 @@ Room Flow에서 목록이 나오고 화면은 값과 콜백만 받는다. 상태
 수집 파이프라인의 상당 부분은 실제로 composition과 Activity에 묶여 있다. 함께 올리면 수명주기를 직접 관리해야 하므로 오히려 위험해진다.
 
 - `previewSurface`·`previewTexture`는 `AndroidView` 안 `TextureView`의 리스너에서 만들어져 수명이 View에 묶인다. ViewModel이 들고 있으면 backing View가 사라진 뒤의 null·release를 직접 처리해야 한다.
-- 카메라 권한·프리뷰 권한·SAF 선택의 `rememberLauncherForActivityResult`는 composition에서만 만들 수 있다.
+- 카메라 권한·프리뷰 권한의 `rememberLauncherForActivityResult`는 composition에서만 만들 수 있다.
 - ARCore `requestInstall`과 수집 화면의 방향 고정은 Activity를 필요로 한다.
 - `CapturePreviewController`의 preflight가 `previewSurface`를 클로저로 잡는다.
 

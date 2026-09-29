@@ -17,7 +17,7 @@
 ### 계측 테스트 실행
 
 `connectedDebugAndroidTest`를 쓰지 않는다. 이 태스크는 실행할 때마다 APK를 다시 설치하는데,
-debug APK가 42MB이고 그중 41MB가 dex라 기기에서 처리하는 데 수 분씩 걸린다. 2026-09-21에
+debug APK가 51MB이고 그중 43MB가 dex라(2026-09-29 기준) 기기에서 처리하는 데 수 분씩 걸린다. 2026-09-21에
 `SM-G973N`에서 32분을 기다려도 테스트가 시작되지 않았다. 전송이 느린 것은 아니다
 (`adb push`는 74MB/s로 측정됐다).
 
@@ -30,8 +30,9 @@ adb install -r app\build\outputs\apk\androidTest\debug\app-debug-androidTest.apk
 adb shell am instrument -w com.ssafy.s15p21a206.tigermask.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
-같은 기기에서 전체 20개가 15초에 끝나며, 마지막 줄이 `OK (20 tests)`다. 클래스나 메서드만
-고르려면 `-e class`를 준다.
+2026-09-21에 같은 기기에서 당시 전체 20개가 15초에 끝났다. 모두 통과하면 마지막 줄이
+`OK (N tests)`이고, N은 `app/src/androidTest`의 `@Test` 수와 같다(2026-09-29 기준 41개).
+클래스나 메서드만 고르려면 `-e class`를 준다.
 
 패키지 이름이 둘이다. `-w` 뒤의 instrumentation은 `applicationId`(`com.ssafy.s15p21a206.tigermask`)를
 따르고, `-e class`의 클래스 이름은 코드 네임스페이스(`com.ssafy.s15p21a206.tiger`)를 따른다. 앞의 것이
