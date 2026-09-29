@@ -2,7 +2,7 @@
 
 ## 결정: 원시 데이터는 DB blob이 아닌 내부 파일 bundle로 유지
 
-**근거**: 영상·CSV 스트림은 이미 검증 가능한 불변 bundle이다. 기존 root를 앱 전용 내부 파일 저장소로 옮기면 일반 파일 관리자 삭제를 막으면서 finalize·manifest 검증·export·multipart 업로드 계약을 유지할 수 있다. Room은 목록·상세 색인에 적합하다.
+**근거**: 영상·CSV 스트림은 이미 검증 가능한 불변 bundle이다. 기존 root를 앱 전용 내부 파일 저장소로 옮기면 일반 파일 관리자 삭제를 막으면서 finalize·manifest 검증·export·multipart 업로드 계약을 유지할 수 있다. Room은 목록·상세 색인에 적합하다. (export는 2026-09-22에 제거했다.)
 
 **검토한 대안**:
 

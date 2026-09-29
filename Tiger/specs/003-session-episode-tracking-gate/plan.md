@@ -91,7 +91,7 @@ app/
 
 ## 조사 결정
 
-[research.md](research.md)에 아홉 개 결정을 기록했다. 구현에 직접 영향을 주는 것은 다음 넷이다.
+[research.md](research.md)에 아홉 개 결정을 기록했다(결정 10은 2026-09-15에 더했다). 구현에 직접 영향을 주는 것은 다음 넷이다.
 
 **Tracking 신호 전달 (결정 1)**: pose 스레드가 `StateFlow<Boolean>`로 Tracking 여부를 노출하고, 수집 화면이 100ms ticker로 최신 값을 `onTracking()`에 반복 전달한다. `onTracking()`은 호출 시점 기준으로 경과 시간을 판정하므로, 값 변화에만 반응하는 구독으로는 0.5초 마감이 영영 발화하지 않는다. Coordinator 호출은 전부 main 스레드에서 수행한다. (구현) 노출 값은 Tracking 여부에 그 pose의 카메라 시각을 더한 `StateFlow<TrackingSample>`이다.
 

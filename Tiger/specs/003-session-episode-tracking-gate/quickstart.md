@@ -328,7 +328,8 @@ Sensor 방향 그대로 저장된다. 수집 상세 화면이 영상을 돌려�
 
 1. 수집 화면에서 Session START
 2. 홈 버튼으로 중단하거나, 수집 종료로 정상 마감한다
-3. `adb shell pidof com.ssafy.s15p21a206.tiger`로 프로세스 생존을 확인하고,
+3. `adb shell pidof com.ssafy.s15p21a206.tiger`로 프로세스 생존을 확인하고(2026-09-23부터 applicationId가
+   `com.ssafy.s15p21a206.tigermask`이므로 지금 따라 할 때는 그 이름을 쓴다),
    `adb logcat -d | grep 'FATAL EXCEPTION'`으로 크래시 여부를 본다
 
 ### 수정 전

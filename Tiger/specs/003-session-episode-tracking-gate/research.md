@@ -71,9 +71,9 @@
 
 ## 결정 5: `frame_number` 생성과 중복 방지
 
-**결정**: 카메라 핸들러 스레드에서만 접근하는 카운터를 두고, CSV에 실제로 기록한 행에 대해서만 0부터 증가시킨다. 기존의 `timestampNs != lastFrameTimestampNs` 중복 제거를 반드시 유지한다.
+**결정**: 카메라 핸들러 스레드에서만 접근하는 카운터를 두고, CSV에 실제로 기록한 행에 대해서만 0부터 증가시킨다. 기존의 `timestampNs != lastFrameTimestampNs` 중복 제거를 반드시 유지한다. (구현) 카운터와 중복 제거는 `FrameTimestampWriter.record()`가 들며, 변수 이름은 `lastTimestampNs`다.
 
-**근거**: 현재 코드는 **동일한 `CaptureCallback` 인스턴스를 두 번 등록**한다 — `setRepeatingRequest(request, captureCallback, handler)`와 `sharedCamera.setCaptureCallback(captureCallback, handler)`. 같은 프레임에 대해 콜백이 두 번 불릴 수 있으며, 기존 타임스탬프 중복 제거가 그 결과를 걸러내고 있다. 이 방어를 제거한 채 카운터만 추가하면 `frame_number`가 프레임당 2씩 증가해 결함이 더 나빠진다. 카운터는 중복 제거를 통과한 행에 대해서만 증가해야 한다.
+**근거**: 현재 코드는 **동일한 `CaptureCallback` 인스턴스를 두 번 등록**한다 — `setRepeatingRequest(request, captureCallback, handler)`와 `sharedCamera.setCaptureCallback(captureCallback, handler)`. (2026-09-23) 지금은 `ArSharedCameraSession`의 `frameCallback`이 같은 두 곳에 등록된다. 같은 프레임에 대해 콜백이 두 번 불릴 수 있으며, 기존 타임스탬프 중복 제거가 그 결과를 걸러내고 있다. 이 방어를 제거한 채 카운터만 추가하면 `frame_number`가 프레임당 2씩 증가해 결함이 더 나빠진다. 카운터는 중복 제거를 통과한 행에 대해서만 증가해야 한다.
 
 **검토한 대안**: *Camera2의 `CaptureResult.FRAME_NUMBER`를 사용*. 이 값은 CaptureSession 수명 기준 요청 일련번호이며 0에서 시작하지 않고, 드롭된 요청에 대해서도 증가한다. 수신 측이 요구한 "Camera Stream의 순차 frame index"와 다르다. 기각.
 

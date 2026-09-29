@@ -214,6 +214,7 @@ completed bundle은 공개된 뒤 수정하지 않습니다. 업로드는 그것
 ## 문서와 작업 방식
 
 - 기능 명세·계획·작업: [`specs/001-episode-recorder/`](specs/001-episode-recorder/), [`specs/002-capture-control-ux/`](specs/002-capture-control-ux/), [`specs/003-session-episode-tracking-gate/`](specs/003-session-episode-tracking-gate/)
+- 명세와 다르게 동작하는 알려진 결함: [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md)
 - SDD/Spec Kit 완료 판정 규칙: [`specs/AGENTS.md`](specs/AGENTS.md)
 - 프로젝트 공통 작업 규칙: [`AGENTS.md`](AGENTS.md)
 

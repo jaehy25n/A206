@@ -91,6 +91,8 @@ app/
 
 `CaptureControlPolicy`의 네 상태·준비 여부·작업 잠금을 단위 테스트하고, `CaptureScreen`의 production 콜백과 제어 UI가 같은 정책을 사용한다. 종료 확인·BackHandler·툴팁은 `CaptureWorkspaceScreen.kt`에서 렌더링하고 부모가 확인 상태와 비동기 작업을 소유한다. Compose 검증은 기존 환경에 맞게 `src/androidTest/.../ui/CaptureControlStateScreenTest.kt`에 두고, T025는 제어 상태와 UI semantics·툴팁 자동 검사로 완료 판정한다. 개발용 앱이라는 사용자 결정(2026-09-11)에 따라 TalkBack 실사용 검증은 필수 범위에서 제외한다.
 
+이후 바뀐 것: 정책의 상태는 003에서 다섯(`Idle`·`Initializing`·`Ready`·`EpisodeActive`·`Finalizing`)이 됐고, `CaptureScreen`은 2026-09-22에 `CaptureWorkspace`(그리기)와 `rememberCaptureDriver`(콜백)로 갈렸다. 상태와 확인 여부는 `TigerApp`이 소유하는 `CaptureUiState`가 든다.
+
 [research.md](research.md)의 모든 결정이 해결됐으며 추가 확인 항목은 없다.
 
 ## 설계 후 규칙 점검

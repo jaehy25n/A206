@@ -35,7 +35,7 @@ Session을 종료하면 확정 뒤 업로드가 곧바로 시작되고 그 Sessi
 
 실서버 검증은 Android에서 completed Session을 만든 뒤 다음 순서로 수행한다.
 
-1. 기기에서 꺼낸 동일 bundle을 PC에서 multipart로 보내 `201 created` 또는 `200 duplicate`를 확인한다.
+1. 기기에서 꺼낸 동일 bundle을 PC에서 multipart로 보내 `201 created` 또는 `200 duplicate`를 확인한다. 번들은 앱 전용 내부 저장소에 있으므로, debug 빌드에서 `adb exec-out run-as com.ssafy.s15p21a206.tigermask tar -cf - -C files/capture/completed <session_id> > <session_id>.tar`로 꺼낸다.
 2. 앱에서 같은 Session을 업로드해 상태가 `UPLOADED`로 바뀌는지 확인한다.
 3. 네트워크 오류 또는 의도적으로 잘못된 receipt를 재현해 `FAILED`와 수동 재시도가 표시되고 source bundle이 남는지 확인한다.
 
