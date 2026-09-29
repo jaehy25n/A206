@@ -117,7 +117,7 @@
 - Episode가 `INVALID_TRACKING`으로 자동 마감된 직후 담당자가 `Episode END`를 누르면 어떻게 되는가: 이미 마감된 Episode를 다시 마감하지 않으며, 상태가 중복 기록되지 않는다.
 - Tracking 유실이 유효성 판정 시간 이상 지속된 Episode의 종료 시각은 무엇인가: Tracking 유실이 시작된 시점부터 유효성 판정 시간이 경과한 순간이다. 담당자가 나중에 인지한 시점이 아니다.
 - Episode가 진행 중이 아닌 `READY` 상태에서 Tracking이 유실되면 어떻게 되는가: 유효하지 않게 마감할 Episode가 없으므로 Episode 상태는 변하지 않고, 화면만 `READY`에서 Tracking 준비 중 상태로 돌아가 `Episode START`가 불가능해진다.
-- Session 수집 중 앱이 비정상 종료되면 어떻게 되는가: 기존 Session 중단 복구 동작을 그대로 따른다. 이번 변경으로 달라지지 않는다.
+- Session 수집 중 앱이 비정상 종료되면 어떻게 되는가: 아래 FR-027~FR-030의 구제를 따른다. 다음 실행에서 staging 번들을 정상 Session으로 마감하고, 마감할 수 없는 번들만 중단 상태로 남긴다. 처음에는 "기존 중단 복구를 그대로 따른다"고 적었으나 같은 명세의 구제 요구가 그 동작을 바꿨다.
 - `metadata.json`의 Intrinsic을 확보하지 못하면 Session 저장이 실패하는가: 실패하지 않는다. 확보 가능한 값만 기록하고 Session은 정상 마감된다.
 
 ## Requirements *(mandatory)*
@@ -128,7 +128,7 @@
 
 - **FR-001**: 시스템은 Session 시작과 Episode 시작을 별개의 사용자 조작으로 제공해야 한다.
 - **FR-002**: Session 시작 시 시스템은 Session을 생성하고 Camera / IMU / ARCore 수집을 시작해야 하며, Episode를 자동으로 시작해서는 안 된다.
-- **FR-003**: 시스템은 수집 화면에 현재 상태를 `INITIALIZING`, `READY`, `EPISODE ACTIVE`, `FINALIZING` 중 하나로 구분해 표시해야 한다.
+- **FR-003**: 시스템은 수집 화면에 현재 상태를 `INITIALIZING`, `READY`, `EPISODE ACTIVE`, `FINALIZING` 중 하나로 구분해 표시해야 한다. (2026-09-21) `FINALIZING`은 상태 배지가 아니라 화면을 덮는 마감 판(`세션을 마무리하고 있습니다`)으로 표시한다.
 - **FR-004**: Episode 종료 시 시스템은 Session과 Camera / IMU / ARCore 수집을 중단하지 않고 유지해야 한다.
 - **FR-005**: 시스템은 하나의 Session 안에서 Episode 시작·종료를 횟수 제한 없이 반복할 수 있어야 한다.
 - **FR-006**: 시스템은 Episode가 진행 중일 때 Session 종료를 허용하지 않고, 진행 중인 Episode를 먼저 종료하도록 안내해야 한다.
@@ -157,7 +157,7 @@
 
 - **FR-021**: 시스템은 Session 마감 시 `metadata.json`에 실제 촬영에 사용된 Camera의 `camera_id`, `image_width`, `image_height`, `fx`, `fy`, `cx`, `cy`를 기록해야 한다.
 - **FR-022**: 기록되는 Intrinsic은 기기 일반 대표값이 아니라 해당 Session의 Camera ID 및 촬영 해상도에 대응하는 값이어야 한다.
-- **FR-023**: 시스템은 기기가 제공하는 경우 `distortion_coefficients`, `focal_length`, `sensor_size`를 함께 기록해야 한다.
+- **FR-023**: 시스템은 기기가 제공하는 경우 `distortion_coefficients`, `focal_length_mm`, `sensor_width_mm`·`sensor_height_mm`를 함께 기록해야 한다.
 - **FR-024**: 시스템은 기기가 제공하지 않는 Camera Metadata 항목에 대해 값을 임의로 계산해 채워서는 안 되며, 값이 없음을 명시해야 한다.
 - **FR-025**: Camera Metadata 확보 실패는 Session 마감과 업로드를 실패시켜서는 안 된다.
 - **FR-026**: 시스템은 `metadata.json`의 기존 Session 식별자, Camera Stream 선언, 파일 manifest의 형식과 의미를 유지해야 한다.
@@ -191,14 +191,14 @@
 - **Ultra-wide Camera Intrinsic**: 위 항목에 종속된다. Ultra-wide 동시 촬영이 가능하다고 확인되기 전에는 수집 대상이 아니다.
 - **ARCore SharedCamera 도입**: 이미 구현되어 동작 중이므로 이번 변경 대상이 아니다. 회귀가 발생하지 않는 것만 확인한다.
 - **Session 번들의 파일 구성 및 업로드 계약 변경**: 수신 측이 현행 구조로 정상 동작함을 확인했다. `metadata.json`에 필드를 추가하는 것 외에 파일 레이아웃과 업로드 방식은 바꾸지 않는다.
-- **Camera 설정값의 사용자 노출 설정 화면**: 해상도·프레임레이트 등을 쉽게 바꿀 수 있는 구조는 향후 확장 항목으로만 남긴다. 이번 범위에서는 설정 UI를 추가하지 않는다.
+- **Camera 설정값의 사용자 노출 설정 화면**: 해상도·프레임레이트 등을 쉽게 바꿀 수 있는 구조는 향후 확장 항목으로만 남긴다. 이번 범위에서는 설정 UI를 추가하지 않는다. (2026-09-16) 녹화 해상도 선택은 FR-039로 범위에 들어왔고, (2026-09-23) 초점·ISO·셔터·화이트 밸런스와 함께 카메라 설정 시트에서 고른다([002](../002-capture-control-ux/spec.md) FR-017 계열). 프레임레이트는 30으로 고정이다.
 - **영상 중간 구간의 frame drop 대응**: 확인 결과 Timestamp와 MP4 frame 수의 차이는 녹화 시작·종료 경계에서 발생하며 중간 구간의 지속적 drop이 아니다. 정확한 1:1 frame correspondence를 위한 별도 인코더 처리는 수신 측 방침에 따라 서버 전처리에 맡긴다.
 
 ## Assumptions
 
 - 수집 담당자는 앱을 사용해 본 내부 인원이며, `Session START`와 `Episode START`가 분리된 조작을 별도 교육 없이 수행할 수 있다.
 - 안정화 판정 시간 1초, 유효성 판정 시간 0.5초는 기존 명세에서 합의된 값을 따른다. 수신 측이 제시한 "약 0.5초 이상"을 0.5초로 확정한다.
-- Episode의 task와 object 입력 방식은 기존 흐름을 유지하되, 입력된 값이 Session 단위가 아니라 각 Episode 단위로 귀속된다.
+- Episode의 task와 object 입력 방식은 기존 흐름을 유지하되, 입력된 값이 Session 단위가 아니라 각 Episode 단위로 귀속된다. (2026-09-22) 각 Episode는 여전히 시작 시점의 값을 제 값으로 기록하며(FR-007), 같은 값을 Session 속성으로도 저장해 Episode 없이 마감된 Session도 이름을 잃지 않는다.
 - Episode 상태 값의 표현은 기존 Episode 기록 형식을 그대로 사용한다. 수신 측이 `COMPLETED`와 `INVALID_TRACKING`을 같은 열에서 읽을 수 있으므로 새 열을 추가하지 않는다.
 - `metadata.json`에 새 필드를 추가하는 것은 수신 측 파이프라인에 호환되는 변경이다. 기존 필드를 제거하거나 이름을 바꾸지 않는다.
 - ARCore Tracking 상태의 원시 값은 지금처럼 ARCore Pose 기록에 계속 남으며, 이번 변경은 그 값을 Episode 유효성 판정에 사용하는 것을 추가한다.
@@ -233,7 +233,8 @@ Session이 Episode 여러 개를 담는 긴 단위가 되면서 중단 한 번�
   표시해야 한다.
 - **FR-032**: 프리뷰는 저장되는 영상과 같은 방향으로 보여야 하며, 보여 줄 수 있는 화각을 잘라내지
   않아야 한다. ARCore Camera 텍스처(16:9)와 녹화 해상도(4:3)의 비율 차이에서 오는 세로 화각 차이는
-  ARCore Camera 구성의 속성이며 이 범위에서 해소하지 않는다.
+  ARCore Camera 구성의 속성이며 이 범위에서 해소하지 않는다. (2026-09-16) 녹화도 ARCore Camera
+  텍스처(`textureSize`, 16:9)를 따르게 되어 이 차이는 사라졌다. 프리뷰와 저장 영상의 비율·화각이 같다.
 - **FR-033**: 프리뷰 표시를 위한 카메라 출력 추가가 `main_frame_timestamps.csv`의 행 수와
   `frame_number` 연속성에 영향을 주어서는 안 된다.
 
@@ -261,7 +262,8 @@ frame 수의 차이가 프리뷰 없는 대조군과 같은 수준을 유지한�
   같은 가로 기준이어야 한다.
 - **FR-037**: `metadata.json`의 Camera Intrinsic은 저장된 영상과 같은 기하여야 하며, 적용한 회전
   각도(`video_rotation_degrees`, 현재 항상 `0`)를 함께 기록해 수신 측이 회전 규약이 있던 시기의
-  수집분과 구분할 수 있어야 한다.
+  수집분과 구분할 수 있어야 한다. (2026-09-29 확인) 값이 `0`이면 직렬화가 기본값을 생략해 키가 쓰이지
+  않는다. 수신 측은 키 부재를 `0`으로 읽는다.
 - **FR-038**: `arcore_poses.csv`는 ARCore 원본 기록을 유지한다.
 
 **SC-013**: 수신 측이 `metadata.json`의 `video_rotation_degrees`만으로 회전 적용 여부를 판별할 수

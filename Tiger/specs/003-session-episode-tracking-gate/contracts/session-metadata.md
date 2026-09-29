@@ -45,8 +45,7 @@ Session 번들의 `metadata.json`이 수신 측에 제공하는 형식. 기존 �
     "focal_length_mm": 4.32,
     "sensor_width_mm": 5.645,
     "sensor_height_mm": 4.234,
-    "distortion_coefficients": [0.1234, -0.2345, 0.0012, 0.0009, 0.0456],
-    "video_rotation_degrees": 0
+    "distortion_coefficients": [0.1234, -0.2345, 0.0012, 0.0009, 0.0456]
   },
   "files": [
     { "path": "accelerometer.csv", "sizeBytes": 184320, "sha256": "…" },
@@ -62,8 +61,8 @@ Session 번들의 `metadata.json`이 수신 측에 제공하는 형식. 기존 �
 | `session_id` | 유지 | Session UUID |
 | `camera_streams.main` | 유지 | 항상 `true` |
 | `camera_streams.ultrawide` | 유지 | 이번 범위에서는 항상 `false` |
-| `camera` | 2026-09-14 추가 | 촬영에 사용된 Camera 정보. 획득 실패 시 키 자체가 생략된다 |
-| `capture_settings` | 2026-09-23 추가 | 그 Session의 촬영 조건. 수동 설정을 쓰지 않은 Session은 키 자체가 생략된다 |
+| `camera` | 2026-09-14 추가 | 촬영에 사용된 Camera 정보. 획득에 실패했거나 다음 실행에서 구제된 Session은 키 자체가 생략된다 |
+| `capture_settings` | 2026-09-23 추가 | 그 Session의 촬영 조건. 수동 설정을 쓰지 않았거나 다음 실행에서 구제된 Session은 키 자체가 생략된다 |
 | `files` | 유지 | 번들 파일 manifest. `metadata.json` 자신은 포함하지 않는다 |
 
 ### `camera` 객체
@@ -81,7 +80,7 @@ Session 번들의 `metadata.json`이 수신 측에 제공하는 형식. 기존 �
 | `sensor_width_mm` | number | 아니오 | 기기 미제공 시 키 생략 |
 | `sensor_height_mm` | number | 아니오 | 기기 미제공 시 키 생략 |
 | `distortion_coefficients` | number[] | 아니오 | 기기 미제공 시 키 생략. 순서는 Camera2 `LENS_DISTORTION` 정의를 따른다 |
-| `video_rotation_degrees` | int | 아니오 | `main_rgb.mp4`에 적용된 시계 방향 회전. 기본 `0`. 아래 [영상 회전](#영상-회전-2026-09-16-갱신) 참고 |
+| `video_rotation_degrees` | int | 아니오 | `main_rgb.mp4`에 적용된 시계 방향 회전. `0`이면 키를 쓰지 않으며, 키가 없으면 `0`으로 읽는다. 아래 [영상 회전](#영상-회전-2026-09-16-갱신) 참고 |
 
 ### `capture_settings` 객체
 
@@ -93,7 +92,7 @@ Session 번들의 `metadata.json`이 수신 측에 제공하는 형식. 기존 �
 |---|---|---|---|
 | `mode` | string | 예 | 수동 설정을 쓴 Session은 `manual` |
 | `requested` | object | 아니오 | 사용자가 정해 `CaptureRequest`에 건 값 |
-| `actual` | object | 아니오 | 첫 유효 프레임 이후 `CaptureResult`에서 읽은 값. 프레임을 받지 못하면 키 생략 |
+| `actual` | object | 아니오 | 수동 요청이 실제로 걸린 프레임의 `CaptureResult`에서 읽은 값. 매 프레임 갱신되어 정지 직전 프레임의 값이 남는다. 그런 프레임을 받지 못하면 키 생략 |
 | `awb_fixed` | bool | 예 | 화이트 밸런스를 고정했는지. 고정하지 않았으면 `false`로 적으며 키를 생략하지 않는다 |
 
 `requested` 객체:
@@ -146,6 +145,8 @@ Session 번들의 `metadata.json`이 수신 측에 제공하는 형식. 기존 �
 
 `capture_settings` 키가 없는 Session은 **촬영 조건을 기기 자동에 맡긴 수집**이다. 그 Session의 노출·ISO·화이트 밸런스는 프레임마다 변했다고 보아야 하며, 다른 Session에서 구한 intrinsic이나 LUT를 그대로 적용할 근거가 없다. 수동 설정을 지원하지 않는 기기에서 찍은 Session과, 이 항목이 생기기 전에 찍은 Session이 여기 해당한다.
 
+예외가 하나 있다. 화면 중단 뒤 다음 실행에서 구제된 Session([spec.md](../spec.md) FR-027~FR-028)은 수동 설정으로 찍었어도 `capture_settings`와 `camera`가 없다. 구제는 staging에 남은 파일만 보고 metadata를 쓰기 때문이다. 이때 키 부재는 "자동으로 찍음"이 아니라 "기록되지 않음"이다.
+
 ## 녹화 해상도 (2026-09-16 갱신)
 
 `main_rgb.mp4`의 해상도는 Session마다 다를 수 있다. 수집자가 Session 전에 카메라 설정에서
@@ -161,7 +162,7 @@ Session 번들의 `metadata.json`이 수신 측에 제공하는 형식. 기존 �
 같은 가로 기준이다. `arcore_poses.csv`의 Camera 좌표계도 같은 기준이라 추가 변환 없이 함께 쓴다.
 
 `camera` 객체의 `video_rotation_degrees`(int, 기본 `0`)는 그 Session의 `main_rgb.mp4`에 적용된
-시계 방향 회전이며, 지금은 항상 `0`이다. 값이 `90`인 번들은 2026-09-15~16 사이 회전 규약이 있던
+시계 방향 회전이다. 지금은 회전이 없어 키를 쓰지 않는다(없으면 `0`). 값이 `90`인 번들은 2026-09-15~16 사이 회전 규약이 있던
 시기의 수집분이다. 그 수집분만 다음이 성립한다.
 
 - `image_width`·`image_height`·`fx`·`fy`·`cx`·`cy`가 **회전 후** 기하다. 컨테이너에 저장된 track

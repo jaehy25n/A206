@@ -18,6 +18,8 @@
 
 **결정**: ARCore pose 수집 스레드가 Tracking 여부를 `StateFlow<Boolean>`로 노출하고, 수집 화면이 **100ms 주기 ticker**로 그 최신 값을 `CaptureSessionCoordinator.onTracking()`에 반복 전달한다. Coordinator 호출은 전부 main 스레드에서 이루어진다.
 
+(구현) 노출하는 값은 Tracking 여부와 그 pose의 카메라 시각을 함께 담은 `StateFlow<TrackingSample>`이다. 기록용 유실 시작 시각을 `arcore_poses.csv`와 맞추기 위해서이며, 근거는 [계약](contracts/capture-state-machine.md)의 "유실 시작 시각의 기준"에 있다.
+
 **근거**: `onTracking()`은 호출 시점의 경과 시간을 기준으로 1초 안정화와 0.5초 유실을 판정한다. 즉 **상태가 변하지 않아도 계속 호출되어야** 마감 시점이 도래한다. Tracking 유실이 지속될 때 값이 `false`로 고정되므로, 값 변화에만 반응하는 구독은 0.5초 마감을 영영 발화시키지 못한다. 100ms 주기는 두 임계값(500ms, 1000ms)보다 충분히 촘촘해 판정 오차가 임계값의 20% 이내이며, 수집 중에만 도는 경량 루프라 비용이 무시할 수준이다.
 
 **검토한 대안**:
@@ -52,6 +54,8 @@
 **근거**: 화면은 전체 화면 프리뷰 위의 하단 중앙 오버레이 3버튼 구성이며, 002에서 확정된 UX다. 상태별로 같은 버튼이 다른 의미를 갖는 구성은 이미 문자열 리소스에 반영되어 있다(`capture_control_start` = "수집 시작", `capture_control_resume` = "작업 구간 시작"). 버튼을 추가하면 002의 레이아웃 결정을 되돌리게 되고, 명세는 조작의 **분리**를 요구할 뿐 버튼 개수를 지정하지 않는다. `Initializing`에서 재생이 비활성화되고 그 이유가 표시되면 FR-009가 충족된다.
 
 **검토한 대안**: *Session START와 Episode START를 별개 버튼으로 배치*. 명세 의도에는 더 직설적이지만 002에서 확정한 3버튼 오버레이를 재설계해야 하고, 두 버튼 중 하나는 항상 비활성이라 화면만 복잡해진다. 기각.
+
+(2026-09-23) 분기는 `state.phase == Idle`이면 Session START, 아니면 Episode START다. 제어는 화면 우측 가장자리에 세로로 쌓이고 상태마다 한두 개만 보이며(002 FR-004), `capture_control_start`는 "세션 시작"이다. 재생 버튼 하나가 상태에 따라 두 조작을 맡는 결정은 그대로다.
 
 ---
 
@@ -91,6 +95,11 @@
 
 ## 결정 7: Camera Intrinsic의 획득 출처
 
+> (2026-09-16) 이 결정을 뒤집었다. 녹화를 1920×1080으로 올리려고 MediaRecorder 해상도와 Intrinsic을 GPU
+> 텍스처 스트림(`cameraConfig.textureSize`, `Camera.getTextureIntrinsics()`)으로 옮겼다. CPU 이미지
+> (`imageSize`)는 640×480으로 남아야 stream 조합이 성립한다. 근거는 [계약](contracts/capture-state-machine.md)의
+> "Session 중 화면 프리뷰"에 있고, 아래는 당시의 결정이다.
+
 **결정**: ARCore `Frame.getCamera().getImageIntrinsics()`를 1차 출처로 사용하고, Camera2 `CameraCharacteristics`로 부가 광학 값을 보완한다. 첫 유효 프레임에서 1회 획득해 보관했다가 Session 마감 시 기록한다.
 
 | 필드 | 출처 | 확보 |
@@ -99,8 +108,8 @@
 | `image_width` / `image_height` | `CameraIntrinsics.getImageDimensions()` | 항상 |
 | `fx` / `fy` | `CameraIntrinsics.getFocalLength()` | 항상 |
 | `cx` / `cy` | `CameraIntrinsics.getPrincipalPoint()` | 항상 |
-| `focal_length` | Camera2 `LENS_INFO_AVAILABLE_FOCAL_LENGTHS` | 대체로 |
-| `sensor_size` | Camera2 `SENSOR_INFO_PHYSICAL_SIZE` | 대체로 |
+| `focal_length_mm` | Camera2 `LENS_INFO_AVAILABLE_FOCAL_LENGTHS` | 대체로 |
+| `sensor_width_mm` / `sensor_height_mm` | Camera2 `SENSOR_INFO_PHYSICAL_SIZE` | 대체로 |
 | `distortion_coefficients` | Camera2 `LENS_DISTORTION` | 기기 의존 |
 
 **근거**: `getImageIntrinsics()`는 ARCore가 실제로 사용하는 CPU 이미지 스트림에 대응하는 값을 돌려준다. 그리고 현행 구현은 MediaRecorder 해상도를 `session.cameraConfig.imageSize`로 설정하므로([`AndroidCaptureRuntime`](../../app/src/main/java/com/ssafy/s15p21a206/tiger/capture/AndroidCaptureRuntime.kt)), **녹화 해상도와 intrinsics 기준 해상도가 자동으로 일치한다.** 수신 측이 요구한 "기기 대표값이 아니라 실제 촬영 Camera ID 및 Resolution에 대응하는 값"이 별도 보정 없이 충족된다. FR-022와 SC-007의 근거가 이것이다.
@@ -109,7 +118,7 @@
 
 **검토한 대안**:
 - *`getTextureIntrinsics()` 사용*: GPU 텍스처 스트림(`cameraConfig.textureSize`) 기준이라 녹화 해상도와 다를 수 있다. 기각.
-- *[`CameraCapabilityPreflight`](../../app/src/main/java/com/ssafy/s15p21a206/tiger/capture/CameraCapabilityPreflight.kt) 재사용*: 이미 focal/sensor/activeArray를 읽지만, Galaxy S10 1× 프로파일 값과 하드코딩 비교해 불일치 시 실패시킨다. 메타데이터 수집에 그대로 쓰면 FR-025(메타데이터 실패가 Session을 실패시키지 않음)를 위반한다. 값 읽기 로직만 참고하고 판정 로직은 쓰지 않는다.
+- *`CameraCapabilityPreflight` 재사용*: 이미 focal/sensor/activeArray를 읽지만, Galaxy S10 1× 프로파일 값과 하드코딩 비교해 불일치 시 실패시킨다. 메타데이터 수집에 그대로 쓰면 FR-025(메타데이터 실패가 Session을 실패시키지 않음)를 위반한다. 값 읽기 로직만 참고하고 판정 로직은 쓰지 않는다. (2026-09-23) 이 클래스는 쓰는 곳이 없어 지웠다.
 
 ---
 
@@ -129,7 +138,7 @@
 
 **근거**: `INVALID_TRACKING` 마감은 사용자 조작 없이 ticker 안에서 발생하므로, 화면이 `latestClosedEpisode`를 폴링하지 않는 한 기록 시점을 알 수 없다. 기존 `onInterrupted` 콜백과 같은 방식이라 클래스의 설계 결을 따른다. 두 경로가 같은 출구를 쓰므로 FR-015의 두 상태가 동일한 형식으로 기록된다.
 
-**중복 마감 방지**: `endEpisode()`는 `activeEpisode`가 `null`이면 예외를 던진다. `INVALID_TRACKING` 자동 마감이 `activeEpisode`를 이미 비우므로, 그 직후 사용자가 일시 정지를 눌러도 화면 상태가 `Ready`로 바뀌어 있어 조작 자체가 차단된다. 엣지 케이스 항목이 이렇게 해소된다.
+**중복 마감 방지**: `endEpisode()`는 `activeEpisode`가 `null`이면 예외를 던진다. `INVALID_TRACKING` 자동 마감이 `activeEpisode`를 이미 비우므로, 그 직후 사용자가 일시 정지를 눌러도 화면 상태가 `Initializing`으로 바뀌어 있어 조작 자체가 차단된다. 엣지 케이스 항목이 이렇게 해소된다.
 
 ---
 
@@ -158,6 +167,6 @@ ARCore가 2개(GPU 텍스처 + CPU 이미지), MediaRecorder 1개에 프리뷰�
 
 **비용**: OES 셰이더와 `Frame.transformCoordinates2d` 기반 UV 처리가 필요하고, pose 수집 스레드가 렌더 스레드를 겸한다. 기록 경로와 렌더링이 한 스레드에 묶이므로, 이후 렌더링을 무겁게 만들면 pose 기록 주기에 영향이 갈 수 있다. 그리기는 `runCatching`으로 감싸 실패가 pose 수집을 멈추지 않게 했다.
 
-**화각 일치**: 프리뷰 버퍼를 `cameraConfig.imageSize`로 두고 `setDisplayGeometry`를 같은 값으로 잡는다. 표시 기하를 화면 크기로 잡으면 ARCore가 화면 비율에 맞춰 이미지를 잘라내므로 저장 영상보다 좁은 화각이 된다. 촬영 해상도를 기준으로 잡아야 저장되는 것과 같은 화각이 그대로 나온다.
+**화각 일치**: 프리뷰 버퍼와 `setDisplayGeometry`를 녹화와 같은 `cameraConfig.textureSize`로 잡는다(2026-09-16 갱신. 처음에는 `imageSize` 기준이었다). 표시 기하를 화면 크기로 잡으면 ARCore가 화면 비율에 맞춰 이미지를 잘라내므로 저장 영상보다 좁은 화각이 된다. 촬영 해상도를 기준으로 잡아야 저장되는 것과 같은 화각이 그대로 나온다.
 
 **fallback을 넣지 않은 이유**: 대상 기기가 갤럭시 S10 하나이고 실제 배포가 없다. 채택안은 stream 제약을 받지 않으므로 애초에 fallback이 필요한 실패 모드가 없다.

@@ -8,6 +8,7 @@
 
 - 저장소 루트에서 Gradle Wrapper를 실행한다.
 - 실기기 검증에는 ARCore(Google Play Services for AR)가 설치된 Android API 28 이상 기기가 필요하다. 기준 기기는 Galaxy S10 계열이다.
+- 카메라의 timestamp source가 `REALTIME`이어야 한다. 아니면 Session 시작이 거부되고 `ARCore 녹화를 시작할 수 없습니다: Camera timestamp source is not REALTIME`이 뜬다(2026-09-23부터).
 - 새 clone 또는 worktree라면 `.\gradlew.bat installGitHooks`를 한 번 실행한다.
 
 ## 자동 검증
@@ -16,11 +17,7 @@
 ./gradlew.bat ktlintCheck testDebugUnitTest lintDebug assembleDebug
 ```
 
-Compose 제어 상태 검증은 연결된 기기 또는 에뮬레이터가 있을 때만 실행한다.
-
-```bash
-./gradlew.bat connectedDebugAndroidTest
-```
+Compose 제어 상태 검증은 연결된 기기 또는 에뮬레이터가 있을 때만 실행한다. `connectedDebugAndroidTest`는 실행할 때마다 APK를 다시 설치해 기기에서 수 분씩 걸리므로 쓰지 않는다. APK를 한 번 설치한 뒤 `am instrument`로 돌리는 절차는 [`AGENTS.md`](../../AGENTS.md)의 "계측 테스트 실행"에 있다.
 
 ### 자동 검증이 덮는 범위
 

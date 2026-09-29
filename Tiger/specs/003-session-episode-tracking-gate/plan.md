@@ -87,17 +87,19 @@ app/
 
 **구조 결정**: 기존 단일 Android 앱 모듈과 패키지 구성을 유지한다. 새 파일은 `CameraMetadataReader.kt` 하나이며, 나머지는 기존 파일의 수정이다. `CaptureSessionCoordinator`를 옮기거나 재작성하지 않고, 마감 사건 전파용 콜백만 추가해 수집 화면에 연결한다.
 
+위 트리는 이 기능이 손댄 파일이다. 이후 구조가 바뀌었다. `MainActivity`는 `TigerApp`만 띄우고, 상태 계산은 `ui/capture/CaptureState.kt`, ticker와 Episode 마감 저장은 `ui/capture/CaptureDriver.kt`로 옮겼다(2026-09-22, S15P21A206-46). `AndroidCaptureRuntime`의 일은 `ArSharedCameraSession`(카메라)·`ArPoseCollector`(tracking 노출·Intrinsic 확보)·기록 클래스로 갈랐다(2026-09-23). frame index는 구현 때부터 `FrameTimestampWriter`가 센다. 지금의 배치는 [`app/AGENTS.md`](../../app/AGENTS.md)에 있다.
+
 ## 조사 결정
 
 [research.md](research.md)에 아홉 개 결정을 기록했다. 구현에 직접 영향을 주는 것은 다음 넷이다.
 
-**Tracking 신호 전달 (결정 1)**: pose 스레드가 `StateFlow<Boolean>`로 Tracking 여부를 노출하고, 수집 화면이 100ms ticker로 최신 값을 `onTracking()`에 반복 전달한다. `onTracking()`은 호출 시점 기준으로 경과 시간을 판정하므로, 값 변화에만 반응하는 구독으로는 0.5초 마감이 영영 발화하지 않는다. Coordinator 호출은 전부 main 스레드에서 수행한다.
+**Tracking 신호 전달 (결정 1)**: pose 스레드가 `StateFlow<Boolean>`로 Tracking 여부를 노출하고, 수집 화면이 100ms ticker로 최신 값을 `onTracking()`에 반복 전달한다. `onTracking()`은 호출 시점 기준으로 경과 시간을 판정하므로, 값 변화에만 반응하는 구독으로는 0.5초 마감이 영영 발화하지 않는다. Coordinator 호출은 전부 main 스레드에서 수행한다. (구현) 노출 값은 Tracking 여부에 그 pose의 카메라 시각을 더한 `StateFlow<TrackingSample>`이다.
 
 **상태 이름 재정의 (결정 2)**: 기존 `CaptureWorkspaceControlState.Ready`는 "Session 미시작"을 뜻해 명세와 수신 측의 `READY`와 정반대다. `Idle` / `Initializing` / `Ready` / `EpisodeActive` / `Finalizing`으로 재정의한다. 영향 범위는 enum, 정책 클래스, `MainActivity` 상태 계산, 테스트 두 개로 한정된다.
 
 **frame index 중복 방지 (결정 5)**: 현재 동일한 `CaptureCallback` 인스턴스가 `setRepeatingRequest`와 `sharedCamera.setCaptureCallback`으로 두 번 등록되어 있고, 기존 타임스탬프 중복 제거가 그 결과를 걸러내고 있다. 이 방어를 유지한 채 **중복 제거를 통과한 행에 대해서만** 카운터를 증가시킨다. 방어를 걷어내면 `frame_number`가 프레임당 2씩 증가해 결함이 악화된다.
 
-**Intrinsic 출처 (결정 7)**: ARCore `Frame.getCamera().getImageIntrinsics()`를 1차 출처로 쓴다. 현행 구현이 MediaRecorder 해상도를 `session.cameraConfig.imageSize`로 설정하므로 intrinsics 기준 해상도와 녹화 해상도가 구조적으로 일치하며, 수신 측이 요구한 "실제 촬영 Camera ID 및 Resolution에 대응하는 값"이 별도 보정 없이 충족된다. Camera2 `CameraCharacteristics`로 `focal_length`, `sensor_size`, `distortion_coefficients`를 보완하되 미제공 시 생략한다.
+**Intrinsic 출처 (결정 7)**: ARCore `Frame.getCamera().getImageIntrinsics()`를 1차 출처로 쓴다. 현행 구현이 MediaRecorder 해상도를 `session.cameraConfig.imageSize`로 설정하므로 intrinsics 기준 해상도와 녹화 해상도가 구조적으로 일치하며, 수신 측이 요구한 "실제 촬영 Camera ID 및 Resolution에 대응하는 값"이 별도 보정 없이 충족된다. Camera2 `CameraCharacteristics`로 `focal_length`, `sensor_size`, `distortion_coefficients`를 보완하되 미제공 시 생략한다. (2026-09-16) 이 결정은 뒤집혔다. 1080p 녹화를 위해 MediaRecorder와 Intrinsic을 `textureSize`·`getTextureIntrinsics()`로 옮겼다. research.md 결정 7을 참고한다.
 
 추가 확인이 필요한 미해결 항목은 없다.
 

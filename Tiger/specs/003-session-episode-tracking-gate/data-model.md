@@ -13,9 +13,9 @@
 | 값 | 의미 | 재생 | 일시 정지 | 정지 |
 |---|---|---|---|---|
 | `Idle` | Session 미시작 | Session START (task/object 입력 완료 시) | 불가 | 불가 |
-| `Initializing` | **신규.** Session 수집 중, ARCore Tracking 미안정화 | 불가 | 불가 | Session END |
-| `Ready` | Session 수집 중, Tracking 안정화 | Episode START | 불가 | Session END |
-| `EpisodeActive` | Episode 진행 중 | 불가 | Episode END | 확인 후 Session END |
+| `Initializing` | **신규.** Session 수집 중, ARCore Tracking 미안정화 | 불가 | 불가 | 확인 후 Session END |
+| `Ready` | Session 수집 중, Tracking 안정화 | Episode START | 불가 | 확인 후 Session END |
+| `EpisodeActive` | Episode 진행 중 | 불가 | Episode END | 확인 후 거부·안내 (Episode를 먼저 끝내야 한다) |
 | `Finalizing` | Session 마감 중 | 불가 | 불가 | 불가 |
 
 기존 값에서의 변경: `Ready` → `Idle`, `SessionActive` → `Ready`, `Initializing` 추가. 근거는 [research.md](research.md) 결정 2.
@@ -25,13 +25,13 @@
 ```text
 Idle ──Session START──> Initializing
 Initializing ──Tracking 1초 안정화──> Ready
-Initializing ──Session END──> Finalizing
+Initializing ──Session END(확인)──> Finalizing
 Ready ──Episode START──> EpisodeActive
 Ready ──Tracking 유실──> Initializing
-Ready ──Session END──> Finalizing
+Ready ──Session END(확인)──> Finalizing
 EpisodeActive ──Episode END──> Ready
 EpisodeActive ──Tracking 0.5초 유실──> Initializing   (Episode는 INVALID_TRACKING으로 마감)
-EpisodeActive ──Session END(확인)──> Finalizing
+EpisodeActive ──Session END(확인)──> (거부)   진행 중 Episode를 먼저 종료하도록 안내 (FR-006)
 Finalizing ──완료──> Idle
 ```
 
@@ -93,23 +93,24 @@ Session 단위로 1회 확보해 `metadata.json`에 기록하는 촬영 카메�
 
 **검증 규칙**
 
-- `imageWidth` / `imageHeight`는 같은 Session의 `main_rgb.mp4` 해상도와 일치한다(SC-007). 현행 구현이 MediaRecorder 해상도를 ARCore `cameraConfig.imageSize`로 설정하므로 구조적으로 보장된다.
+- `imageWidth` / `imageHeight`는 같은 Session의 `main_rgb.mp4` 해상도와 일치한다(SC-007). (2026-09-16) MediaRecorder 해상도와 Intrinsic이 모두 ARCore `cameraConfig.textureSize`(`Camera.getTextureIntrinsics()`) 기준이므로 구조적으로 보장된다. 처음에는 둘 다 `imageSize` 기준이었다.
 - 선택 필드는 기기가 제공하지 않으면 `null`이며, 값을 계산해 채우지 않는다(FR-024).
 - 전체 객체가 `null`이어도 Session 마감과 업로드는 진행된다(FR-025).
 
-기존 [`CameraConfig`](../../app/src/main/java/com/ssafy/s15p21a206/tiger/episode/EpisodeModels.kt)와 필드가 일부 겹치지만, 그 타입은 `CameraCapabilityPreflight`의 Galaxy S10 프로파일 판정용이고 intrinsics(`fx`/`fy`/`cx`/`cy`)를 갖지 않는다. 별도 타입으로 둔다.
+작성 당시에는 기존 `CameraConfig`와 필드가 일부 겹쳤다. 그 타입은 `CameraCapabilityPreflight`의 Galaxy S10 프로파일 판정용이고 intrinsics(`fx`/`fy`/`cx`/`cy`)를 갖지 않아 별도 타입으로 두었다. (2026-09-23) 두 타입은 production 경로가 없어 지웠고, 촬영 Camera 정보 타입은 `CameraMetadata` 하나다.
 
 ---
 
 ## 6. metadata.json (필드 추가)
 
-기존 키는 형식과 의미를 그대로 유지하고 `camera` 객체만 추가한다. 상세 형식은 [contracts/session-metadata.md](contracts/session-metadata.md)를 따른다.
+기존 키는 형식과 의미를 그대로 유지하고 `camera` 객체만 추가한다. (2026-09-23) 002의 촬영 조건 기능이 `capture_settings`를 더했다. 상세 형식은 [contracts/session-metadata.md](contracts/session-metadata.md)를 따른다.
 
 ```text
-session_id      유지
-camera_streams  유지
-files           유지 (manifest, metadata.json 자신은 제외)
-camera          신규 — 위 CameraMetadata
+session_id        유지
+camera_streams    유지
+files             유지 (manifest, metadata.json 자신은 제외)
+camera            신규 — 위 CameraMetadata
+capture_settings  2026-09-23 추가 — 수동 촬영 조건(요청값·실제값)
 ```
 
 `SessionBundleValidator`는 `session_id`, `camera_streams`, `files`만 읽고 알 수 없는 키를 무시하므로 이 추가로 검증이 깨지지 않는다(FR-026, SC-008).
