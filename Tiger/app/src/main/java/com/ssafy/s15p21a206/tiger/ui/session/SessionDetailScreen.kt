@@ -61,7 +61,7 @@ internal fun SessionDetailScreen(
     var showSessionInfo by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<SessionDeleteAction?>(null) }
     val presentation = summary?.let(SessionDetailPresentation::from)
-    // 재생 영역 높이와 전송·내보내기 상태에 따라 내용이 화면을 넘는다. 스크롤이 없으면 잘린다.
+    // 재생 영역 높이와 전송 상태에 따라 내용이 화면을 넘는다. 스크롤이 없으면 잘린다.
     Column(
         modifier =
             Modifier
@@ -111,11 +111,12 @@ internal fun SessionDetailScreen(
                 // 화면은 스스로 말하지 않으면 알 길이 없고, Object만으로는 이름의 절반이다.
                 //
                 // 상세는 목록 항목이 아니다. Material 3이 보조 줄을 1~3줄로 제한하는 것은 훑는
-                // 목록의 규칙이고, 여기서는 줄을 아낄 이유가 없다. 이름표와 값을 쌓는다. 세션 정보
+                // 목록의 규칙이고, 여기서는 줄을 아낄 이유가 없다. 이름표와 값을 쌓는다. 상세 정보
                 // 시트가 이미 같은 형태다.
                 //
-                // 이름과 정보는 띄어서 두 묶음으로 가른다. 같은 간격으로 쌓으면 네 줄이 한 덩어리가
-                // 되어 무엇이 이 화면의 이름인지 드러나지 않는다.
+                // 이름과 정보는 이름표를 단 묶음 카드가 가른다. 간격만으로 가르던 동안에는 이름과 정보
+                // 사이를 묶음 사이보다 좁게 두었으나, 카드가 생긴 뒤로는 이름과 각 묶음을 같은 간격으로
+                // 띄운다.
                 Text(
                     text =
                         java.text.DateFormat
@@ -206,7 +207,7 @@ internal fun SessionDetailScreen(
 }
 
 /**
- * 세션 정보와 삭제를 담는 헤더 메뉴다.
+ * 상세 정보 시트와 삭제를 담는 헤더 메뉴다.
  *
  * 둘 다 이 화면의 주 동작이 아니다. 본문의 전송 버튼이 주 동작을 맡고 있고, 이쪽은 확인하거나
  * 정리하러 들어왔을 때만 찾는다. 제목이 없는 헤더에 흐린 글리프를 나란히 세우면 둘 다 무엇인지
@@ -321,7 +322,7 @@ private fun SessionInfoRow(
         Text(text = label, style = TigerText.supporting)
         // 값은 시트 제목보다 작아야 한다. 전에는 값이 `bodyLarge`라 제목과 같은 16sp였고, 그래서
         // 제목이 목록의 첫 항목처럼 읽히며 큰 글자 다섯 개가 사다리처럼 쌓였다. 한 단계 내리면
-        // 제목이 이 시트의 유일한 최상위가 되고, 라벨과의 낙차도 4sp에서 2sp로 좁아져 두 줄이
+        // 제목이 이 시트의 유일한 최상위가 된다. 라벨과는 크기가 같고 잉크로만 갈려 두 줄이
         // 한 묶음으로 붙는다. 36자 식별자도 한 줄에 들어가 행 높이가 고르게 된다.
         Text(
             text = value,
@@ -368,15 +369,7 @@ private val DETAIL_CONTENT_PADDING = 16.dp
 private val DETAIL_VIDEO_GAP = 24.dp
 
 /**
- * 이름과 그 아래 정보 묶음 사이 간격.
- *
- * 줄 사이(2dp)보다 뚜렷하게 넓어야 이름이 정보와 갈린다. 다만 아래 묶음(16dp)보다는 좁아야 둘이
- * 한 덩어리로 묶여 보인다. 간격의 크기가 곧 묶음의 경계다.
- */
-private val DETAIL_TITLE_GAP = 8.dp
-
-/**
- * 묶음과 묶음 사이.
+ * 묶음과 묶음 사이. 이름과 첫 묶음 사이도 같다.
  *
  * 묶음 안 줄 사이(6dp)와 이름표가 제 묶음에 붙는 간격(4dp)보다 뚜렷하게 넓어야 한다. 셋이 엇비슷하면
  * 이름표가 어느 묶음의 것인지 간격이 말해 주지 못한다.

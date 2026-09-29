@@ -4,7 +4,7 @@ object RecordingInputValidator {
     private val controlCharacter = Regex("[\\u0000-\\u001F\\u007F]")
     private val pathSeparator = Regex("[/\\\\]")
 
-    /** 수집 정보 입력 화면에 보여 주는 순서와 같다. 첫 항목이 기본값이다. */
+    /** 카메라 설정 시트에 보여 주는 순서와 같다. 첫 항목이 기본값이다. */
     val supportedResolutions = listOf(RecordingResolution(1920, 1080), RecordingResolution(1280, 720))
     val DEFAULT_RESOLUTION = supportedResolutions.first()
 

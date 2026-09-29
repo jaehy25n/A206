@@ -22,7 +22,7 @@ import org.junit.Test
 import java.nio.file.Files
 
 /**
- * 내보내기·전송·삭제의 조율을 확인한다.
+ * 전송·삭제의 조율을 확인한다.
  *
  * 이 코드는 이전까지 Composable 안에 있어 테스트가 없었다. 아래 동작들은 화면 밖으로 나와야
  * 확인할 수 있는 것들이다.

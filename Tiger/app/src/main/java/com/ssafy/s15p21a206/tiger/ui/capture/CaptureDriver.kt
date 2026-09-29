@@ -404,8 +404,10 @@ internal fun rememberCaptureDriver(
             } finally {
                 // 예외로 빠져나가도 Finalizing에 머무르지 않게 여기서 닫는다.
                 onIntent(CaptureIntent.Finalized)
-                // 마감에 성공하면 업로드·상세 화면으로 이동해 TextureView가 사라지므로 되살릴 필요가 없다.
-                // 수집 화면에 그대로 남는 실패 경로에서만 유휴 프리뷰를 다시 연다.
+                // 작업 공간에 남는 경로(마감 실패, 업로드 서버 주소 없음)를 위해 유휴 프리뷰를 다시 연다.
+                // 의도는 그 경로에서만 여는 것이지만 `state`는 마감을 시작한 시점의 값이라 늘 open이다.
+                // 상세로 넘어가는 경로에서도 Surface가 아직 남아 있어 잠깐 열렸다가, 작업 공간을 벗어날 때
+                // 닫힌다. KNOWN_ISSUES.md에 적어 두었다.
                 if (state.open) restoreIdlePreview()
             }
         }
