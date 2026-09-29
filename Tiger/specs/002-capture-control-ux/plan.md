@@ -18,9 +18,9 @@
 
 **언어/버전**: Kotlin 2.2.10, Java 11 바이트코드 대상
 
-**주요 의존성**: Jetpack Compose Material 3, Activity Compose, Lifecycle Compose, Room 2.8.4, Kotlin coroutines, OkHttp 5.3.2, ARCore
+**주요 의존성**: Jetpack Compose Material 3, Activity Compose, Lifecycle Compose, Room 2.8.4, Kotlin coroutines, OkHttp 5.3.2, ARCore, Navigation Compose 2.10.1, Media3 ExoPlayer 1.11.1, Material Components 1.14.0(`SideSheetDialog`)
 
-**저장소**: Room `sessions`·`episode_markers` 색인, Detail 수집 시각용 로컬 벽시계 값과 Session 단위 Task·Object, 앱 전용 `filesDir/capture/{staging,completed}/<session_id>/` 원시 bundle, 기존 SAF export 대상
+**저장소**: Room `sessions`·`episode_markers` 색인, Detail 수집 시각용 로컬 벽시계 값과 Session 단위 Task·Object, 앱 전용 `filesDir/capture/{staging,completed}/<session_id>/` 원시 bundle
 
 **테스트**: JUnit, Room testing, MockWebServer, 화면 전환·접근성 검증이 필요한 Compose UI 테스트, Gradle 단위·lint·assemble 검사
 
@@ -30,9 +30,9 @@
 
 **성능 목표**: 제어 조작에도 카메라·센서 수집이 끊기지 않고 반응성을 유지한다. 업로드 중 서버 진행률 조회는 하지 않는다.
 
-**제약**: 서버 API·multipart 전송 계약·새 의존성 추가 없음, 서버 DELETE API 없음(삭제는 기기에만 미침), 백그라운드 업로드 없음, 백그라운드 전환 시 전송 취소, 일반 파일 관리자가 원시 bundle을 수정할 수 없음, legacy 외부 bundle은 이전·삭제 없이 제외, 첫 재생 전 프리뷰는 녹화하지 않음. Android 15+ 16KB 페이지 호환을 위해 기존 ARCore 의존성은 1.56.0으로 올리고 APK 정렬 및 16KB 환경을 검증한다.
+**제약**: 서버 API·multipart 전송 계약 변경 없음, 의존성은 Navigation Compose·Media3(2026-09-17)와 Material Components(2026-09-23, 카메라 설정 시트)만 더함, 서버 DELETE API 없음(삭제는 기기에만 미침), 백그라운드 업로드 없음, 백그라운드 전환 시 전송 취소, 일반 파일 관리자가 원시 bundle을 수정할 수 없음, legacy 외부 bundle은 이전·삭제 없이 제외, 첫 재생 전 프리뷰는 녹화하지 않음. Android 15+ 16KB 페이지 호환을 위해 기존 ARCore 의존성은 1.56.0으로 올리고 APK 정렬 및 16KB 환경을 검증한다.
 
-**범위**: Session 목록·수집 작업 공간·Session 상세, 내부 저장소 전환, Episode 취소 상태 제거 및 자동 테스트. export는 지원을 유지하되 UX를 재설계하지 않는다.
+**범위**: Session 목록·수집 작업 공간·Session 상세, 내부 저장소 전환, Episode 취소 상태 제거 및 자동 테스트. export는 지원을 유지하되 UX를 재설계하지 않는다. (2026-09-22) SAF export는 제거했다(S15P21A206-52).
 
 ## 프로젝트 규칙 점검
 
@@ -66,9 +66,11 @@ app/
 │   ├── capture/                        # 카메라 프리뷰와 AR/IMU 녹화 수명주기
 │   ├── data/local/                     # Room 데이터베이스와 DAO
 │   ├── episode/                        # Session·Episode·bundle·repository 모델
-│   ├── ui/capture/                     # 수집 작업 공간·드라이버·상태·프리뷰 Surface
-│   ├── ui/session/                     # 세션 목록·상세·운용(내보내기·전송·삭제)
+│   ├── ui/capture/                     # 수집 작업 공간·드라이버·상태·프리뷰 Surface·카메라 설정 시트
+│   ├── ui/session/                     # 세션 목록·상세·운용(전송·삭제)
 │   ├── ui/video/                       # 전체화면 재생과 공유 ExoPlayer
+│   ├── ui/upload/                      # 전송 상태 문구와 백그라운드 취소 판정
+│   ├── ui/theme/                       # 글자 역할·판·타입 스케일·글꼴·색
 │   ├── ui/common/                      # 공통 표시 요소와 방향 고정
 │   └── upload/                         # multipart 업로드와 취소 가능한 작업
 ├── src/main/res/values/strings.xml     # 사용자 문구·접근성 라벨
@@ -79,7 +81,7 @@ app/
     └── ui/
 ```
 
-2026-09-22에 presentation 계층을 정리하며 갱신했다(S15P21A206-46). 이전에는 `MainActivity.kt` 한 파일이 루트 UI 상태와 화면 구성을 전부 들고 있었다.
+2026-09-22에 presentation 계층을 정리하며 갱신했다(S15P21A206-46). 이전에는 `MainActivity.kt` 한 파일이 루트 UI 상태와 화면 구성을 전부 들고 있었다. 2026-09-29에 내보내기 제거와 `ui/theme`·`ui/upload`·카메라 설정 시트를 반영했다.
 
 **구조 결정**: 기존 단일 Android 앱 모듈을 유지한다. 조회 흐름(목록·Task Session 목록·상세·전체 화면 동영상)은 `androidx.navigation:navigation-compose`의 `NavHost`와 type-safe route로 전환하고, 이탈은 `popBackStack()`으로 통일한다. 수집 작업 공간은 목적지가 아니라 `NavHost` 위에 얹는 모달이며 boolean 상태로 관리한다. 2026-09-17에 S15P21A206-40으로 갱신했다. 이전 결정과 뒤집는 이유는 `research.md`에 있다.
 
@@ -88,6 +90,8 @@ app/
 ### Phase 5 구현 단위
 
 `CaptureControlPolicy`의 네 상태·준비 여부·작업 잠금을 단위 테스트하고, `CaptureScreen`의 production 콜백과 제어 UI가 같은 정책을 사용한다. 종료 확인·BackHandler·툴팁은 `CaptureWorkspaceScreen.kt`에서 렌더링하고 부모가 확인 상태와 비동기 작업을 소유한다. Compose 검증은 기존 환경에 맞게 `src/androidTest/.../ui/CaptureControlStateScreenTest.kt`에 두고, T025는 제어 상태와 UI semantics·툴팁 자동 검사로 완료 판정한다. 개발용 앱이라는 사용자 결정(2026-09-11)에 따라 TalkBack 실사용 검증은 필수 범위에서 제외한다.
+
+이후 바뀐 것: 정책의 상태는 003에서 다섯(`Idle`·`Initializing`·`Ready`·`EpisodeActive`·`Finalizing`)이 됐고, `CaptureScreen`은 2026-09-22에 `CaptureWorkspace`(그리기)와 `rememberCaptureDriver`(콜백)로 갈렸다. 상태와 확인 여부는 `TigerApp`이 소유하는 `CaptureUiState`가 든다.
 
 [research.md](research.md)의 모든 결정이 해결됐으며 추가 확인 항목은 없다.
 

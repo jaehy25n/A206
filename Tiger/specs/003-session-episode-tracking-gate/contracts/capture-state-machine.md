@@ -8,15 +8,19 @@
 
 | 상태 | 화면 표시 | 재생 | 일시 정지 | 정지 | 화면 이탈 |
 |---|---|---|---|---|---|
-| `Idle` | `IDLE` | Session START | 비활성 | 비활성 | 즉시 이탈 |
-| `Initializing` | `INITIALIZING` | **비활성** (사유 표시) | 비활성 | Session END | 확인 후 이탈 |
-| `Ready` | `READY` | Episode START | 비활성 | Session END | 확인 후 이탈 |
-| `EpisodeActive` | `EPISODE ACTIVE` | 비활성 | Episode END | 활성이지만 거부 후 안내 | 확인 후 이탈 |
-| `Finalizing` | `FINALIZING` | 비활성 | 비활성 | 비활성 | 무시 |
+| `Idle` | (배지 없음. 그 자리에 카메라 설정 톱니바퀴) | Session START | 비활성 | 비활성 | 즉시 이탈 |
+| `Initializing` | `INITIALIZING` | **비활성** (사유 표시) | 비활성 | 확인 후 Session END | 확인 후 이탈 |
+| `Ready` | `READY` | Episode START | 비활성 | 확인 후 Session END | 확인 후 이탈 |
+| `EpisodeActive` | `EPISODE ACTIVE` | 비활성 | Episode END | 확인 후 거부·안내 | 확인 후 거부·안내 |
+| `Finalizing` | (배지 없음. 마감 판이 화면을 덮는다) | 비활성 | 비활성 | 비활성 | 무시 |
 
 `Idle`에서 재생은 task/object 입력이 완료되고 프리뷰가 준비된 경우에만 활성화된다(기존 동작 유지).
 
-촬영 설정(초점·ISO·셔터·화이트 밸런스)은 `Idle`에서만 바꿀 수 있다. 다른 상태에서도 패널을 열어 값을 읽을 수 있으나 조작은 받지 않으며, `Idle → Initializing` 전이에서 패널이 접힌다.
+표의 `비활성`은 그 조작을 받지 않는다는 뜻이다. 화면에는 상태마다 쓰는 아이콘만 그린다. `Idle`은 재생 하나, `EpisodeActive`는 일시 정지와 정지, `Initializing`·`Ready`는 재생과 정지이며, `Finalizing`에는 제어가 없다.
+
+정지와 화면 이탈(X·시스템 뒤로 가기)은 수집 중이면 같은 종료 확인을 거친다. `EpisodeActive`에서는 확인해도 Session을 마감하지 않고, 진행 중인 Episode를 먼저 종료하라고 안내한 뒤 작업 공간에 머문다.
+
+촬영 설정(녹화 해상도·초점·ISO·셔터·화이트 밸런스)은 `Idle`에서만 바꿀 수 있다. (2026-09-23) 설정 시트도 `Idle`에서만 열린다. 다른 상태에서는 톱니바퀴가 없고, 여는 요청이 와도 상태 전이가 무시한다. `Idle → Initializing` 전이에서 열린 시트를 접는다.
 
 ## 전이
 
@@ -24,11 +28,12 @@
 
 ```text
 Idle          ──재생──>  Initializing     Session 생성, Camera/IMU/ARCore 수집 시작
+Idle          ──재생──>  Idle             카메라 timestamp 소스가 REALTIME이 아니면 시작 거부. 번들을 지우고 사유를 알린다
 Ready         ──재생──>  EpisodeActive    Episode를 ACTIVE로 시작
 EpisodeActive ──일시정지──> Ready          Episode를 COMPLETED로 마감
-Initializing  ──정지──>  Finalizing       Session 마감
-Ready         ──정지──>  Finalizing       Session 마감
-EpisodeActive ──정지──>  (거부)           진행 중 Episode를 먼저 종료하도록 안내
+Initializing  ──정지(확인)──>  Finalizing   Session 마감
+Ready         ──정지(확인)──>  Finalizing   Session 마감
+EpisodeActive ──정지(확인)──>  (거부)       진행 중 Episode를 먼저 종료하도록 안내
 Finalizing    ──완료──>  Idle
 ```
 
@@ -43,6 +48,8 @@ Ready         ──TRACKING 유실──>             Initializing
 EpisodeActive ──유실 0.5초 미만 후 회복──>    EpisodeActive  (변화 없음, 기록 계속)
 EpisodeActive ──유실 0.5초 이상 지속──>       Initializing   (Episode를 INVALID_TRACKING으로 마감)
 ```
+
+Episode 중 짧은 유실(0.5초 미만)이 있었으면, 회복한 뒤 안정화 판정 시간(1초)을 다시 채우기 전까지 Tracking은 `READY`가 아니다. 그 사이 일시 정지하면 화면은 `Ready`를 거쳐 다음 평가(0.1초 뒤)에 `Initializing`으로 가고, 1초가 차면 `Ready`로 돌아온다. 그 짧은 `Ready` 동안 재생을 눌러도 Episode는 시작되지 않는다.
 
 ## 불변식
 
@@ -97,10 +104,10 @@ EpisodeActive ──유실 0.5초 이상 지속──>       Initializing   (Epi
 `TRACKING` 이후 첫 유실 pose 시각을 걸어 두고 회복할 때까지 그 값을 보낸다. 실기기에서 편차 0 ms를
 확인했다.
 
-**폴백**: 카메라 timestamp 소스가 `REALTIME`이 아닌 기기에서는 pose 시각이 단조 시계와 다른
-시간축이다. 그 값이 진행 중 Episode의 시작보다 이르거나 현재보다 미래이면 다른 시간축으로 보고
-버리며, 이때는 인지 시각을 기록에 사용한다. 그 Session의 `end_timestamp_ns`는 최대
-평가 주기 + pose 지연만큼 늦어지지만, 시간축이 뒤섞인 값이 기록되지는 않는다.
+**폴백**: (2026-09-23) 카메라 timestamp 소스가 `REALTIME`이 아니거나 알려지지 않은 기기에서는 Session을
+시작하지 않는다. 카메라를 열기 전에 거부하므로 기록되는 pose 시각은 단조 시계와 같은 시간축이다.
+그래도 걸어 둔 pose 시각이 진행 중 Episode의 시작보다 이르거나 현재보다 미래이면 버리고 인지 시각을
+기록에 쓰는 방어는 남아 있다.
 
 ### Session 중 화면 프리뷰
 

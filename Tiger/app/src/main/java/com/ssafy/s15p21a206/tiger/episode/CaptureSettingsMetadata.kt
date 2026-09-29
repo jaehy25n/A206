@@ -11,12 +11,12 @@ import kotlinx.serialization.Serializable
  * 요청값과 실제값을 나눠 담는다. `CaptureRequest`에 넣었다고 센서가 그 값을 쓴 것은 아니며,
  * calibration은 실제로 쓰인 값 위에서만 뜻이 있기 때문이다.
  *
- * 기존 `metadata.json`에 더해지는 항목이고 모든 필드에 기본값이 있어, 이 값이 없는 예전 Session을
- * 읽는 쪽이 깨지지 않는다.
+ * 기존 `metadata.json`에 더해지는 객체다. 수동 설정을 쓰지 않은 Session은 객체째 쓰지 않으므로, 이
+ * 객체가 없는 예전 Session을 읽는 쪽도 깨지지 않는다.
  */
 @Serializable
 data class CaptureSettingsMetadata(
-    /** 수동 설정을 쓴 Session은 `manual`, 기기 자동에 맡긴 Session은 `auto`. */
+    /** 지금은 늘 `manual`이다. 기기 자동에 맡긴 Session은 이 객체를 쓰지 않는다. */
     val mode: String,
     val requested: RequestedCaptureSettings? = null,
     val actual: ActualCaptureSettings? = null,

@@ -1,5 +1,9 @@
 # 구현 계획: Capture Session Recorder MVP — SAF Export
 
+> (2026-09-22) 이 계획의 SAF 내보내기는 철회되고 구현에서도 걷어 냈다. 무엇을 거뒀는지는
+> [기능 명세](spec.md)의 철회된 범위에 있다. 번들 저장 위치도 이후 앱 전용 내부 저장소(`filesDir`)로
+> 옮겼다(002 FR-012). 아래는 당시의 계획이며 구현 판정의 근거로 삼지 않는다.
+
 ## Technical Context
 
 | 항목 | 결정 |

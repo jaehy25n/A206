@@ -40,9 +40,9 @@ internal data class ManualCameraUiState(
  * 그중 다섯만 합법이었다. 나머지 열하나는 타입이 아니라 호출 순서로만 막혀 있었다. 여기서는
  * [phase] 하나가 그 다섯을 든다.
  *
- * [previewSurface]·[previewTexture]에 해당하는 값은 여기 없다. 수명이 `TextureView`에 묶여 있어
- * 상태로 올리면 backing view가 사라진 뒤의 null·release를 직접 관리해야 한다. composition에
- * 남기고 intent의 인자로 넘긴다.
+ * `previewSurface`·`previewTexture`에 해당하는 값은 여기 없다. 수명이 `TextureView`에 묶여 있어
+ * 상태로 올리면 backing view가 사라진 뒤의 null·release를 직접 관리해야 한다. [rememberCaptureDriver]가
+ * 들고, 화면은 Surface가 생기고 사라졌다는 사실만 알린다.
  */
 internal data class CaptureUiState(
     /** 작업 공간을 띄우고 있는지. `false`면 나머지 값은 다음 [CaptureIntent.Open]이 새로 채운다. */

@@ -1,5 +1,9 @@
 # SAF Export 조사
 
+> (2026-09-22) SAF 내보내기가 철회되어 아래 결정은 모두 더 이상 유효하지 않다. export 상태 컬럼은
+> 이관 5→6에서 지웠다. 무엇을 거뒀는지는 [기능 명세](spec.md)의 철회된 범위에 있고, 이 문서는
+> 기록으로 남긴다.
+
 ## Decision: Storage Access Framework tree URI를 사용한다
 
 **Rationale:** 사용자가 선택한 directory provider 하위에서만 문서를 생성할 수 있고, broad storage permission 없이 Documents를 포함한 사용자 선택 저장소에 쓸 수 있다. picker는 Documents 위치에서 시작하지만 선택된 tree URI의 범위를 넘지 않는다.

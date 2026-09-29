@@ -141,7 +141,7 @@ frame#2  request[af=OFF ae=ON   awb=AUTO focus=1.0]   ← ARCore가 갈아 끼�
 
 ### 요구 환경
 
-- Android Studio 및 JDK 11
+- Android Studio 및 JDK 17 이상. Gradle 9.6은 JDK 17 미만에서 실행되지 않습니다. 소스는 Java 11 대상으로 컴파일합니다.
 - Android SDK Platform 37
 - ARCore 지원 Android 기기와 최신 Google Play Services for AR
 
@@ -167,13 +167,13 @@ app/build/outputs/apk/debug/app-debug.apk
 .\gradlew.bat assembleDebug
 ```
 
-연결된 실기기 또는 emulator가 있을 때만 instrumented test를 실행합니다.
+instrumented test는 연결된 실기기 또는 emulator에서 실행합니다. `connectedDebugAndroidTest`는 실행할 때마다 APK를 다시 설치해 기기에서 수 분씩 걸리므로 쓰지 않습니다. APK를 한 번 설치한 뒤 `am instrument`로 돌리며, 절차는 [`AGENTS.md`의 계측 테스트 실행](AGENTS.md#계측-테스트-실행)에 있습니다.
 
-```powershell
-.\gradlew.bat connectedDebugAndroidTest
-```
+카메라, IMU, ARCore, 런타임 권한은 단위 테스트만으로 검증할 수 없습니다. 실기기 검증 절차는 기능별 검증 가이드를 따릅니다.
 
-카메라, IMU, ARCore, 런타임 권한은 단위 테스트만으로 검증할 수 없습니다. 실기기 검증 절차는 [Capture Session 검증 가이드](specs/001-episode-recorder/quickstart.md)를 따릅니다.
+- [Capture Session 검증 가이드](specs/001-episode-recorder/quickstart.md)
+- [Capture Control UX 검증 가이드](specs/002-capture-control-ux/quickstart.md)
+- [Session/Episode 분리와 Tracking 유효성 게이트 검증 가이드](specs/003-session-episode-tracking-gate/quickstart.md)
 
 ## 데이터 흐름
 
@@ -185,10 +185,12 @@ capture/staging/<session_id>/
         │  finalize + file/manifest 검증
         ▼
 capture/completed/<session_id>/
-        │  사용자가 SAF tree 선택
+        │  multipart 업로드 (마감 직후 자동, 실패하면 상세에서 재전송)
         ▼
-<selected tree>/TigerCapture/<session_id>/
+POST {BASE_URL}/sessions
 ```
+
+두 디렉터리는 앱 전용 내부 저장소(`filesDir`) 아래에 있습니다.
 
 completed bundle에는 다음 파일이 포함됩니다.
 
@@ -207,11 +209,11 @@ completed bundle은 공개된 뒤 수정하지 않습니다. 업로드는 그것
 
 ## 업로드 계약
 
-서버 연동을 위한 HTTP multipart 계약은 [Capture Session Upload 계약](specs/001-episode-recorder/contracts/episode-upload.md)에 정의돼 있습니다. 요청 생성기는 `POST {BASE_URL}/sessions`와 `Idempotency-Key: <session_id>`를 사용하지만, 실제 server URL 주입과 앱 흐름 연결은 아직 구현되지 않았습니다.
+서버 연동을 위한 HTTP multipart 계약은 [Capture Session Upload 계약](specs/001-episode-recorder/contracts/episode-upload.md)에 정의돼 있습니다. 앱은 `POST {BASE_URL}/sessions`에 `Idempotency-Key: <session_id>`를 붙여 보냅니다. `BASE_URL`은 빌드할 때 `tigerUploadBaseUrl`(Gradle 속성 `-PtigerUploadBaseUrl` 또는 `local.properties`)에서 `BuildConfig.UPLOAD_BASE_URL`로 들어갑니다.
 
 ## 문서와 작업 방식
 
-- 기능 명세·계획·작업: [`specs/001-episode-recorder/`](specs/001-episode-recorder/)
+- 기능 명세·계획·작업: [`specs/001-episode-recorder/`](specs/001-episode-recorder/), [`specs/002-capture-control-ux/`](specs/002-capture-control-ux/), [`specs/003-session-episode-tracking-gate/`](specs/003-session-episode-tracking-gate/)
 - SDD/Spec Kit 완료 판정 규칙: [`specs/AGENTS.md`](specs/AGENTS.md)
 - 프로젝트 공통 작업 규칙: [`AGENTS.md`](AGENTS.md)
 

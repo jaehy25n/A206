@@ -36,12 +36,12 @@ main-only Session은 다음 part를 한 번씩 보낸다. `metadata` 외 part의
 
 ## Metadata 검증
 
-metadata JSON은 최소한 `session_id`, device, camera streams, camera, arcore, timebase, recording start/end timestamp, sample counts, raw file manifest를 포함한다. 파일 manifest는 metadata 자신을 제외한 모든 전송 raw file의 relative filename, byte size, lowercase SHA-256을 기록한다.
+metadata JSON은 `session_id`, `camera_streams`, raw file manifest `files`를 포함하고, 확보한 경우 `camera`와 `capture_settings`를 더한다. 형식은 [Session `metadata.json` 계약](../../003-session-episode-tracking-gate/contracts/session-metadata.md)을 따른다. 파일 manifest는 metadata 자신을 제외한 모든 전송 raw file의 relative filename, byte size, lowercase SHA-256을 기록한다.
 
-서버는 `session_id`, streams 선언, manifest size/hash, 필수 file 구성, timestamp comparability 결과를 검증한다. `main=true`와 `arcore.enabled=true/shared_camera=true`가 main-only MVP의 정상 선언이며, `ultrawide=false`에 UW part 또는 `ultrawide=true`에 UW 누락 part는 reject한다.
+서버는 `session_id`, streams 선언, manifest size/hash, 필수 file 구성을 검증한다. `main=true`, `ultrawide=false`가 main-only MVP의 정상 선언이며, `ultrawide=false`에 UW part 또는 `ultrawide=true`에 UW 누락 part는 reject한다.
 
 ## Receipt와 오류
 
-유효한 신규 수신은 `201`과 `{ "session_id": "…", "result": "created" }`, 동일 bundle 재수신은 `200`과 `result: "duplicate"`를 반환한다. 앱은 status·JSON content type·session ID·result가 모두 일치할 때만 `UPLOADED`로 표시한다.
+유효한 신규 수신은 `201`과 `{ "session_id": "…", "result": "created" }`, 동일 bundle 재수신은 `200`과 `result: "duplicate"`를 반환한다. 앱은 status가 `200` 또는 `201`이고 응답이 JSON이며, receipt의 `session_id`가 보낸 값과 같고 `result`가 `created` 또는 `duplicate`일 때만 `UPLOADED`로 표시한다. status와 `result`의 짝은 따지지 않는다.
 
 `400 MALFORMED_MULTIPART`, `409 IDEMPOTENCY_CONFLICT`, `409 IDEMPOTENCY_IN_PROGRESS`, `413 PAYLOAD_TOO_LARGE`, `415 UNSUPPORTED_MEDIA_TYPE`, `422 BUNDLE_INVALID`, `429 RATE_LIMITED`, TLS/연결 오류, redirect, 그 밖의 성공 조건 불일치는 `FAILED`다. 실패한 completed Session은 수동으로 재전송할 수 있다.

@@ -70,7 +70,7 @@ private data class SessionVideoRoute(
 /**
  * 앱의 뿌리. 조회 흐름의 NavHost와 그 위에 얹히는 수집 작업 공간을 담는다.
  *
- * 여기가 목적지와 세션 운용(내보내기·전송·삭제)을 쥐고, 수집은 [CaptureWorkspace]가 가져간다.
+ * 여기가 목적지와 세션 운용(전송·삭제)을 쥐고, 수집은 [CaptureWorkspace]가 가져간다.
  * 수집 상태는 이 화면이 소유하는데, 작업 공간을 여는 것이 조회 화면의 동작이기 때문이다.
  */
 @Suppress("FunctionName", "LongMethod")
@@ -198,8 +198,8 @@ fun TigerApp() {
             startDestination = SessionListRoute,
             modifier = Modifier.fillMaxSize(),
             // NavHost의 기본 전환은 좌우 슬라이드다. 이관 전에는 화면이 즉시 바뀌었고, 이 앱에는
-            // 전환 애니메이션을 도입할 이유가 없다. 수집 마감 경로는 Detail과 업로드 상태를 한
-            // 프레임에 연달아 쌓으므로 애니메이션이 있으면 슬라이드가 두 번 겹쳐 보인다.
+            // 전환 애니메이션을 도입할 이유가 없다. 업로드 상태 화면이 있던 동안에는 수집 마감 경로가
+            // Detail과 그 화면을 한 프레임에 연달아 쌓아, 애니메이션이 있으면 슬라이드가 두 번 겹쳐 보였다.
             enterTransition = { EnterTransition.None },
             exitTransition = { ExitTransition.None },
             popEnterTransition = { EnterTransition.None },

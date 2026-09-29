@@ -61,14 +61,14 @@ val Pretendard =
  *
  * ## 층
  *
- * 크기는 넷이다. Material 3의 타입 스케일에서 이름을 빌리고, 괄호 안은 Apple HIG의 대응이다.
+ * 크기는 다섯이다. Material 3의 타입 스케일에서 이름을 빌리고, 괄호 안은 Apple HIG의 대응이다.
  *
  * | 층 | 크기 | 쓰는 곳 |
  * | --- | --- | --- |
- * | largeTitle | 28sp | 화면의 이름. `headlineMedium` (title1 28) |
- * | title | 22sp | `AlertDialog`의 제목. `titleLarge` (title2 22) |
- * | body | 16sp | 상세 본문, 목록 항목의 이름. `bodyLarge`·`titleMedium` (body 17, headline 17) |
- * | callout | 14sp | 목록의 값, 컨트롤의 글자. `bodyMedium`·`titleSmall`·`labelLarge` (subhead 15) |
+ * | largeTitle | 28sp | 묶음의 이름(홈의 `Tasks`, Task 이름). `headlineMedium` (title1 28) |
+ * | title | 22sp | 상세의 이름(수집 일시), `AlertDialog`의 제목. `titleLarge` (title2 22) |
+ * | body | 16sp | 화면에 직접 놓이는 문장, 목록 카드의 이름. `bodyLarge`·`titleMedium` (body 17, headline 17) |
+ * | callout | 14sp | 카드 안의 값, 컨트롤의 글자. `bodyMedium`·`titleSmall`·`labelLarge` (subhead 15) |
  * | caption | 12sp | 묶음 이름표. `labelMedium` (caption1 12) |
  *
  * 28 위는 비워 둔다. `display`와 `headlineLarge`는 한 화면에 제목이 여럿인 문서형 화면의 눈금이고, 이
@@ -114,7 +114,7 @@ val Typography =
  *
  * 숫자는 고정폭(`tnum`)으로 둔다. 기본값인 비례 숫자는 글자마다 폭이 달라 `1`이 좁다. 한 줄로 읽는
  * 글에서는 그편이 고르지만, 이 앱의 숫자는 세로로 쌓인다. 목록 카드의 수집 일시가 카드마다 같은
- * 자리에서 시작하고, 세션 정보 시트의 값들도 기둥을 이룬다. 폭이 흔들리면 자릿수가 어긋나 보여 두
+ * 자리에서 시작하고, 상세 정보 시트의 값들도 기둥을 이룬다. 폭이 흔들리면 자릿수가 어긋나 보여 두
  * 시각을 견주기 어렵다.
  *
  * Pretendard가 Inter에서 물려받은 기능이고, 이 가족을 고른 이유 중 하나다. 한 곳에서 켜서 화면과

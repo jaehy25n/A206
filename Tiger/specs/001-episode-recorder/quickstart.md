@@ -31,11 +31,11 @@
 tigerUploadBaseUrl=http://<ingestion-server>
 ```
 
-completed Session에서 **업로드**를 선택한다. 앱은 source bundle을 먼저 검증하고, 동일한 UUID를 `Idempotency-Key`와 metadata `session_id`로 사용해 전체 multipart를 전송한다. `201 created` 또는 `200 duplicate`의 JSON receipt가 전송한 session ID와 일치할 때만 `UPLOADED`로 표시한다. 실패·앱 종료로 중단된 `UPLOADING`은 `FAILED`로 복구되며, **업로드 재시도**는 원본을 수정·삭제하지 않고 같은 session ID로 전체 request를 다시 보낸다.
+Session을 종료하면 확정 뒤 업로드가 곧바로 시작되고 그 Session의 상세로 이동한다. 아직 보내지 않은 Session(`LOCAL_ONLY`)은 상세의 **업로드**로 보낸다. 앱은 source bundle을 먼저 검증하고, 동일한 UUID를 `Idempotency-Key`와 metadata `session_id`로 사용해 전체 multipart를 전송한다. status `200` 또는 `201`의 JSON receipt가 전송한 session ID와 일치하고 `result`가 `created` 또는 `duplicate`일 때만 `UPLOADED`로 표시한다. 실패·앱 종료로 중단된 `UPLOADING`은 `FAILED`로 복구되며, **업로드 재시도**는 원본을 수정·삭제하지 않고 같은 session ID로 전체 request를 다시 보낸다.
 
 실서버 검증은 Android에서 completed Session을 만든 뒤 다음 순서로 수행한다.
 
-1. 기기에서 꺼낸 동일 bundle을 PC에서 multipart로 보내 `201 created` 또는 `200 duplicate`를 확인한다.
+1. 기기에서 꺼낸 동일 bundle을 PC에서 multipart로 보내 `201 created` 또는 `200 duplicate`를 확인한다. 번들은 앱 전용 내부 저장소에 있으므로, debug 빌드에서 `adb exec-out run-as com.ssafy.s15p21a206.tigermask tar -cf - -C files/capture/completed <session_id> > <session_id>.tar`로 꺼낸다.
 2. 앱에서 같은 Session을 업로드해 상태가 `UPLOADED`로 바뀌는지 확인한다.
 3. 네트워크 오류 또는 의도적으로 잘못된 receipt를 재현해 `FAILED`와 수동 재시도가 표시되고 source bundle이 남는지 확인한다.
 

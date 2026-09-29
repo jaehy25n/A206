@@ -3,8 +3,8 @@
 # 커밋 전에 Kotlin 스타일과 단위 테스트를 검사한다.
 #
 # 두 검사를 한 번의 Gradle 호출에 얹어 설정 단계를 한 번만 거치게 한다. 단위 테스트는 기기가
-# 필요 없으므로 여기서 돌릴 수 있다. 기기가 필요한 `connectedDebugAndroidTest`는 hook에 넣지
-# 않으며, 언제 직접 돌려야 하는지는 AGENTS.md에 적어 뒀다.
+# 필요 없으므로 여기서 돌릴 수 있다. 기기가 필요한 계측 테스트는 hook에 넣지 않으며, 언제 어떻게
+# 직접 돌리는지는 AGENTS.md에 적어 뒀다. `connectedDebugAndroidTest`가 아니라 `am instrument`로 돌린다.
 
 set -eu
 
